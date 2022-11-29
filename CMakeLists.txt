@@ -56,6 +56,11 @@ if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
   add_subdirectory(athenapp)
 endif()
 
+# compile athenapp
+if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
+  add_subdirectory(cliutils)
+endif()
+
 ## 6. set up project library ##
 message(STATUS "")
 message(STATUS "Set up project complication and installation ...")
@@ -63,4 +68,4 @@ message(STATUS "Set up project complication and installation ...")
 # set up configure file
 configure_file(${CMAKE_SOURCE_DIR}/configure.hpp.in configure.hpp @ONLY)
 add_subdirectory(src)
-#add_subdirectory(tests)
+add_subdirectory(tests)
