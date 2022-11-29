@@ -1,0 +1,31 @@
+325,327d324
+<   // For the cubed sphere implementation right now we only care about 
+<   // the same level
+<   int tmp_ox1, tmp_ox2, tmp_tox1, tmp_tox2;
+330,333c327
+<     tmp_ox1 = n;
+<     tmp_ox2 = 0;
+<     TransformOxForCubedSphere(&tmp_ox1, &tmp_ox2, &tmp_tox1, &tmp_tox2);
+<     neibt = tree.FindNeighbor(loc, tmp_ox1, tmp_ox2, 0);
+---
+>     neibt = tree.FindNeighbor(loc, n, 0, 0);
+358c352
+<         tbid = FindBufferID(tmp_tox1, tmp_tox2, 0, 0, 0);
+---
+>         tbid = FindBufferID(-n, 0, 0, 0, 0);
+377,380c371
+<     tmp_ox1 = 0;
+<     tmp_ox2 = n;
+<     TransformOxForCubedSphere(&tmp_ox1, &tmp_ox2, &tmp_tox1, &tmp_tox2);
+<     neibt = tree.FindNeighbor(loc, tmp_ox1, tmp_ox2, 0);
+---
+>     neibt = tree.FindNeighbor(loc, 0, n, 0);
+408,409c399
+<         tbid = FindBufferID(tmp_tox1, tmp_tox2, 0, 0, 0);
+<         // tbid = FindBufferID(0, polar ? n : -n, 0, 0, 0);
+---
+>         tbid = FindBufferID(0, polar ? n : -n, 0, 0, 0);
+459d448
+<   // For cubed spheres, there are no such edges, so we skip here
+705d693
+<   // For cubed spheres, there are no corners, so we skip here
