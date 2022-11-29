@@ -78,6 +78,7 @@ class BoundaryBase {
   static int FindBufferID(int ox1, int ox2, int ox3, int fi1, int fi2);
 
   void SearchAndSetNeighbors(MeshBlockTree &tree, int *ranklist, int *nslist);
+  void TransformOxForCubedSphere(int *ox1, int *ox2, int *tox1, int *tox2);
 
  protected:
   // 1D refined or unrefined=2
