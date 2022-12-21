@@ -1,5 +1,6 @@
 #include <sstream>
 #include <ostream>
+#include <iostream>
 #include <bvals/bvals.hpp>
 #include <bvals/cubed_sphere.hpp>
 
@@ -86,6 +87,7 @@ void TransformOxForCubedSphere(int *ox2, int *ox3, int *tox2, int *tox3,
   // No need to consider the corner cases, abandon in reading buffers.
   int target_block = -1; // Block id of target
   int target_loc_2, target_loc_3; // local x2 and x3 in target block
+  std::cout << "|Block ID: " << block_id << "||ox2: " << *ox2 << "|ox3: " << *ox3 << std::endl;
 
   switch (block_id)
   {
@@ -251,7 +253,11 @@ void TransformOxForCubedSphere(int *ox2, int *ox3, int *tox2, int *tox3,
     // Calculate and pass the differences
     *ox3 = lx3_t - loc.lx1;
     *ox2 = lx2_t - loc.lx2;
+  }else{
+    *tox2 = -*ox2;
+    *tox3 = -*ox3;
   }
+  std::cout << "|Block ID: " << block_id << "|Target Block: " << target_block << "||ox2: " << *ox2 << "|ox3: " << *ox3 << "||tox2:" << *tox2 << "|tox3:" << *tox3 << std::endl;
   return;
 }
 
