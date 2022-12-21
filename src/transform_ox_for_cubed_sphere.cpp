@@ -19,7 +19,7 @@ int FindBlockID(LogicalLocation const& loc){
           block_id = 1;
           break;
         case 1:
-          block_id = 3;
+          block_id = 2;
           break;
         default:
           std::stringstream msg;
@@ -32,7 +32,7 @@ int FindBlockID(LogicalLocation const& loc){
       switch(lv2_lx2)
       {
         case 0:
-          block_id = 2;
+          block_id = 3;
           break;
         case 1:
           block_id = 4;
@@ -93,7 +93,7 @@ void TransformOxForCubedSphere(int *ox2, int *ox3, int *tox2, int *tox3,
   {
     case 1: // Special: left, top, right
       if ((local_lx3==0) && (*ox3==-1)){ // Left Boundary
-        target_block = 2;
+        target_block = 3;
         target_loc_2 = 0;
         target_loc_3 = local_lx2;
         *tox2 = -1;
@@ -115,6 +115,15 @@ void TransformOxForCubedSphere(int *ox2, int *ox3, int *tox2, int *tox3,
       }
       break;
     case 2:
+      if ((local_lx3==0) && (*ox3==-1)){ // Left Boundary
+        target_block = 3;
+        target_loc_2 = local_lx2;
+        target_loc_3 = bound_lim;
+        *tox2 = 0;
+        *tox3 = 1;
+      }
+      break;
+    case 3:
       if ((local_lx2==0) && (*ox2==-1)){ // Top Boundary
         target_block = 1;
         target_loc_2 = local_lx3;
@@ -130,20 +139,11 @@ void TransformOxForCubedSphere(int *ox2, int *ox3, int *tox2, int *tox3,
         *tox3 = -1;
       }
       if ((local_lx3==bound_lim) && (*ox3==1)){ // Right Boundary
-        target_block = 3;
+        target_block = 2;
         target_loc_2 = local_lx2;
         target_loc_3 = 0;
         *tox2 = 0;
         *tox3 = -1;
-      }
-      break;
-    case 3:
-      if ((local_lx3==0) && (*ox3==-1)){ // Left Boundary
-        target_block = 2;
-        target_loc_2 = local_lx2;
-        target_loc_3 = bound_lim;
-        *tox2 = 0;
-        *tox3 = 1;
       }
       break;
     case 4:
@@ -164,7 +164,7 @@ void TransformOxForCubedSphere(int *ox2, int *ox3, int *tox2, int *tox3,
       break;
     case 5:
       if ((local_lx3==0) && (*ox3==-1)){ // Left Boundary
-        target_block = 2;
+        target_block = 3;
         target_loc_2 = bound_lim;
         target_loc_3 = bound_lim - local_lx2;
         *tox2 = 1;
@@ -220,12 +220,12 @@ void TransformOxForCubedSphere(int *ox2, int *ox3, int *tox2, int *tox3,
       lx2_0 = 0;
       break;
     case 2:
-      lx3_0 = 1;
-      lx2_0 = 0;
-      break;
-    case 3:
       lx3_0 = 0;
       lx2_0 = 1;
+      break;
+    case 3:
+      lx3_0 = 1;
+      lx2_0 = 0;
       break;
     case 4:
       lx3_0 = 1;
@@ -316,10 +316,10 @@ switch(blockID){
     if(ox3==-1){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
     break;
   case 2:
-    if(ox2==1){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox2==-1){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
     break;
   case 3:
+    if(ox2==1){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox2==-1){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
     break;
   case 4:
     if(ox2==1){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
