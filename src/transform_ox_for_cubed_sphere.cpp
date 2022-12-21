@@ -279,7 +279,7 @@ void TransformOxForCubedSphere(int *ox2, int *ox3, int *tox2, int *tox3,
     int lx3_t = lx3_0 + target_loc_3;
     int lx2_t = lx2_0 + target_loc_2;
     // Calculate and pass the differences
-    *ox3 = lx3_t - loc.lx1;
+    *ox3 = lx3_t - loc.lx3;
     *ox2 = lx2_t - loc.lx2;
   }else{
     *tox2 = -*ox2;
