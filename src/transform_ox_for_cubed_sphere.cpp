@@ -122,8 +122,22 @@ void TransformOxForCubedSphere(int *ox2, int *ox3, int *tox2, int *tox3,
         *tox2 = 0;
         *tox3 = 1;
       }
+      if ((local_lx2==bound_lim) && (*ox2==1)){ // Bottom Boundary
+        target_block = 5;
+        target_loc_2 = 0;
+        target_loc_3 = local_lx3;
+        *tox2 = -1;
+        *tox3 = 0;
+      }
       break;
     case 3:
+      if ((local_lx3==0) && (*ox3==-1)){ // Left Boundary
+        target_block = 6;
+        target_loc_2 = local_lx2;
+        target_loc_3 = bound_lim;
+        *tox2 = 0;
+        *tox3 = 1;
+      }
       if ((local_lx2==0) && (*ox2==-1)){ // Top Boundary
         target_block = 1;
         target_loc_2 = local_lx3;
@@ -184,6 +198,13 @@ void TransformOxForCubedSphere(int *ox2, int *ox3, int *tox2, int *tox3,
         *tox2 = 1;
         *tox3 = 0;
       }
+      if ((local_lx2==0) && (*ox2==-1)){ // Top Boundary
+        target_block = 2;
+        target_loc_2 = bound_lim;
+        target_loc_3 = local_lx3;
+        *tox2 = 1;
+        *tox3 = 0;
+      }
       break;
     case 6:
       if ((local_lx2==0) && (*ox2==-1)){ // Top Boundary
@@ -199,6 +220,13 @@ void TransformOxForCubedSphere(int *ox2, int *ox3, int *tox2, int *tox3,
         target_loc_3 = bound_lim - local_lx3;
         *tox2 = 1;
         *tox3 = 0;
+      }
+      if ((local_lx3==bound_lim) && (*ox3==1)){ // Right Boundary
+        target_block = 3;
+        target_loc_2 = local_lx2;
+        target_loc_3 = 0;
+        *tox2 = 0;
+        *tox3 = -1;
       }
       break;
     default:
