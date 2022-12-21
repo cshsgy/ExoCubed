@@ -11,6 +11,7 @@ include_directories(
   ${ATHENAPP_INCLUDE_DIR}
   ${CLIUTILS_INCLUDE_DIR}
   ${EXOCUBED_INCLUDE_DIR}
+  ${MPI_CXX_INCLUDE_PATH}
   ${CMAKE_BINARY_DIR}
   )
 
@@ -37,6 +38,8 @@ foreach(_pgen ${_pgens})
       ${ATHENAPP_LIBRARY_${build}}
       ${CLIUTILS_LIBRARY_${build}}
       ${EXOCUBED_LIBRARY_${build}}
+      ${MPI_CXX_LIBRARIES}
+      ${_prob}.${buildl}
       )
   endforeach()
 endforeach()
