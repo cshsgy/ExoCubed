@@ -16,7 +16,10 @@
 #   target_link_libraries( ${EXOCUBED_LIBRARY_DEBUG})
 #
 
-file(GLOB _src_files *.cpp)
+file(GLOB _src_files
+  transform_ox_for_cubed_sphere.cpp
+  setup_input_and_init_mesh.cpp
+  )
 
 foreach(build ${BUILD_TYPES})
   string(TOLOWER ${build} buildl)
@@ -32,7 +35,7 @@ foreach(build ${BUILD_TYPES})
     SYSTEM PRIVATE
     ${DEBUGGER_INCLUDE_DIR}
     ${ATHENAPP_INCLUDE_DIR}
-    ${CLIUITLS_INCLUDE_DIR}
+    ${CLIUTILS_INCLUDE_DIR}
     ${MPI_CXX_INCLUDE_PATH}
     ${CMAKE_BINARY_DIR}
     )

@@ -5,7 +5,7 @@ project(
   LANGUAGES CXX
   )
 set(CMAKE_CXX_STANDARD 14)
-message(STATUS "== Setting up cliutils library ==")
+message(STATUS "== Setting up ExoCubed library ==")
 
 ## 1. set up compiler flags ##
 message(STATUS "")
@@ -56,7 +56,7 @@ if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
   add_subdirectory(athenapp)
 endif()
 
-# compile athenapp
+# compile cliutils
 if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
   add_subdirectory(cliutils)
 endif()
