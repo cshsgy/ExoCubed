@@ -356,30 +356,37 @@ if((ox2+ox3==0)||(ox2+ox3==2)||(ox2+ox3==-2)||(ox1!=0)){
   PackDataCubedSphereR0(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);
   return;
 }
+// Get the local indices
+int lv2_lx2 = loc.lx2 >> (loc.level - 2);
+int lv2_lx3 = loc.lx3 >> (loc.level - 2);
+int local_lx2 = loc.lx2 - (lv2_lx2<<(loc.level - 2));
+int local_lx3 = loc.lx3 - (lv2_lx3<<(loc.level - 2));
+int bound_lim = (1<<(loc.level - 2)) - 1;
+
 switch(blockID){
   case 1:
-    if(ox3==1){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox2==-1){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox3==-1){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox3==1 && local_lx3==bound_lim){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox2==-1 && local_lx2==0){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox3==-1 && local_lx3==0){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
     break;
   case 2:
     break;
   case 3:
-    if(ox2==1){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox2==-1){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox2==1 && local_lx2==bound_lim){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox2==-1 && local_lx2==0){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
     break;
   case 4:
-    if(ox2==1){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox2==-1){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox2==1 && local_lx2==bound_lim){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox2==-1 && local_lx2==0){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
     break;
   case 5:
-    if(ox3==1){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox2==1){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox3==-1){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox3==1 && local_lx3==bound_lim){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox2==1 && local_lx2==bound_lim){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox3==-1 && local_lx3==0){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
     break;
   case 6:
-    if(ox2==1){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox2==-1){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox2==1 && local_lx2==bound_lim){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox2==-1 && local_lx2==0){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
 }
 return;
 }
