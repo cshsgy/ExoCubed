@@ -87,7 +87,7 @@ void TransformOxForCubedSphere(int *ox2, int *ox3, int *tox2, int *tox3,
   // No need to consider the corner cases, abandon in reading buffers.
   int target_block = -1; // Block id of target
   int target_loc_2, target_loc_3; // local x2 and x3 in target block
-  std::cout << "|Block ID: " << block_id << "||ox2: " << *ox2 << "|ox3: " << *ox3 << std::endl;
+  // std::cout << "|Block ID: " << block_id << "||ox2: " << *ox2 << "|ox3: " << *ox3 << std::endl;
 
   switch (block_id)
   {
@@ -285,7 +285,7 @@ void TransformOxForCubedSphere(int *ox2, int *ox3, int *tox2, int *tox3,
     *tox2 = -*ox2;
     *tox3 = -*ox3;
   }
-  std::cout << "|Block ID: " << block_id << "|Target Block: " << target_block << "||ox2: " << *ox2 << "|ox3: " << *ox3 << "||tox2:" << *tox2 << "|tox3:" << *tox3 << std::endl;
+  // std::cout << "|Block ID: " << block_id << "|Target Block: " << target_block << "||ox2: " << *ox2 << "|ox3: " << *ox3 << "||tox2:" << *tox2 << "|tox3:" << *tox3 << std::endl;
   return;
 }
 
@@ -331,36 +331,62 @@ void PackDataCubedSphereR1(const AthenaArray<Real> &src, Real *buf,
   return;
 }
 
+void PackDataCubedSphereR0(const AthenaArray<Real> &src, Real *buf,
+         int sn, int en, int si, int ei, int sj, int ej, int sk, int ek, int &offset) {
+  for (int n=sn; n<=en; n++){
+    for (int k=sk; k<=ek; k++) {
+      for (int j=sj; j<=ej; j++) {
+#pragma omp simd
+        for (int i=si; i<=ei; i++)
+          buf[offset++] = src(k, j, i);
+      }
+    }
+  }
+  return;
+}
+
 
 void PackDataCubedSphere(const AthenaArray<Real> &src, Real *buf,
          int sn, int en, int si, int ei, int sj, int ej, int sk, int ek, int &offset,
-         int ox2, int ox3,LogicalLocation const& loc){
+         int ox1, int ox2, int ox3,LogicalLocation const& loc){
 // Find the block ID
 int blockID = FindBlockID(loc);
+// Bypass Corner cases
+if((ox2+ox3==0)||(ox2+ox3==2)||(ox2+ox3==-2)||(ox1!=0)){
+  PackDataCubedSphereR0(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);
+  return;
+}
+// Get the local indices
+int lv2_lx2 = loc.lx2 >> (loc.level - 2);
+int lv2_lx3 = loc.lx3 >> (loc.level - 2);
+int local_lx2 = loc.lx2 - (lv2_lx2<<(loc.level - 2));
+int local_lx3 = loc.lx3 - (lv2_lx3<<(loc.level - 2));
+int bound_lim = (1<<(loc.level - 2)) - 1;
+
 switch(blockID){
   case 1:
-    if(ox3==1){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox2==-1){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox3==-1){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox3==1 && local_lx3==bound_lim){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox2==-1 && local_lx2==0){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox3==-1 && local_lx3==0){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
     break;
   case 2:
     break;
   case 3:
-    if(ox2==1){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox2==-1){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox2==1 && local_lx2==bound_lim){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox2==-1 && local_lx2==0){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
     break;
   case 4:
-    if(ox2==1){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox2==-1){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox2==1 && local_lx2==bound_lim){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox2==-1 && local_lx2==0){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
     break;
   case 5:
-    if(ox3==1){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox2==1){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox3==-1){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox3==1 && local_lx3==bound_lim){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox2==1 && local_lx2==bound_lim){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox3==-1 && local_lx3==0){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
     break;
   case 6:
-    if(ox2==1){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox2==-1){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox2==1 && local_lx2==bound_lim){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox2==-1 && local_lx2==0){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
 }
 return;
 }
