@@ -11,4 +11,9 @@
 // CubedSphere flag
 #define @CubedSphereOption@
 
+// ghost zone size (uniform)
+enum {
+  GhostZoneSize = @GhostZoneSize@
+};
+
 #endif

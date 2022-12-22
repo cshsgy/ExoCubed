@@ -10,6 +10,10 @@ option(UseMPI "Enable MPI" OFF)
 # CubedSphere flag
 option(UseCubedSphere "Enable CubedSphere" ON)
 
+# ghost zone size
+set(GhostZoneSize 2
+  CACHE STRING "Set ghose zone size")
+
 # configure athenapp
 message(STATUS "Include ${CMAKE_SOURCE_DIR}/athenapp/cmake/setup_configure.cmake")
 include(${CMAKE_SOURCE_DIR}/athenapp/cmake/setup_configure.cmake)
