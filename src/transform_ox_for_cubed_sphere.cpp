@@ -296,7 +296,7 @@ void PackDataCubedSphereR3(const AthenaArray<Real> &src, Real *buf,
       for (int k=ek; k>=sk; k--) {
 #pragma omp simd
         for (int i=si; i<=ei; i++)
-          buf[offset++] = src(k, j, i);
+          buf[offset++] = src(n, k, j, i);
       }
     }
   }
@@ -310,7 +310,7 @@ void PackDataCubedSphereR2(const AthenaArray<Real> &src, Real *buf,
       for (int j=ej; j>=sj; j--) {
 #pragma omp simd
         for (int i=si; i<=ei; i++)
-          buf[offset++] = src(k, j, i);
+          buf[offset++] = src(n, k, j, i);
       }
     }
   }
@@ -324,7 +324,7 @@ void PackDataCubedSphereR1(const AthenaArray<Real> &src, Real *buf,
       for (int k=sk; k<=ek; k++) {
 #pragma omp simd
         for (int i=si; i<=ei; i++)
-          buf[offset++] = src(k, j, i);
+          buf[offset++] = src(n, k, j, i);
       }
     }
   }
@@ -338,7 +338,7 @@ void PackDataCubedSphereR0(const AthenaArray<Real> &src, Real *buf,
       for (int j=sj; j<=ej; j++) {
 #pragma omp simd
         for (int i=si; i<=ei; i++)
-          buf[offset++] = src(k, j, i);
+          buf[offset++] = src(n, k, j, i);
       }
     }
   }
@@ -365,28 +365,29 @@ int bound_lim = (1<<(loc.level - 2)) - 1;
 
 switch(blockID){
   case 1:
-    if(ox3==1 && local_lx3==bound_lim){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox2==-1 && local_lx2==0){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox3==-1 && local_lx3==0){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox3==1 && local_lx3==bound_lim){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset); return;}
+    if(ox2==-1 && local_lx2==0){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset); return;}
+    if(ox3==-1 && local_lx3==0){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset); return;}
     break;
   case 2:
     break;
   case 3:
-    if(ox2==1 && local_lx2==bound_lim){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox2==-1 && local_lx2==0){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox2==1 && local_lx2==bound_lim){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset); return;}
+    if(ox2==-1 && local_lx2==0){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset); return;}
     break;
   case 4:
-    if(ox2==1 && local_lx2==bound_lim){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox2==-1 && local_lx2==0){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox2==1 && local_lx2==bound_lim){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset); return;}
+    if(ox2==-1 && local_lx2==0){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset); return;}
     break;
   case 5:
-    if(ox3==1 && local_lx3==bound_lim){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox2==1 && local_lx2==bound_lim){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox3==-1 && local_lx3==0){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox3==1 && local_lx3==bound_lim){PackDataCubedSphereR3(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset); return;}
+    if(ox2==1 && local_lx2==bound_lim){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset); return;}
+    if(ox3==-1 && local_lx3==0){PackDataCubedSphereR1(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset); return;}
     break;
   case 6:
-    if(ox2==1 && local_lx2==bound_lim){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
-    if(ox2==-1 && local_lx2==0){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);}
+    if(ox2==1 && local_lx2==bound_lim){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset); return;}
+    if(ox2==-1 && local_lx2==0){PackDataCubedSphereR2(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset); return;}
 }
+PackDataCubedSphereR0(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);
 return;
 }
