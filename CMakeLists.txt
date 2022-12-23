@@ -38,6 +38,7 @@ endif()
 
 if (${UseCubedSphere})
   set(CubedSphereOption CUBED_SPHERE)
+  set(CoordinateSystem gnomonic_equilangle)
 else()
   set(CubedSphereOption NOT_CUBED_SPHERE)
 endif()
