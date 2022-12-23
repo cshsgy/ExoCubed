@@ -1,7 +1,7 @@
 #include <sstream>
 #include <ostream>
 #include <iostream>
-#include <bvals/cubed_sphere.hpp>
+#include <cubed_sphere.hpp>
 #include <coordinates/coordinates.hpp>
 
 Real CubedSphereMeshGeneratorX2(Real x, LogicalLocation const& loc)

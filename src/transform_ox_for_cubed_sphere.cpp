@@ -2,7 +2,7 @@
 #include <ostream>
 #include <iostream>
 #include <bvals/bvals.hpp>
-#include <bvals/cubed_sphere.hpp>
+#include <cubed_sphere.hpp>
 
 int FindBlockID(LogicalLocation const& loc){
   int lv2_lx2 = loc.lx2 >> (loc.level - 2);
