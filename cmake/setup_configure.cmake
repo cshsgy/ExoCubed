@@ -15,8 +15,8 @@ set(GhostZoneSize 2
   CACHE STRING "Set ghose zone size")
 
 # configure athenapp
-message(STATUS "Include ${CMAKE_SOURCE_DIR}/athenapp/cmake/setup_configure.cmake")
-include(${CMAKE_SOURCE_DIR}/athenapp/cmake/setup_configure.cmake)
+#message(STATUS "Include ${CMAKE_SOURCE_DIR}/athenapp/cmake/setup_configure.cmake")
+#include(${CMAKE_SOURCE_DIR}/athenapp/cmake/setup_configure.cmake)
 
 if (CMAKE_BUILD_TYPE MATCHES "Debug")
   if (NOT "DEBUG" IN_LIST BUILD_TYPES)
