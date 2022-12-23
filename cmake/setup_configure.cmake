@@ -4,6 +4,14 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
   set(CMAKE_BUILD_TYPE "DebugRelease")
 endif()
 
+# equation of state
+set(EquationOfState adiabatic_hydro
+  CACHE STRING "Choose the equation of state for primitive-conserved conversion")
+
+# riemann solver
+set(RiemannSolver hllc
+  CACHE STRING "Choose the Riemann Solver")
+
 # MPI flag
 option(UseMPI "Enable MPI" ON)
 
