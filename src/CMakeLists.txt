@@ -18,6 +18,7 @@
 
 file(GLOB _src_files
   transform_ox_for_cubed_sphere.cpp
+  cubed_sphere_coord.cpp
   setup_input_and_init_mesh.cpp
   )
 
