@@ -5,7 +5,7 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
 endif()
 
 # MPI flag
-option(UseMPI "Enable MPI" OFF)
+option(UseMPI "Enable MPI" ON)
 
 # CubedSphere flag
 option(UseCubedSphere "Enable CubedSphere" ON)
