@@ -7,8 +7,20 @@ endif()
 # MPI flag
 option(UseMPI "Enable MPI" ON)
 
+# MPI flag
+if (${UseMPI})
+  find_package(MPI REQUIRED)
+  set(MPIOption MPI_PARALLEL)
+endif()
+
 # CubedSphere flag
 option(UseCubedSphere "Enable CubedSphere" ON)
+
+# CubedSphere flag
+if (${UseCubedSphere})
+  set(CubedSphereOption CUBED_SPHERE)
+  set(CoordinateSystem gnomonic_equiangle)
+endif()
 
 # ghost zone size
 set(GhostZoneSize 2
