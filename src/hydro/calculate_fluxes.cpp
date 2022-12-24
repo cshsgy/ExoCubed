@@ -13,18 +13,18 @@
 #include <sstream>     // string stream
 
 // Athena++ headers
-#include "../athena.hpp"
-#include "../athena_arrays.hpp"
-#include "../coordinates/coordinates.hpp"
-#include "../eos/eos.hpp"   // reapply floors to face-centered reconstructed states
-#include "../field/field.hpp"
-#include "../field/field_diffusion/field_diffusion.hpp"
-#include "../gravity/gravity.hpp"
-#include "../reconstruct/reconstruction.hpp"
-#include "../scalars/scalars.hpp"
-#include "hydro.hpp"
-#include "hydro_diffusion/hydro_diffusion.hpp"
-#include "cubed_sphere.hpp"
+#include <athena.hpp>
+#include <athena_arrays.hpp>
+#include <coordinates/coordinates.hpp>
+#include <eos/eos.hpp>   // reapply floors to face-centered reconstructed states
+#include <field/field.hpp>
+#include <field/field_diffusion/field_diffusion.hpp>
+#include <gravity/gravity.hpp>
+#include <reconstruct/reconstruction.hpp>
+#include <scalars/scalars.hpp>
+#include <hydro/hydro.hpp>
+#include <hydro/hydro_diffusion/hydro_diffusion.hpp>
+#include <cubed_sphere.hpp>
 
 // OpenMP header
 #ifdef OPENMP_PARALLEL
@@ -410,6 +410,7 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
 
 // Cubed Sphere: recover the stored values, run riemann solvers
 #ifdef CUBED_SPHERE
+  LR_Storage.SynchronizeFluxes();
   //--------------------------------------------------------------------------------------
   // i-direction
   jl = js, ju = je, kl = ks, ku = ke;
