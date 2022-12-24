@@ -1,16 +1,6 @@
 #ifndef CONFIGURE_HPP
 #define CONFIGURE_HPP
 
-// macros
-#define ON 1
-#define OFF 0
-
-// MPI parallel flag
-#define @MPIOption@
-
-// CubedSphere flag
-#define @CubedSphereOption@
-
 // ghost zone size (uniform)
 enum {
   GhostZoneSize = @GhostZoneSize@
