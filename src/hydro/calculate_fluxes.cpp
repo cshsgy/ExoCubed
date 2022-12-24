@@ -399,7 +399,8 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
 
 // Cubed Sphere: recover the stored values, run riemann solvers
 #ifdef CUBED_SPHERE
-  SynchronizeFluxes();
+  SynchronizeFluxesSend();
+  SynchronizeFluxesRecv();
   //--------------------------------------------------------------------------------------
   // i-direction
   jl = js, ju = je, kl = ks, ku = ke;

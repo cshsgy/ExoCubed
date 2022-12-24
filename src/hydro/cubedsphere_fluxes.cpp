@@ -29,7 +29,7 @@ void Hydro::LoadLR3DValues(AthenaArray<Real> &L_in, AthenaArray<Real> &R_in,
     }
 }
 
-void Hydro::SynchronizeFluxes(){
+void Hydro::SynchronizeFluxesSend(){
     MeshBlock *pmb = pmy_block;
     for (int n=0; n<pmb->pbval->nneighbor; n++){
         NeighborBlock &nb = pmb->pbval->neighbor[n];
@@ -37,7 +37,10 @@ void Hydro::SynchronizeFluxes(){
             SendNeighborBlocks(pmb->loc, nb.ni.ox2, nb.ni.ox3, nb.snb.rank, nb.snb.gid);
         }
     }
+}
 
+void Hydro::SynchronizeFluxesRecv(){
+    MeshBlock *pmb = pmy_block;
     for (int n=0; n<pmb->pbval->nneighbor; n++){
         NeighborBlock &nb = pmb->pbval->neighbor[n];
         if(nb.ni.ox1==0 && nb.ni.ox2*nb.ni.ox3==0){ // On x2 and x3 face boundaries only
@@ -186,7 +189,6 @@ void Hydro::SendNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
     std::cout << "MPI Message: Sent data with size " << dsize << " from rank " << Globals::my_rank << " to " << tg_rank << " on tag number " << DirTag << std::endl;
     std::cout << "This is a message from block gid " << pmb->gid << " to " << tg_gid << std::endl;
     std::cout << "The direction is ox2=" << ox2 << ", ox3=" << ox3 << " and inversion is " << invDir << std::endl;
-    std::cout << "===============================" << std::endl;
     delete[] data;
 }
 
@@ -201,7 +203,7 @@ void Hydro::RecvNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
     int local_lx3 = loc.lx3 - (lv2_lx3<<(loc.level - 2));
     int bound_lim = (1<<(loc.level - 2)) - 1;
     int tox2, tox3;
-    int DirTag, DirNum; // Tag for receiving, and the numbering of axis to place the values
+    int DirTag, DirNum, ownTag; // Tag for receiving, and the numbering of axis to place the values
     int ox2_bkp = ox2;
     int ox3_bkp = ox3;
     bool invDir, Left; // Marking whether need to reverse direction in packing or unpacking; Left marking left or right.
@@ -267,11 +269,20 @@ void Hydro::RecvNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
     if (ox2==1) DirTag = 1 + 4 * tg_gid + 24*(1 << (loc.level - 2)) * pmb->gid;
     if (ox3==-1) DirTag = 2 + 4 * tg_gid + 24*(1 << (loc.level - 2)) * pmb->gid;
     if (ox3==1) DirTag = 3 + 4 * tg_gid + 24*(1 << (loc.level - 2)) * pmb->gid;
-    // Receive from MPI
+    MPI_Recv(data, dsize, MPI_DOUBLE, tg_rank, DirTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);    
     std::cout << "===============================" << std::endl;
-    std::cout << "MPI Message: Waiting for data from " << tg_gid << " to " << pmb->gid << " on tag number " << DirTag << std::endl;
-    MPI_Recv(data, dsize, MPI_DOUBLE, tg_rank, DirTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    std::cout << "MPI Message: Received data with size " << dsize << " from rank " << tg_rank << " to " << Globals::my_rank << " on tag number " << DirTag << std::endl;
+    std::cout << "MPI Message: Received data from " << tg_gid << " to " << pmb->gid << " on tag number " << DirTag << std::endl;
+
+    // =======
+    // int test;
+    // probe MPI communications.  This is a bit of black magic that seems to promote
+    // communications to top of stack and gets them to complete more quickly
+    // MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &test,
+    //             MPI_STATUS_IGNORE);
+    // =======
+    // MPI_Test(&recv_request[ownTag], &test, MPI_STATUS_IGNORE);
+    
+
     int offset = 0;
     for (int n=0; n<NWAVE; n++)
         for (int k=kb1; k<=kb2; k++)
