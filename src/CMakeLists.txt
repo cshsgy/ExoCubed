@@ -21,6 +21,7 @@ file(GLOB _src_files
   cubed_sphere_coord.cpp
   setup_input_and_init_mesh.cpp
   gnomonic_equiangle.cpp
+  correct_fluxes_cubed_sphere.cpp
   )
 
 foreach(build ${BUILD_TYPES})
