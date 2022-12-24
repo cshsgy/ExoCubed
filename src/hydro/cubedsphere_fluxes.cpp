@@ -57,7 +57,7 @@ void Hydro::SendNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
     int local_lx3 = loc.lx3 - (lv2_lx3<<(loc.level - 2));
     int bound_lim = (1<<(loc.level - 2)) - 1;
     int tox2, tox3;
-    int DirTag, DirNum; // Tag for target, and the numbering of axis
+    int DirTag, DirNum, ownTag; // Tag for target, and the numbering of axis
     int ox2_bkp = ox2;
     int ox3_bkp = ox3;
     bool invDir, Left; // Marking whether need to reverse direction in packing or unpacking; Left marking left or right.
@@ -110,11 +110,6 @@ void Hydro::SendNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
     }else{ // No need to communicate fluxes, return
         return;
     }
-    // Calculate the tag of destination
-    if (tox2==-1) DirTag = 0;
-    if (tox2==1) DirTag = 1;
-    if (tox3==-1) DirTag = 2;
-    if (tox3==1) DirTag = 3;
     // Pack the data
     int kb1, kb2, jb1, jb2, ib1, ib2;
     if (ox2==1){
@@ -176,10 +171,22 @@ void Hydro::SendNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
                             data[offset++] = R3DValues[DirNum](n,k,j,i);
     }
 
+    // Calculate the tag of destination
+    if (tox2==-1) DirTag = 0 + 4 * pmb->gid + 24*(1 << (loc.level - 2)) * tg_gid;
+    if (tox2==1) DirTag = 1 + 4 * pmb->gid + 24*(1 << (loc.level - 2)) * tg_gid;
+    if (tox3==-1) DirTag = 2 + 4 * pmb->gid + 24*(1 << (loc.level - 2)) * tg_gid;
+    if (tox3==1) DirTag = 3 + 4 * pmb->gid + 24*(1 << (loc.level - 2)) * tg_gid;
     // Send by MPI: we don't care whether it is in the same process for now
-    MPI_Send(data, dsize, MPI_DOUBLE, tg_rank, DirTag, MPI_COMM_WORLD);
+    if (ox2==-1) ownTag = 0;
+    if (ox2==1) ownTag = 1;
+    if (ox3==-1) ownTag = 2;
+    if (ox3==1) ownTag = 3;
+    MPI_Isend(data, dsize, MPI_DOUBLE, tg_rank, DirTag, MPI_COMM_WORLD, &send_request[ownTag]);
+    std::cout << "===============================" << std::endl;
     std::cout << "MPI Message: Sent data with size " << dsize << " from rank " << Globals::my_rank << " to " << tg_rank << " on tag number " << DirTag << std::endl;
-
+    std::cout << "This is a message from block gid " << pmb->gid << " to " << tg_gid << std::endl;
+    std::cout << "The direction is ox2=" << ox2 << ", ox3=" << ox3 << " and inversion is " << invDir << std::endl;
+    std::cout << "===============================" << std::endl;
     delete[] data;
 }
 
@@ -215,11 +222,6 @@ void Hydro::RecvNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
     }else{ // No need to communicate fluxes, return
         return;
     }
-    // Calculate the tag for receiving
-    if (ox2==-1) DirTag = 0;
-    if (ox2==1) DirTag = 1;
-    if (ox3==-1) DirTag = 2;
-    if (ox3==1) DirTag = 3;
     // Pack the data
     int kb1, kb2, jb1, jb2, ib1, ib2;
     if (ox2==1){
@@ -260,8 +262,14 @@ void Hydro::RecvNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
     }
     int dsize = ((kb2 - kb1 + 1) * (jb2 - jb1 + 1) * (ib2 - ib1 + 1) * NWAVE);
     Real *data = new Real[dsize];
-
+    // Calculate the tag for receiving
+    if (ox2==-1) DirTag = 0 + 4 * tg_gid + 24*(1 << (loc.level - 2)) * pmb->gid;
+    if (ox2==1) DirTag = 1 + 4 * tg_gid + 24*(1 << (loc.level - 2)) * pmb->gid;
+    if (ox3==-1) DirTag = 2 + 4 * tg_gid + 24*(1 << (loc.level - 2)) * pmb->gid;
+    if (ox3==1) DirTag = 3 + 4 * tg_gid + 24*(1 << (loc.level - 2)) * pmb->gid;
     // Receive from MPI
+    std::cout << "===============================" << std::endl;
+    std::cout << "MPI Message: Waiting for data from " << tg_gid << " to " << pmb->gid << " on tag number " << DirTag << std::endl;
     MPI_Recv(data, dsize, MPI_DOUBLE, tg_rank, DirTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     std::cout << "MPI Message: Received data with size " << dsize << " from rank " << tg_rank << " to " << Globals::my_rank << " on tag number " << DirTag << std::endl;
     int offset = 0;
