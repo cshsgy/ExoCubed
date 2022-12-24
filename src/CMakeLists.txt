@@ -23,6 +23,7 @@ file(GLOB _src_files
   gnomonic_equiangle.cpp
   correct_fluxes_cubed_sphere.cpp
   hydro/calculate_fluxes.cpp
+  hydro/cubedsphere_fluxes.cpp
   )
 
 foreach(build ${BUILD_TYPES})

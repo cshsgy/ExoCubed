@@ -1,50 +1,43 @@
 #include <sstream>
-#include <ostream>
 #include <iostream>
-#include <cubed_sphere.hpp>
+
 #include <globals.hpp>
 #include <hydro/hydro.hpp>
-#include <mpi.h>
+#include <cubed_sphere.hpp>
 
-void CubedSphereLR::InitializeSizes(int nc3, int nc2, int nc1){
-    L3DValues.NewAthenaArray(3, NWAVE, nc3, nc2, nc1);
-    R3DValues.NewAthenaArray(3, NWAVE, nc3, nc2, nc1);
-    return;
-}
+#ifdef MPI_PARALLEL
+  #include <mpi.h>
+#endif
 
-void CubedSphereLR::SetMeshBlock(MeshBlock *pmb_in){
-    *pmb = *pmb_in;
-}
-
-void CubedSphereLR::SaveLR3DValues(AthenaArray<Real> &L_in, AthenaArray<Real> &R_in, int direction, 
-        int k, int j, int il, int iu){
+void Hydro::SaveLR3DValues(AthenaArray<Real> &L_in, AthenaArray<Real> &R_in,
+  int direction,  int k, int j, int il, int iu) {
     for (int n=0; n<NWAVE; n++){
         for (int i=il; i<=iu; i++){
-            L3DValues(direction, n, k, j, i) = L_in(n, i);
-            R3DValues(direction, n, k, j, i) = R_in(n, i);
+            L3DValues[direction](n, k, j, i) = L_in(n, i);
+            R3DValues[direction](n, k, j, i) = R_in(n, i);
         }
     }
-    return;
 }
 
-void CubedSphereLR::LoadLR3DValues(AthenaArray<Real> &L_in, AthenaArray<Real> &R_in, int direction, 
-        int k, int j, int il, int iu){
+void Hydro::LoadLR3DValues(AthenaArray<Real> &L_in, AthenaArray<Real> &R_in,
+  int direction,  int k, int j, int il, int iu) {
     for (int n=0; n<NWAVE; n++){
         for (int i=il; i<=iu; i++){
-            L_in(n, i) = L3DValues(direction, n, k, j, i);
-            R_in(n, i) = R3DValues(direction, n, k, j, i);
+            L_in(n, i) = L3DValues[direction](n, k, j, i);
+            R_in(n, i) = R3DValues[direction](n, k, j, i);
         }
     }
-    return;
 }
 
-void CubedSphereLR::SynchronizeFluxes(){
+void Hydro::SynchronizeFluxes(){
+    MeshBlock *pmb = pmy_block;
     for (int n=0; n<pmb->pbval->nneighbor; n++){
         NeighborBlock &nb = pmb->pbval->neighbor[n];
         if(nb.ni.ox1==0 && nb.ni.ox2*nb.ni.ox3==0){ // On x2 and x3 face boundaries only
             SendNeighborBlocks(pmb->loc, nb.ni.ox2, nb.ni.ox3, nb.snb.rank, nb.snb.gid);
         }
     }
+
     for (int n=0; n<pmb->pbval->nneighbor; n++){
         NeighborBlock &nb = pmb->pbval->neighbor[n];
         if(nb.ni.ox1==0 && nb.ni.ox2*nb.ni.ox3==0){ // On x2 and x3 face boundaries only
@@ -53,7 +46,9 @@ void CubedSphereLR::SynchronizeFluxes(){
     }
 }
 
-void CubedSphereLR::SendNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int tg_rank, int tg_gid){
+void Hydro::SendNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int tg_rank, int tg_gid){
+    MeshBlock *pmb = pmy_block;
+
     int lv2_lx2 = loc.lx2 >> (loc.level - 2);
     int lv2_lx3 = loc.lx3 >> (loc.level - 2);
     int blockID = lv2_lx2 + lv2_lx3 * 2 + 1;
@@ -159,7 +154,7 @@ void CubedSphereLR::SendNeighborBlocks(LogicalLocation const& loc, int ox2, int 
         kb2 = pmb->ks;
     }
     int dsize = ((kb2 - kb1 + 1) * (jb2 - jb1 + 1) * (ib2 - ib1 + 1) * NWAVE);
-    Real data[dsize];
+    Real *data = new Real[dsize];
     int offset = 0;
     if (invDir){
         for (int n=0; n<NWAVE; n++)
@@ -167,25 +162,30 @@ void CubedSphereLR::SendNeighborBlocks(LogicalLocation const& loc, int ox2, int 
                 for (int j=jb2; j>=jb1; j--)
                     for (int i=ib1; i<=ib2; i++)
                         if (Left)
-                            data[offset++] = L3DValues(DirNum,n,k,j,i);
+                            data[offset++] = L3DValues[DirNum](n,k,j,i);
                         else
-                            data[offset++] = R3DValues(DirNum,n,k,j,i);
+                            data[offset++] = R3DValues[DirNum](k,j,i);
     }else{
         for (int n=0; n<NWAVE; n++)
             for (int k=kb1; k<=kb2; k++)
                 for (int j=jb1; j<=jb2; j++)
                     for (int i=ib1; i<=ib2; i++)
                         if (Left)
-                            data[offset++] = L3DValues(DirNum,n,k,j,i);
+                            data[offset++] = L3DValues[DirNum](n,k,j,i);
                         else
-                            data[offset++] = R3DValues(DirNum,n,k,j,i);
+                            data[offset++] = R3DValues[DirNum](n,k,j,i);
     }
+
     // Send by MPI: we don't care whether it is in the same process for now
-    MPI_Send(&data, dsize, MPI_DOUBLE, tg_rank, DirTag, MPI_COMM_WORLD);
+    MPI_Send(data, dsize, MPI_DOUBLE, tg_rank, DirTag, MPI_COMM_WORLD);
     std::cout << "MPI Message: Sent data with size " << dsize << " from rank " << Globals::my_rank << " to " << tg_rank << " on tag number " << DirTag << std::endl;
+
+    delete[] data;
 }
 
-void CubedSphereLR::RecvNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int tg_rank, int tg_gid){
+void Hydro::RecvNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int tg_rank, int tg_gid){
+    MeshBlock *pmb = pmy_block;
+
     int lv2_lx2 = loc.lx2 >> (loc.level - 2);
     int lv2_lx3 = loc.lx3 >> (loc.level - 2);
     int blockID = lv2_lx2 + lv2_lx3 * 2 + 1;
@@ -259,10 +259,10 @@ void CubedSphereLR::RecvNeighborBlocks(LogicalLocation const& loc, int ox2, int 
         kb2 = pmb->ks;
     }
     int dsize = ((kb2 - kb1 + 1) * (jb2 - jb1 + 1) * (ib2 - ib1 + 1) * NWAVE);
-    Real data[dsize];
+    Real *data = new Real[dsize];
 
     // Receive from MPI
-    MPI_Recv(&data, dsize, MPI_DOUBLE, tg_rank, DirTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Recv(data, dsize, MPI_DOUBLE, tg_rank, DirTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     std::cout << "MPI Message: Received data with size " << dsize << " from rank " << tg_rank << " to " << Globals::my_rank << " on tag number " << DirTag << std::endl;
     int offset = 0;
     for (int n=0; n<NWAVE; n++)
@@ -270,7 +270,8 @@ void CubedSphereLR::RecvNeighborBlocks(LogicalLocation const& loc, int ox2, int 
             for (int j=jb1; j<=jb2; j++)
                 for (int i=ib1; i<=ib2; i++)
                     if (Left)
-                        L3DValues(DirNum,n,k,j,i) = data[offset++];
+                        L3DValues[DirNum](n,k,j,i) = data[offset++];
                     else
-                        R3DValues(DirNum,n,k,j,i) = data[offset++];
+                        R3DValues[DirNum](n,k,j,i) = data[offset++];
+    delete[] data;
 }

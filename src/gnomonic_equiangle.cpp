@@ -1,30 +1,17 @@
-//========================================================================================
-// Athena++ astrophysical MHD code
-// Copyright(C) 2014 James M. Stone <jmstone@princeton.edu> and other code contributors
-// Licensed under the 3-clause BSD License, see LICENSE file for details
-//========================================================================================
-//! \file cartesian.cpp
-//! \brief implements functions for Cartesian (x-y-z) coordinates in a derived class of
-//! the Coordinates abstract base class.
-
-// C headers
-
-// C++ headers
-
 // Athena++ headers
 #include <athena.hpp>
 #include <athena_arrays.hpp>
 #include <mesh/mesh.hpp>
 #include <parameter_input.hpp>
 #include <coordinates/coordinates.hpp>
-
 #include <cubed_sphere.hpp>
 
 //----------------------------------------------------------------------------------------
 //! Cartesian coordinates constructor
 
 GnomonicEquiangle::GnomonicEquiangle(MeshBlock *pmb, ParameterInput *pin, bool flag)
-    : Coordinates(pmb, pin, flag) {
+    : Coordinates(pmb, pin, flag)
+{
   // initialize volume-averaged coordinates and spacing
   // x1-direction: x1v = dx/2
   for (int i=il-ng; i<=iu+ng; ++i) {
