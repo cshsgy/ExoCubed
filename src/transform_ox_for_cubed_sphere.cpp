@@ -515,7 +515,8 @@ switch(blockID){
   case 3:
     if(ox2==1 && local_lx2==bound_lim){
       InteprolateX3CubedSphere(src, interpolatedSrc, loc, sn, en, si, ei, sj, ej, sk, ek);
-      PackDataCubedSphereR3(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset); 
+      PackDataCubedSphereR3(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset);
+      return; 
     }
     if(ox2==-1 && local_lx2==0){
       InteprolateX3CubedSphere(src, interpolatedSrc, loc, sn, en, si, ei, sj, ej, sk, ek);
