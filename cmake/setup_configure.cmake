@@ -25,9 +25,11 @@ set_property(CACHE CoordinateSystem
 if (${EquationOfState} STREQUAL "shallow_water")
   set(RiemannSolver roe_shallow_water
     CACHE STRING "Choose the Riemann Solver")
+  option(Barotropic "Barotropic equation of state" ON)
 else()
   set(RiemannSolver hllc
     CACHE STRING "Choose the Riemann Solver")
+  option(Barotropic "Barotropic equation of state" OFF)
 endif()
 
 # riemann solver

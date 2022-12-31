@@ -41,9 +41,9 @@ x3max      = 5.         # maximum value of X3
 ix3_bc     = periodic   # inner-X3 boundary flag
 ox3_bc     = periodic   # inner-X3 boundary flag
 
-
 <hydro>
 gamma       = 1.4
+multi_layer_coupling = true
 
 <meshblock>
 nx1       = 2

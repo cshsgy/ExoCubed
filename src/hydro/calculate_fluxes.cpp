@@ -65,56 +65,56 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
   // i-direction
 
   // shallow water eqution of state does not do X1
+  AthenaArray<Real> &x1flux = flux[X1DIR];
 #ifndef HYDROSTATIC
-    AthenaArray<Real> &x1flux = flux[X1DIR];
-    // set the loop limits
-    jl = js, ju = je, kl = ks, ku = ke;
-    if (MAGNETIC_FIELDS_ENABLED || order == 4) {
-      if (pmb->block_size.nx2 > 1) {
-        if (pmb->block_size.nx3 == 1) // 2D
-          jl = js-1, ju = je+1, kl = ks, ku = ke;
-        else // 3D
-          jl = js-1, ju = je+1, kl = ks-1, ku = ke+1;
-      }
+  // set the loop limits
+  jl = js, ju = je, kl = ks, ku = ke;
+  if (MAGNETIC_FIELDS_ENABLED || order == 4) {
+    if (pmb->block_size.nx2 > 1) {
+      if (pmb->block_size.nx3 == 1) // 2D
+        jl = js-1, ju = je+1, kl = ks, ku = ke;
+      else // 3D
+        jl = js-1, ju = je+1, kl = ks-1, ku = ke+1;
     }
+  }
 
-    for (int k=kl; k<=ku; ++k) {
-      for (int j=jl; j<=ju; ++j) {
-        // reconstruct L/R states
-        if (order == 1) {
-          pmb->precon->DonorCellX1(k, j, is-1, ie+1, w, bcc, wl_, wr_);
-        } else if (order == 2) {
-          pmb->precon->PiecewiseLinearX1(k, j, is-1, ie+1, w, bcc, wl_, wr_);
-        } else {
-          pmb->precon->PiecewiseParabolicX1(k, j, is-1, ie+1, w, bcc, wl_, wr_);
-        }
+  for (int k=kl; k<=ku; ++k) {
+    for (int j=jl; j<=ju; ++j) {
+      // reconstruct L/R states
+      if (order == 1) {
+        pmb->precon->DonorCellX1(k, j, is-1, ie+1, w, bcc, wl_, wr_);
+      } else if (order == 2) {
+        pmb->precon->PiecewiseLinearX1(k, j, is-1, ie+1, w, bcc, wl_, wr_);
+      } else {
+        pmb->precon->PiecewiseParabolicX1(k, j, is-1, ie+1, w, bcc, wl_, wr_);
+      }
 
-        pmb->pcoord->CenterWidth1(k, j, is, ie+1, dxw_);
+      pmb->pcoord->CenterWidth1(k, j, is, ie+1, dxw_);
 #ifdef CUBED_SPHERE // Rieman solver run later
-        SaveLR3DValues(wl_, wr_, X1DIR, k, j, is, ie+1); // is to ie+1 is what the RiemannSolver below uses...
-#else
+      SaveLR3DValues(wl_, wr_, X1DIR, k, j, is, ie+1); // is to ie+1 is what the RiemannSolver below uses...
+#else // not cubed sphere
 
 #if !MAGNETIC_FIELDS_ENABLED  // Hydro:
-        RiemannSolver(k, j, is, ie+1, IVX, wl_, wr_, x1flux, dxw_);
+      RiemannSolver(k, j, is, ie+1, IVX, wl_, wr_, x1flux, dxw_);
 #else  // MHD:
-        // x1flux(IBY) = (v1*b2 - v2*b1) = -EMFZ
-        // x1flux(IBZ) = (v1*b3 - v3*b1) =  EMFY
-        RiemannSolver(k, j, is, ie+1, IVX, b1, wl_, wr_, x1flux, e3x1, e2x1, w_x1f, dxw_);
-        
-        if (order == 4) {
-          for (int n=0; n<NWAVE; n++) {
-            for (int i=is; i<=ie+1; i++) {
-              wl3d_(n,k,j,i) = wl_(n,i);
-              wr3d_(n,k,j,i) = wr_(n,i);
-            }
+      // x1flux(IBY) = (v1*b2 - v2*b1) = -EMFZ
+      // x1flux(IBZ) = (v1*b3 - v3*b1) =  EMFY
+      RiemannSolver(k, j, is, ie+1, IVX, b1, wl_, wr_, x1flux, e3x1, e2x1, w_x1f, dxw_);
+      
+      if (order == 4) {
+        for (int n=0; n<NWAVE; n++) {
+          for (int i=is; i<=ie+1; i++) {
+            wl3d_(n,k,j,i) = wl_(n,i);
+            wr3d_(n,k,j,i) = wr_(n,i);
           }
         }
-#endif
-
-#endif
       }
+#endif  // end MHD
+
+#endif  // end cubed sphere
     }
-#endif  // HYDROSTATIC
+  }
+#endif  // end HYDROSTATIC
 
   //--------------------------------------------------------------------------------------
   // j-direction
@@ -152,7 +152,7 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
         pmb->pcoord->CenterWidth2(k, j, il, iu, dxw_);
 #ifdef CUBED_SPHERE // Rieman solver run later
         SaveLR3DValues(wl_, wr_, X2DIR, k, j, il, iu); // il to iu is what the RiemannSolver below uses...
-#else
+#else // not cubed sphere
 
 #if !MAGNETIC_FIELDS_ENABLED  // Hydro:
         RiemannSolver(k, j, il, iu, IVY, wl_, wr_, x2flux, dxw_);
@@ -160,7 +160,7 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
         // flx(IBY) = (v2*b3 - v3*b2) = -EMFX
         // flx(IBZ) = (v2*b1 - v1*b2) =  EMFZ
         RiemannSolver(k, j, il, iu, IVY, b2, wl_, wr_, x2flux, e1x2, e3x2, w_x2f, dxw_);
-#endif
+#endif // end MHD
 
         if (order == 4) {
           for (int n=0; n<NWAVE; n++) {
@@ -173,7 +173,7 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
         // swap the arrays for the next step
         wl_.SwapAthenaArray(wlb_);
 
-#endif
+#endif // end cubed sphere
       }
     }
 #ifndef CUBED_SPHERE
@@ -348,8 +348,10 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
 #ifdef CUBED_SPHERE
   SynchronizeFluxesSend();
   SynchronizeFluxesRecv();
+
   //--------------------------------------------------------------------------------------
   // i-direction
+#ifndef HYDROSTATIC
   jl = js, ju = je, kl = ks, ku = ke;
   if (MAGNETIC_FIELDS_ENABLED) {
     if (pmb->block_size.nx2 > 1) {
@@ -371,9 +373,10 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
       // x1flux(IBY) = (v1*b2 - v2*b1) = -EMFZ
       // x1flux(IBZ) = (v1*b3 - v3*b1) =  EMFY
       RiemannSolver(k, j, is, ie+1, IVX, b1, wl_, wr_, x1flux, e3x1, e2x1, w_x1f, dxw_);
-#endif
+#endif // end MHD
     }
   }
+#endif // HYDROSTATIC
 
   //--------------------------------------------------------------------------------------
   // j-direction
