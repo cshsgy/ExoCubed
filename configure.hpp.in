@@ -6,4 +6,17 @@ enum {
   GhostZoneSize = @GhostZoneSize@
 };
 
+enum {
+  NumVapors = 0
+};
+
+// hydrostatic flag
+#define HYDROSTATIC @Hydrostatic@
+
+// netcdf option
+#define @NetCDFOption@
+
+// pnetcdf option
+#define @PNetCDFOption@
+
 #endif

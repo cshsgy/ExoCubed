@@ -64,110 +64,57 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
   //--------------------------------------------------------------------------------------
   // i-direction
 
-  AthenaArray<Real> &x1flux = flux[X1DIR];
-  // set the loop limits
-  jl = js, ju = je, kl = ks, ku = ke;
-  if (MAGNETIC_FIELDS_ENABLED || order == 4) {
-    if (pmb->block_size.nx2 > 1) {
-      if (pmb->block_size.nx3 == 1) // 2D
-        jl = js-1, ju = je+1, kl = ks, ku = ke;
-      else // 3D
-        jl = js-1, ju = je+1, kl = ks-1, ku = ke+1;
-    }
-  }
-
-  for (int k=kl; k<=ku; ++k) {
-    for (int j=jl; j<=ju; ++j) {
-      // reconstruct L/R states
-      if (order == 1) {
-        pmb->precon->DonorCellX1(k, j, is-1, ie+1, w, bcc, wl_, wr_);
-      } else if (order == 2) {
-        pmb->precon->PiecewiseLinearX1(k, j, is-1, ie+1, w, bcc, wl_, wr_);
-      } else {
-        pmb->precon->PiecewiseParabolicX1(k, j, is-1, ie+1, w, bcc, wl_, wr_);
+  // shallow water eqution of state does not do X1
+#ifndef HYDROSTATIC
+    AthenaArray<Real> &x1flux = flux[X1DIR];
+    // set the loop limits
+    jl = js, ju = je, kl = ks, ku = ke;
+    if (MAGNETIC_FIELDS_ENABLED || order == 4) {
+      if (pmb->block_size.nx2 > 1) {
+        if (pmb->block_size.nx3 == 1) // 2D
+          jl = js-1, ju = je+1, kl = ks, ku = ke;
+        else // 3D
+          jl = js-1, ju = je+1, kl = ks-1, ku = ke+1;
       }
-
-      pmb->pcoord->CenterWidth1(k, j, is, ie+1, dxw_);
-#ifdef CUBED_SPHERE // Rieman solver run later
-      SaveLR3DValues(wl_, wr_, X1DIR, k, j, is, ie+1); // is to ie+1 is what the RiemannSolver below uses...
-#else
-
-#if !MAGNETIC_FIELDS_ENABLED  // Hydro:
-      RiemannSolver(k, j, is, ie+1, IVX, wl_, wr_, x1flux, dxw_);
-#else  // MHD:
-      // x1flux(IBY) = (v1*b2 - v2*b1) = -EMFZ
-      // x1flux(IBZ) = (v1*b3 - v3*b1) =  EMFY
-      RiemannSolver(k, j, is, ie+1, IVX, b1, wl_, wr_, x1flux, e3x1, e2x1, w_x1f, dxw_);
-      
-      if (order == 4) {
-        for (int n=0; n<NWAVE; n++) {
-          for (int i=is; i<=ie+1; i++) {
-            wl3d_(n,k,j,i) = wl_(n,i);
-            wr3d_(n,k,j,i) = wr_(n,i);
-          }
-        }
-      }
-#endif
-
-#endif
     }
-  }
-#ifndef CUBED_SPHERE // Ignore order=4-related statements for Cubed sphere (higher order scheme)
-  if (order == 4) {
-    // TODO(felker): assuming uniform mesh with dx1f=dx2f=dx3f, so this should factor out
-    // TODO(felker): also, this may need to be dx1v, since Laplacian is cell-centered
-    Real h = pmb->pcoord->dx1f(is);  // pco->dx1f(i); inside loop
-    Real C = (h*h)/24.0;
-
-    // construct Laplacian from x1flux
-    pmb->pcoord->LaplacianX1All(x1flux, laplacian_all_fc, 0, NHYDRO-1,
-                                kl, ku, jl, ju, is, ie+1);
 
     for (int k=kl; k<=ku; ++k) {
       for (int j=jl; j<=ju; ++j) {
-        // Compute Laplacian of primitive Riemann states on x1 faces
-        for (int n=0; n<NWAVE; ++n) {
-          pmb->pcoord->LaplacianX1(wl3d_, laplacian_l_fc_, n, k, j, is, ie+1);
-          pmb->pcoord->LaplacianX1(wr3d_, laplacian_r_fc_, n, k, j, is, ie+1);
-#pragma omp simd
-          for (int i=is; i<=ie+1; ++i) {
-            wl_(n,i) = wl3d_(n,k,j,i) - C*laplacian_l_fc_(i);
-            wr_(n,i) = wr3d_(n,k,j,i) - C*laplacian_r_fc_(i);
-          }
-        }
-#pragma omp simd
-        for (int i=is; i<=ie+1; ++i) {
-          pmb->peos->ApplyPrimitiveFloors(wl_, k, j, i);
-          pmb->peos->ApplyPrimitiveFloors(wr_, k, j, i);
+        // reconstruct L/R states
+        if (order == 1) {
+          pmb->precon->DonorCellX1(k, j, is-1, ie+1, w, bcc, wl_, wr_);
+        } else if (order == 2) {
+          pmb->precon->PiecewiseLinearX1(k, j, is-1, ie+1, w, bcc, wl_, wr_);
+        } else {
+          pmb->precon->PiecewiseParabolicX1(k, j, is-1, ie+1, w, bcc, wl_, wr_);
         }
 
-        // Compute x1 interface fluxes from face-centered primitive variables
-        // TODO(felker): check that e3x1,e2x1 arguments added in late 2017 work here
         pmb->pcoord->CenterWidth1(k, j, is, ie+1, dxw_);
+#ifdef CUBED_SPHERE // Rieman solver run later
+        SaveLR3DValues(wl_, wr_, X1DIR, k, j, is, ie+1); // is to ie+1 is what the RiemannSolver below uses...
+#else
 
 #if !MAGNETIC_FIELDS_ENABLED  // Hydro:
-        RiemannSolver(k, j, is, ie+1, IVX, wl_, wr_, flux_fc, dxw_);
+        RiemannSolver(k, j, is, ie+1, IVX, wl_, wr_, x1flux, dxw_);
 #else  // MHD:
-        RiemannSolver(k, j, is, ie+1, IVX, b1, wl_, wr_, flux_fc, e3x1, e2x1,
-                      w_x1f, dxw_);
-#endif
-        // Apply Laplacian of second-order accurate face-averaged flux on x1 faces
-        for (int n=0; n<NHYDRO; ++n) {
-#pragma omp simd
-          for (int i=is; i<=ie+1; i++) {
-            x1flux(n,k,j,i) = flux_fc(n,k,j,i) + C*laplacian_all_fc(n,k,j,i);
-            // TODO(felker): replace this loop-based deep copy with memcpy, or alternative
-            if (n == IDN && NSCALARS > 0) {
-              pmb->pscalars->mass_flux_fc[X1DIR](k,j,i) = flux_fc(n,k,j,i);
+        // x1flux(IBY) = (v1*b2 - v2*b1) = -EMFZ
+        // x1flux(IBZ) = (v1*b3 - v3*b1) =  EMFY
+        RiemannSolver(k, j, is, ie+1, IVX, b1, wl_, wr_, x1flux, e3x1, e2x1, w_x1f, dxw_);
+        
+        if (order == 4) {
+          for (int n=0; n<NWAVE; n++) {
+            for (int i=is; i<=ie+1; i++) {
+              wl3d_(n,k,j,i) = wl_(n,i);
+              wr3d_(n,k,j,i) = wr_(n,i);
             }
           }
         }
+#endif
+
+#endif
       }
     }
-  } // end if (order == 4)
-#endif
-  //------------------------------------------------------------------------------
-  // end x1 fourth-order hydro
+#endif  // HYDROSTATIC
 
   //--------------------------------------------------------------------------------------
   // j-direction

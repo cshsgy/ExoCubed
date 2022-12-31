@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD 14)
 message(STATUS "")
 message(STATUS "== Setting up ExoCubed library ==")
 
+LIST(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/)
+
 ## 1. set up compiler flags ##
 message(STATUS "1. Set up project compiler flags ...")
 message(STATUS "Include ${CMAKE_SOURCE_DIR}/cmake/setup_compiler_flags.cmake")

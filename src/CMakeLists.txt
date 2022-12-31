@@ -24,6 +24,8 @@ file(GLOB _src_files
   correct_fluxes_cubed_sphere.cpp
   hydro/calculate_fluxes.cpp
   hydro/cubedsphere_fluxes.cpp
+  hydro/rsolvers/hydro/${RiemannSolver}.cpp
+  eos/${EquationOfState}_hydro.cpp
   )
 
 foreach(build ${BUILD_TYPES})
@@ -41,6 +43,8 @@ foreach(build ${BUILD_TYPES})
     ${DEBUGGER_INCLUDE_DIR}
     ${ATHENAPP_INCLUDE_DIR}
     ${CLIUTILS_INCLUDE_DIR}
+    ${NETCDF_INCLUDES}
+    ${PNETCDF_INCLUDE_DIR}
     ${MPI_CXX_INCLUDE_PATH}
     ${CMAKE_BINARY_DIR}
     )
@@ -49,6 +53,8 @@ foreach(build ${BUILD_TYPES})
     ${DEBUGGER_LIBRARY_${build}}
     ${ATHENAPP_LIBRARY_${build}}
     ${CLIUTILS_LIBRARY_${build}}
+    ${NETCDF_LIBRARIES}
+    ${PNETCDF_LIBRARY}
     ${MPI_CXX_LIBRARIES}
     )
 
