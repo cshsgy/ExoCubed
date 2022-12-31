@@ -9,6 +9,7 @@
   #include <mpi.h>
 #endif
 
+#ifdef CUBED_SPHERE
 void Hydro::SaveLR3DValues(AthenaArray<Real> &L_in, AthenaArray<Real> &R_in,
   int direction,  int k, int j, int il, int iu) {
     for (int n=0; n<NWAVE; n++){
@@ -294,3 +295,5 @@ void Hydro::RecvNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
                         R3DValues[DirNum](n,k,j,i) = data[offset++];
     delete[] data;
 }
+
+#endif
