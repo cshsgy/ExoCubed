@@ -46,18 +46,6 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
   // b,bcc are passed as fn parameters because clients may want to pass different bcc1,
   // b1, b2, etc., but the remaining members of the Field class are accessed directly via
   // pointers because they are unique. NOTE: b, bcc are nullptrs if no MHD.
-#if MAGNETIC_FIELDS_ENABLED
-  // used only to pass to (up-to) 2x RiemannSolver() calls per dimension:
-  // x1:
-  AthenaArray<Real> &b1 = b.x1f, &w_x1f = pmb->pfield->wght.x1f,
-                  &e3x1 = pmb->pfield->e3_x1f, &e2x1 = pmb->pfield->e2_x1f;
-  // x2:
-  AthenaArray<Real> &b2 = b.x2f, &w_x2f = pmb->pfield->wght.x2f,
-                  &e1x2 = pmb->pfield->e1_x2f, &e3x2 = pmb->pfield->e3_x2f;
-  // x3:
-  AthenaArray<Real> &b3 = b.x3f, &w_x3f = pmb->pfield->wght.x3f,
-                  &e1x3 = pmb->pfield->e1_x3f, &e2x3 = pmb->pfield->e2_x3f;
-#endif
 
   AthenaArray<Real> &flux_fc = scr1_nkji_;
   AthenaArray<Real> &laplacian_all_fc = scr2_nkji_;
@@ -73,6 +61,9 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
 
   AthenaArray<Real> &x1flux = flux[X1DIR];
   // set the loop limits
+
+#ifndef HYDROSTATIC // sw not do X1
+
   jl = js, ju = je, kl = ks, ku = ke;
 
   for (int k=kl; k<=ku; ++k) {
@@ -104,6 +95,7 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
 #endif
     }
   }
+#endif  // end HYDROSTATIC
 
   //--------------------------------------------------------------------------------------
   // j-direction
@@ -236,30 +228,18 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
   SynchronizeFluxesRecv();
   //--------------------------------------------------------------------------------------
   // i-direction
+#ifndef HYDROSTATIC
   jl = js, ju = je, kl = ks, ku = ke;
-  if (MAGNETIC_FIELDS_ENABLED) {
-    if (pmb->block_size.nx2 > 1) {
-      if (pmb->block_size.nx3 == 1) // 2D
-        jl = js-1, ju = je+1, kl = ks, ku = ke;
-      else // 3D
-        jl = js-1, ju = je+1, kl = ks-1, ku = ke+1;
-    }
-  }
 
   for (int k=kl; k<=ku; ++k) {
     for (int j=jl; j<=ju; ++j) {
       // reconstruct L/R states
       LoadLR3DValues(wl_, wr_, X1DIR, k, j, is, ie+1);
       pmb->pcoord->CenterWidth1(k, j, is, ie+1, dxw_);
-#if !MAGNETIC_FIELDS_ENABLED  // Hydro:
       RiemannSolver(k, j, is, ie+1, IVX, wl_, wr_, x1flux, dxw_);
-#else  // MHD:
-      // x1flux(IBY) = (v1*b2 - v2*b1) = -EMFZ
-      // x1flux(IBZ) = (v1*b3 - v3*b1) =  EMFY
-      RiemannSolver(k, j, is, ie+1, IVX, b1, wl_, wr_, x1flux, e3x1, e2x1, w_x1f, dxw_);
-#endif
     }
   }
+#endif // HYDROSTATIC
 
   //--------------------------------------------------------------------------------------
   // j-direction

@@ -40,10 +40,10 @@ set_property(CACHE RiemannSolver
   )
 
 # hydrostatic flag
-option(Hydrostatic "Turn on hydrostatic assumption" OFF)
+option(Hydrostatic "Turn on hydrostatic assumption" ON)
 
 # NetCDF output flag
-option(UseNetCDF "Enable NetCDF output" OFF)
+option(UseNetCDF "Enable NetCDF output" ON)
 
 if (${UseNetCDF})
   find_package(NetCDF REQUIRED)
