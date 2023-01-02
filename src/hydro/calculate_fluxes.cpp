@@ -71,7 +71,15 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
   ProjectLocalCartesianAffine(w, w_trans, PI/3.0, 0, NHYDRO-1, is, ie, js, je, ks, ke, X1DIR);
 #endif
 
+#ifdef AFFINE
+  AthenaArray<Real> w_trans;
+  w_trans.NewAthenaArray(w.GetDim1(), w.GetDim2(), w.GetDim3(), w.GetDim4());
+  ProjectLocalCartesianAffine(w, w_trans, PI/3.0, 0, NHYDRO-1, is, ie, js, je, ks, ke, X1DIR);
+#endif
+
+  // shallow water eqution of state does not do X1
   AthenaArray<Real> &x1flux = flux[X1DIR];
+#ifndef HYDROSTATIC
   // set the loop limits
   jl = js, ju = je, kl = ks, ku = ke;
   if (MAGNETIC_FIELDS_ENABLED || order == 4) {
@@ -106,7 +114,7 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
       pmb->pcoord->CenterWidth1(k, j, is, ie+1, dxw_);
 #ifdef CUBED_SPHERE // Rieman solver run later
       SaveLR3DValues(wl_, wr_, X1DIR, k, j, is, ie+1); // is to ie+1 is what the RiemannSolver below uses...
-#else
+#else // not cubed sphere
 
 #if !MAGNETIC_FIELDS_ENABLED  // Hydro:
       RiemannSolver(k, j, is, ie+1, IVX, wl_, wr_, x1flux, dxw_);
@@ -123,67 +131,12 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
           }
         }
       }
-#endif
+#endif  // end MHD
 
-#endif
+#endif  // end cubed sphere
     }
   }
-#ifndef CUBED_SPHERE // Ignore order=4-related statements for Cubed sphere (higher order scheme)
-  if (order == 4) {
-    // TODO(felker): assuming uniform mesh with dx1f=dx2f=dx3f, so this should factor out
-    // TODO(felker): also, this may need to be dx1v, since Laplacian is cell-centered
-    Real h = pmb->pcoord->dx1f(is);  // pco->dx1f(i); inside loop
-    Real C = (h*h)/24.0;
-
-    // construct Laplacian from x1flux
-    pmb->pcoord->LaplacianX1All(x1flux, laplacian_all_fc, 0, NHYDRO-1,
-                                kl, ku, jl, ju, is, ie+1);
-
-    for (int k=kl; k<=ku; ++k) {
-      for (int j=jl; j<=ju; ++j) {
-        // Compute Laplacian of primitive Riemann states on x1 faces
-        for (int n=0; n<NWAVE; ++n) {
-          pmb->pcoord->LaplacianX1(wl3d_, laplacian_l_fc_, n, k, j, is, ie+1);
-          pmb->pcoord->LaplacianX1(wr3d_, laplacian_r_fc_, n, k, j, is, ie+1);
-#pragma omp simd
-          for (int i=is; i<=ie+1; ++i) {
-            wl_(n,i) = wl3d_(n,k,j,i) - C*laplacian_l_fc_(i);
-            wr_(n,i) = wr3d_(n,k,j,i) - C*laplacian_r_fc_(i);
-          }
-        }
-#pragma omp simd
-        for (int i=is; i<=ie+1; ++i) {
-          pmb->peos->ApplyPrimitiveFloors(wl_, k, j, i);
-          pmb->peos->ApplyPrimitiveFloors(wr_, k, j, i);
-        }
-
-        // Compute x1 interface fluxes from face-centered primitive variables
-        // TODO(felker): check that e3x1,e2x1 arguments added in late 2017 work here
-        pmb->pcoord->CenterWidth1(k, j, is, ie+1, dxw_);
-
-#if !MAGNETIC_FIELDS_ENABLED  // Hydro:
-        RiemannSolver(k, j, is, ie+1, IVX, wl_, wr_, flux_fc, dxw_);
-#else  // MHD:
-        RiemannSolver(k, j, is, ie+1, IVX, b1, wl_, wr_, flux_fc, e3x1, e2x1,
-                      w_x1f, dxw_);
-#endif
-        // Apply Laplacian of second-order accurate face-averaged flux on x1 faces
-        for (int n=0; n<NHYDRO; ++n) {
-#pragma omp simd
-          for (int i=is; i<=ie+1; i++) {
-            x1flux(n,k,j,i) = flux_fc(n,k,j,i) + C*laplacian_all_fc(n,k,j,i);
-            // TODO(felker): replace this loop-based deep copy with memcpy, or alternative
-            if (n == IDN && NSCALARS > 0) {
-              pmb->pscalars->mass_flux_fc[X1DIR](k,j,i) = flux_fc(n,k,j,i);
-            }
-          }
-        }
-      }
-    }
-  } // end if (order == 4)
-#endif
-  //------------------------------------------------------------------------------
-  // end x1 fourth-order hydro
+#endif  // end HYDROSTATIC
 
   //--------------------------------------------------------------------------------------
   // j-direction
@@ -243,7 +196,7 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
         pmb->pcoord->CenterWidth2(k, j, il, iu, dxw_);
 #ifdef CUBED_SPHERE // Rieman solver run later
         SaveLR3DValues(wl_, wr_, X2DIR, k, j, il, iu); // il to iu is what the RiemannSolver below uses...
-#else
+#else // not cubed sphere
 
 #if !MAGNETIC_FIELDS_ENABLED  // Hydro:
         RiemannSolver(k, j, il, iu, IVY, wl_, wr_, x2flux, dxw_);
@@ -251,7 +204,7 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
         // flx(IBY) = (v2*b3 - v3*b2) = -EMFX
         // flx(IBZ) = (v2*b1 - v1*b2) =  EMFZ
         RiemannSolver(k, j, il, iu, IVY, b2, wl_, wr_, x2flux, e1x2, e3x2, w_x2f, dxw_);
-#endif
+#endif // end MHD
 
         if (order == 4) {
           for (int n=0; n<NWAVE; n++) {
@@ -264,7 +217,7 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
         // swap the arrays for the next step
         wl_.SwapAthenaArray(wlb_);
 
-#endif
+#endif // end cubed sphere
       }
     }
 #ifndef CUBED_SPHERE
@@ -461,8 +414,10 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
 #ifdef CUBED_SPHERE
   SynchronizeFluxesSend();
   SynchronizeFluxesRecv();
+
   //--------------------------------------------------------------------------------------
   // i-direction
+#ifndef HYDROSTATIC
   jl = js, ju = je, kl = ks, ku = ke;
   if (MAGNETIC_FIELDS_ENABLED) {
     if (pmb->block_size.nx2 > 1) {
@@ -484,9 +439,10 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
       // x1flux(IBY) = (v1*b2 - v2*b1) = -EMFZ
       // x1flux(IBZ) = (v1*b3 - v3*b1) =  EMFY
       RiemannSolver(k, j, is, ie+1, IVX, b1, wl_, wr_, x1flux, e3x1, e2x1, w_x1f, dxw_);
-#endif
+#endif // end MHD
     }
   }
+#endif // HYDROSTATIC
 
   //--------------------------------------------------------------------------------------
   // j-direction

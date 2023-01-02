@@ -5,12 +5,62 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
 endif()
 
 # equation of state
-set(EquationOfState adiabatic_hydro
+set(EquationOfState adiabatic
   CACHE STRING "Choose the equation of state for primitive-conserved conversion")
+set_property(CACHE EquationOfState
+  PROPERTY STRINGS
+  adiabatic
+  shallow_water
+  )
+
+# coordinate system
+set(CoordinateSystem cartesian
+  CACHE STRING "Choose the coordinate system of the problem")
+set_property(CACHE CoordinateSystem
+  PROPERTY STRINGS
+  cartesian
+  affine
+  )
+
+if (${EquationOfState} STREQUAL "shallow_water")
+  set(RiemannSolver roe_shallow_water
+    CACHE STRING "Choose the Riemann Solver")
+  option(Barotropic "Barotropic equation of state" ON)
+else()
+  set(RiemannSolver hllc
+    CACHE STRING "Choose the Riemann Solver")
+  option(Barotropic "Barotropic equation of state" OFF)
+endif()
 
 # riemann solver
-set(RiemannSolver hllc
-  CACHE STRING "Choose the Riemann Solver")
+set_property(CACHE RiemannSolver
+  PROPERTY STRINGS
+  hllc
+  roe_shallow_water
+  )
+
+# hydrostatic flag
+option(Hydrostatic "Turn on hydrostatic assumption" OFF)
+
+# NetCDF output flag
+option(UseNetCDF "Enable NetCDF output" OFF)
+
+if (${UseNetCDF})
+  find_package(NetCDF REQUIRED)
+  set(NetCDFOption NETCDF_OUTPUT)
+else()
+  set(NetCDFOption NOT_NETCDF_OUTPUT)
+endif()
+
+# PNetCDF output flag
+option(UsePNetCDF "Enable NetCDF output" OFF)
+
+if (${UsePNetCDF})
+  find_package(PNetCDF REQUIRED)
+  set(PNetCDFOption PNETCDF_OUTPUT)
+else()
+  set(PNetCDFOption NOT_PNETCDF_OUTPUT)
+endif()
 
 # MPI flag
 option(UseMPI "Enable MPI" ON)
