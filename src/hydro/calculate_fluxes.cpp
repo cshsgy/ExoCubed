@@ -71,12 +71,6 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
   ProjectLocalCartesianAffine(w, w_trans, PI/3.0, 0, NHYDRO-1, is, ie, js, je, ks, ke, X1DIR);
 #endif
 
-#ifdef AFFINE
-  AthenaArray<Real> w_trans;
-  w_trans.NewAthenaArray(w.GetDim1(), w.GetDim2(), w.GetDim3(), w.GetDim4());
-  ProjectLocalCartesianAffine(w, w_trans, PI/3.0, 0, NHYDRO-1, is, ie, js, je, ks, ke, X1DIR);
-#endif
-
   // shallow water eqution of state does not do X1
   AthenaArray<Real> &x1flux = flux[X1DIR];
 #ifndef HYDROSTATIC
