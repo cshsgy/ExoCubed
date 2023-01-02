@@ -26,6 +26,7 @@ file(GLOB _src_files
   hydro/cubedsphere_fluxes.cpp
   hydro/rsolvers/hydro/${RiemannSolver}.cpp
   eos/${EquationOfState}_hydro.cpp
+  affine_coordinates.cpp
   )
 
 foreach(build ${BUILD_TYPES})

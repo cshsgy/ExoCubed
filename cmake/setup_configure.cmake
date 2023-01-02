@@ -72,12 +72,21 @@ if (${UseMPI})
 endif()
 
 # CubedSphere flag
-option(UseCubedSphere "Enable CubedSphere" ON)
+option(UseCubedSphere "Enable CubedSphere" OFF)
 
 # CubedSphere flag
 if (${UseCubedSphere})
   set(CubedSphereOption CUBED_SPHERE)
   set(CoordinateSystem gnomonic_equiangle)
+endif()
+
+# Affine Coordinates flag
+option(UseAffine "Enable Affine Coordinate" OFF)
+
+# Affine Coordinates flag
+if (${UseAffine})
+  set(UseAffine AFFINE)
+  set(CoordinateSystem affine_coordinates)
 endif()
 
 # ghost zone size
