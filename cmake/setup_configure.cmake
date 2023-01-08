@@ -19,7 +19,7 @@ set(CoordinateSystem cartesian
 set_property(CACHE CoordinateSystem
   PROPERTY STRINGS
   cartesian
-  affine
+  affine_coordinates
   )
 
 if (${EquationOfState} STREQUAL "shallow_water")
@@ -81,7 +81,7 @@ if (${UseCubedSphere})
 endif()
 
 # Affine Coordinates flag
-option(UseAffine "Enable Affine Coordinate" OFF)
+option(UseAffine "Enable Affine Coordinate" ON)
 
 # Affine Coordinates flag
 if (${UseAffine})

@@ -186,7 +186,7 @@ void AffineCoordinate::Face1Area(const int k, const int j, const int il, const i
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     Real& area_i = area(i);
-    area_i = dx1f(i)*dx3f(k) / (sin(PI/3.0) * sin(PI/3.0));
+    area_i = dx2f(j)*dx3f(k);
   }
   return;
 }
@@ -196,7 +196,17 @@ void AffineCoordinate::Face2Area(const int k, const int j, const int il, const i
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     Real& area_i = area(i);
-    area_i = dx1f(i)*dx3f(k) / (sin(PI/3.0) * sin(PI/3.0));
+    area_i = dx1f(i)*dx3f(k);
+  }
+  return;
+}
+
+void AffineCoordinate::Face3Area(const int k, const int j, const int il, const int iu,
+                            AthenaArray<Real> &area) {
+#pragma omp simd
+  for (int i=il; i<=iu; ++i) {
+    Real& area_i = area(i);
+    area_i = dx1f(i)*dx2f(j)*sin(PI/3.0);
   }
   return;
 }
@@ -205,11 +215,15 @@ void AffineCoordinate::Face2Area(const int k, const int j, const int il, const i
 // GetFaceXArea functions: return area of face with normal in X-dir at (i,j,k)
 
 Real AffineCoordinate::GetFace1Area(const int k, const int j, const int i) {
-  return dx2f(j)*dx3f(k) / (sin(PI/3.0) * sin(PI/3.0));
+  return dx2f(j)*dx3f(k);
 }
 
 Real AffineCoordinate::GetFace2Area(const int k, const int j, const int i) {
-  return dx1f(i)*dx3f(k) / (sin(PI/3.0) * sin(PI/3.0));
+  return dx1f(i)*dx3f(k);
+}
+
+Real AffineCoordinate::GetFace3Area(const int k, const int j, const int i) {
+  return dx1f(i)*dx2f(j)*sin(PI/3.0);
 }
 
 //----------------------------------------------------------------------------------------
@@ -222,7 +236,7 @@ void AffineCoordinate::VolCenterFace1Area(const int k, const int j, const int il
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     Real& area_i = area(i);
-    area_i = dx2v(j)*dx3v(k) / (sin(PI/3.0) * sin(PI/3.0));
+    area_i = dx2v(j)*dx3v(k);
   }
   return;
 }
@@ -232,7 +246,35 @@ void AffineCoordinate::VolCenterFace2Area(const int k, const int j, const int il
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     Real& area_i = area(i);
-    area_i = dx1v(i)*dx3v(k) / (sin(PI/3.0) * sin(PI/3.0));
+    area_i = dx1v(i)*dx3v(k);
   }
   return;
+}
+
+void AffineCoordinate::VolCenterFace3Area(const int k, const int j, const int il, const int iu,
+                                     AthenaArray<Real> &area) {
+#pragma omp simd
+  for (int i=il; i<=iu; ++i) {
+    Real& area_i = area(i);
+    area_i = dx1v(i)*dx2v(j)*sin(PI/3.0);
+  }
+  return;
+}
+
+// Cell Volume function: compute volume of cell as vector
+
+void AffineCoordinate::CellVolume(const int k, const int j, const int il, const int iu,
+                             AthenaArray<Real> &vol) {
+#pragma omp simd
+  for (int i=il; i<=iu; ++i) {
+    vol(i) = dx1f(i)*dx2f(j)*dx3f(k)*sin(PI/3.0);
+  }
+  return;
+}
+
+//----------------------------------------------------------------------------------------
+// GetCellVolume: returns cell volume at (i,j,k)
+
+Real AffineCoordinate::GetCellVolume(const int k, const int j, const int i) {
+  return dx1f(i)*dx2f(j)*dx3f(k)*sin(PI/3.0);
 }
