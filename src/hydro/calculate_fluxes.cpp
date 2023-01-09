@@ -53,12 +53,6 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
   //--------------------------------------------------------------------------------------
   // i-direction
 
-#ifdef AFFINE
-  AthenaArray<Real> w_trans;
-  w_trans.NewAthenaArray(w.GetDim1(), w.GetDim2(), w.GetDim3(), w.GetDim4());
-  ProjectLocalCartesianAffine(w, w_trans, PI/3.0, 0, NHYDRO-1, is, ie, js, je, ks, ke, X1DIR);
-#endif
-
   AthenaArray<Real> &x1flux = flux[X1DIR];
   // set the loop limits
 
@@ -69,15 +63,6 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
   for (int k=kl; k<=ku; ++k) {
     for (int j=jl; j<=ju; ++j) {
       // reconstruct L/R states
-#ifdef AFFINE
-      if (order == 1) {
-        pmb->precon->DonorCellX1(k, j, is-1, ie+1, w_trans, bcc, wl_, wr_);
-      } else if (order == 2) {
-        pmb->precon->PiecewiseLinearX1(k, j, is-1, ie+1, w_trans, bcc, wl_, wr_);
-      } else {
-        pmb->precon->PiecewiseParabolicX1(k, j, is-1, ie+1, w_trans, bcc, wl_, wr_);
-      }
-#else
       if (order == 1) {
         pmb->precon->DonorCellX1(k, j, is-1, ie+1, w, bcc, wl_, wr_);
       } else if (order == 2) {
@@ -85,7 +70,6 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
       } else {
         pmb->precon->PiecewiseParabolicX1(k, j, is-1, ie+1, w, bcc, wl_, wr_);
       }
-#endif
       pmb->pcoord->CenterWidth1(k, j, is, ie+1, dxw_);
 #ifdef CUBED_SPHERE // Rieman solver run later
       SaveLR3DValues(wl_, wr_, X1DIR, k, j, is, ie+1); // is to ie+1 is what the RiemannSolver below uses...
@@ -99,11 +83,6 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
 
   //--------------------------------------------------------------------------------------
   // j-direction
-
-#ifdef AFFINE
-  ProjectLocalCartesianAffine(w, w_trans, PI/3.0, 0, NHYDRO-1, is, ie, js, je, ks, ke, X2DIR);
-#endif
-
   if (pmb->pmy_mesh->f2) {
     AthenaArray<Real> &x2flux = flux[X2DIR];
     // set the loop limits
@@ -111,24 +90,6 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
 
     for (int k=kl; k<=ku; ++k) {
       // reconstruct the first row
-#ifdef AFFINE
-      if (order == 1) {
-        pmb->precon->DonorCellX2(k, js-1, il, iu, w_trans, bcc, wl_, wr_);
-      } else if (order == 2) {
-        pmb->precon->PiecewiseLinearX2(k, js-1, il, iu, w_trans, bcc, wl_, wr_);
-      } else {
-        pmb->precon->PiecewiseParabolicX2(k, js-1, il, iu, w_trans, bcc, wl_, wr_);
-      }
-      for (int j=js; j<=je+1; ++j) {
-        // reconstruct L/R states at j
-        if (order == 1) {
-          pmb->precon->DonorCellX2(k, j, il, iu, w_trans, bcc, wlb_, wr_);
-        } else if (order == 2) {
-          pmb->precon->PiecewiseLinearX2(k, j, il, iu, w_trans, bcc, wlb_, wr_);
-        } else {
-          pmb->precon->PiecewiseParabolicX2(k, j, il, iu, w_trans, bcc, wlb_, wr_);
-        }
-#else
       if (order == 1) {
         pmb->precon->DonorCellX2(k, js-1, il, iu, w, bcc, wl_, wr_);
       } else if (order == 2) {
@@ -145,7 +106,6 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
         } else {
           pmb->precon->PiecewiseParabolicX2(k, j, il, iu, w, bcc, wlb_, wr_);
         }
-#endif
         pmb->pcoord->CenterWidth2(k, j, il, iu, dxw_);
 #ifdef CUBED_SPHERE // Rieman solver run later
         SaveLR3DValues(wl_, wr_, X2DIR, k, j, il, iu); // il to iu is what the RiemannSolver below uses...
@@ -161,35 +121,12 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
 
   //--------------------------------------------------------------------------------------
   // k-direction
-#ifdef AFFINE
-  ProjectLocalCartesianAffine(w, w_trans, PI/3.0, 0, NHYDRO-1, is, ie, js, je, ks, ke, X3DIR);
-#endif
-
   if (pmb->pmy_mesh->f3) {
     AthenaArray<Real> &x3flux = flux[X3DIR];
     // set the loop limits
     il = is, iu = ie, jl = js, ju = je;
 
     for (int j=jl; j<=ju; ++j) { // this loop ordering is intentional
-#ifdef AFFINE
-      // reconstruct the first row
-      if (order == 1) {
-        pmb->precon->DonorCellX3(ks-1, j, il, iu, w_trans, bcc, wl_, wr_);
-      } else if (order == 2) {
-        pmb->precon->PiecewiseLinearX3(ks-1, j, il, iu, w_trans, bcc, wl_, wr_);
-      } else {
-        pmb->precon->PiecewiseParabolicX3(ks-1, j, il, iu, w_trans, bcc, wl_, wr_);
-      }
-      for (int k=ks; k<=ke+1; ++k) {
-        // reconstruct L/R states at k
-        if (order == 1) {
-          pmb->precon->DonorCellX3(k, j, il, iu, w_trans, bcc, wlb_, wr_);
-        } else if (order == 2) {
-          pmb->precon->PiecewiseLinearX3(k, j, il, iu, w_trans, bcc, wlb_, wr_);
-        } else {
-          pmb->precon->PiecewiseParabolicX3(k, j, il, iu, w_trans, bcc, wlb_, wr_);
-        }
-#else
       // reconstruct the first row
       if (order == 1) {
         pmb->precon->DonorCellX3(ks-1, j, il, iu, w, bcc, wl_, wr_);
@@ -207,7 +144,6 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
         } else {
           pmb->precon->PiecewiseParabolicX3(k, j, il, iu, w, bcc, wlb_, wr_);
         }
-#endif
         pmb->pcoord->CenterWidth3(k, j, il, iu, dxw_);
 #ifdef CUBED_SPHERE // Rieman solver run later
         SaveLR3DValues(wl_, wr_, X3DIR, k, j, il, iu); // il to iu is what the RiemannSolver below uses...
@@ -277,12 +213,6 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
       }
     }
   }
-#endif
-
-#ifdef AFFINE
-  DeProjectLocalCartesianAffine(flux[X1DIR], PI/3.0, 0, NHYDRO-1, is, ie, js, je, ks, ke, X1DIR);
-  DeProjectLocalCartesianAffine(flux[X2DIR], PI/3.0, 0, NHYDRO-1, is, ie, js, je, ks, ke, X2DIR);
-  DeProjectLocalCartesianAffine(flux[X3DIR], PI/3.0, 0, NHYDRO-1, is, ie, js, je, ks, ke, X3DIR);
 #endif
 
   if (!STS_ENABLED)
