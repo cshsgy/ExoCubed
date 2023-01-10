@@ -46,7 +46,7 @@ void Hydro::RiemannSolver(const int k, const int j, const int il, const int iu,
   Real gm1 = gamma - 1.0;
   Real igm1 = 1.0/gm1;
 
-#if defined(AFFINE) || defined(CUBED_SPHERE) // need of projection
+#if defined(AFFINE)// need of projection
   {
     switch (ivx) {
       case IVX:
@@ -55,12 +55,21 @@ void Hydro::RiemannSolver(const int k, const int j, const int il, const int iu,
       case IVY:
         pmb->pcoord->PrimToLocal2(k, j, il, iu, prim_l, prim_r);
         break;
+    }
+  }
+#endif // AFFINE
+#if defined(CUBED_SPHERE)// need of projection
+  {
+    switch (ivx) {
+      case IVY:
+        pmb->pcoord->PrimToLocal2(k, j, il, iu, prim_l, prim_r);
+        break;
       case IVZ:
         pmb->pcoord->PrimToLocal3(k, j, il, iu, prim_l, prim_r);
         break;
     }
   }
-#endif // AFFINE or CUBED_SPHERE
+#endif //  CUBED_SPHERE
 
 #pragma omp simd private(wli,wri,flxi,fl,fr)
 #pragma distribute_point
@@ -191,7 +200,7 @@ void Hydro::RiemannSolver(const int k, const int j, const int il, const int iu,
     flx(ivz,k,j,i) = flxi[IVZ];
     flx(IEN,k,j,i) = flxi[IEN];
   }
-#if defined(AFFINE) || defined(CUBED_SPHERE) // need of deprojection
+#if defined(AFFINE) // need of deprojection
   {
     switch (ivx) {
       case IVX:
@@ -200,11 +209,21 @@ void Hydro::RiemannSolver(const int k, const int j, const int il, const int iu,
       case IVY:
         pmb->pcoord->FluxToGlobal2(k, j, il, iu, flux);
         break;
+    }
+  }
+#endif  // AFFINE
+#if defined(CUBED_SPHERE) // need of deprojection
+  {
+    switch (ivx) {
+      case IVY:
+        pmb->pcoord->FluxToGlobal2(k, j, il, iu, flux);
+        break;
       case IVZ:
         pmb->pcoord->FluxToGlobal3(k, j, il, iu, flux);
         break;
     }
   }
-#endif  // AFFINE or CUBED_SPHERE
+#endif  // CUBED_SPHERE
+
   return;
 }
