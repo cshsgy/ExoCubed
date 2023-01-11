@@ -14,6 +14,9 @@ AffineCoordinate::AffineCoordinate(MeshBlock *pmb, ParameterInput *pin, bool fla
 {
   // Send something to confirm that we are using Affine
   std::cout << "===Note===: Affine coordinates activated" << std::endl;
+  theta_ = PI/3.;
+  sin_theta_ = sin(theta_);
+  cos_theta_ = cos(theta_);
 
   // initialize volume-averaged coordinates and spacing
   // x1-direction: x1v = dx/2
@@ -174,7 +177,7 @@ void AffineCoordinate::Face1Area(const int k, const int j, const int il, const i
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     Real& area_i = area(i);
-    area_i = dx2f(j)*dx3f(k);
+    area_i = sin_theta_*dx2f(j)*dx3f(k);
   }
   return;
 }
@@ -184,7 +187,7 @@ void AffineCoordinate::Face2Area(const int k, const int j, const int il, const i
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     Real& area_i = area(i);
-    area_i = dx1f(i)*dx3f(k);
+    area_i = sin_theta_*dx1f(i)*dx3f(k);
   }
   return;
 }
@@ -194,7 +197,7 @@ void AffineCoordinate::Face3Area(const int k, const int j, const int il, const i
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     Real& area_i = area(i);
-    area_i = dx1f(i)*dx2f(j)*sin(PI/3.0);
+    area_i = sin_theta_*dx1f(i)*dx2f(j);
   }
   return;
 }
@@ -203,15 +206,15 @@ void AffineCoordinate::Face3Area(const int k, const int j, const int il, const i
 // GetFaceXArea functions: return area of face with normal in X-dir at (i,j,k)
 
 Real AffineCoordinate::GetFace1Area(const int k, const int j, const int i) {
-  return dx2f(j)*dx3f(k);
+  return dx2f(j)*dx3f(k)*sin_theta_;
 }
 
 Real AffineCoordinate::GetFace2Area(const int k, const int j, const int i) {
-  return dx1f(i)*dx3f(k);
+  return dx1f(i)*dx3f(k)*sin_theta_;
 }
 
 Real AffineCoordinate::GetFace3Area(const int k, const int j, const int i) {
-  return dx1f(i)*dx2f(j)*sin(PI/3.0);
+  return dx1f(i)*dx2f(j)*sin_theta_;
 }
 
 //----------------------------------------------------------------------------------------
@@ -224,7 +227,7 @@ void AffineCoordinate::VolCenterFace1Area(const int k, const int j, const int il
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     Real& area_i = area(i);
-    area_i = dx2v(j)*dx3v(k);
+    area_i = dx2v(j)*dx3v(k)*sin_theta_;
   }
   return;
 }
@@ -234,7 +237,7 @@ void AffineCoordinate::VolCenterFace2Area(const int k, const int j, const int il
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     Real& area_i = area(i);
-    area_i = dx1v(i)*dx3v(k);
+    area_i = dx1v(i)*dx3v(k)*sin_theta_;
   }
   return;
 }
@@ -244,7 +247,7 @@ void AffineCoordinate::VolCenterFace3Area(const int k, const int j, const int il
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     Real& area_i = area(i);
-    area_i = dx1v(i)*dx2v(j)*sin(PI/3.0);
+    area_i = dx1v(i)*dx2v(j)*sin_theta_;
   }
   return;
 }
@@ -255,7 +258,7 @@ void AffineCoordinate::CellVolume(const int k, const int j, const int il, const 
                              AthenaArray<Real> &vol) {
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
-    vol(i) = dx1f(i)*dx2f(j)*dx3f(k)*sin(PI/3.0);
+    vol(i) = dx1f(i)*dx2f(j)*dx3f(k)*sin_theta_;
   }
   return;
 }
@@ -264,7 +267,7 @@ void AffineCoordinate::CellVolume(const int k, const int j, const int il, const 
 // GetCellVolume: returns cell volume at (i,j,k)
 
 Real AffineCoordinate::GetCellVolume(const int k, const int j, const int i) {
-  return dx1f(i)*dx2f(j)*dx3f(k)*sin(PI/3.0);
+  return dx1f(i)*dx2f(j)*dx3f(k)*sin_theta_;
 }
 
 //----------------------------------------------------------------------------------------
@@ -278,8 +281,8 @@ void AffineCoordinate::CellMetric(const int k, const int j, const int il, const 
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     // Extract remaining geometric quantities
-    const Real sth = sin(PI/3.0);
-    const Real cth = cos(PI/3.0);
+    const Real sth = sin_theta_;
+    const Real cth = cos_theta_;
 
     // Extract metric terms
     Real &g11 = g(I11,i);
@@ -312,8 +315,8 @@ void AffineCoordinate::CellMetric(const int k, const int j, const int il, const 
 void AffineCoordinate::Face1Metric(const int k, const int j, const int il, const int iu,
                                AthenaArray<Real> &g, AthenaArray<Real> &g_inv) {
   // Extract geometric quantities that do not depend on r
-  const Real sth = sin(PI/3.0);
-  const Real cth = cos(PI/3.0);
+  const Real sth = sin_theta_;
+  const Real cth = cos_theta_;
 
   // Go through 1D block of cells
 #pragma omp simd
@@ -351,8 +354,8 @@ void AffineCoordinate::Face1Metric(const int k, const int j, const int il, const
 void AffineCoordinate::Face2Metric(const int k, const int j, const int il, const int iu,
                                AthenaArray<Real> &g, AthenaArray<Real> &g_inv) {
   // Extract geometric quantities that do not depend on r
-  const Real sth = sin(PI/3.0);
-  const Real cth = cos(PI/3.0);
+  const Real sth = sin_theta_;
+  const Real cth = cos_theta_;
 
   // Go through 1D block of cells
 #pragma omp simd
@@ -390,8 +393,8 @@ void AffineCoordinate::Face2Metric(const int k, const int j, const int il, const
 void AffineCoordinate::Face3Metric(const int k, const int j, const int il, const int iu,
                                AthenaArray<Real> &g, AthenaArray<Real> &g_inv) {
   // Extract geometric quantities that do not depend on r
-  const Real sth = sin(PI/3.0);
-  const Real cth = cos(PI/3.0);
+  const Real sth = sin_theta_;
+  const Real cth = cos_theta_;
 
   // Go through 1D block of cells
 #pragma omp simd
