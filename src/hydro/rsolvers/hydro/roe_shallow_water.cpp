@@ -9,6 +9,8 @@
 // Athena++ headers
 #include <hydro/hydro.hpp>
 #include <athena.hpp>
+#include <mesh/mesh.hpp>
+#include <coordinates/coordinates.hpp>
 
 void Hydro::RiemannSolver(int const k, int const j, int const il, int const iu, 
     int const ivx, AthenaArray<Real> &wl, AthenaArray<Real> &wr,
@@ -19,6 +21,20 @@ void Hydro::RiemannSolver(int const k, int const j, int const il, int const iu,
   Real wli[NHYDRO], wri[NHYDRO], wave[3][3], speed[3];
 
   Real ubar, vbar, cbar, delh, delu, delv, hbar, a1, a2, a3;
+
+  AthenaArray<Real> empty{};  // placeholder for unused electric/magnetic fields
+#ifdef AFFINE // need of projection
+  {
+    switch (ivx) {
+      case IVY:
+        pmy_block->pcoord->PrimToLocal2(k, j, il, iu, empty, wl, wr, empty);
+        break;
+      case IVZ:
+        pmy_block->pcoord->PrimToLocal3(k, j, il, iu, empty, wl, wr, empty);
+        break;
+    }
+  }
+#endif // AFFINE
 
   for (int i = il; i <= iu; ++i) {
     for (int n = 0; n < NHYDRO; ++n) {
@@ -61,4 +77,18 @@ void Hydro::RiemannSolver(int const k, int const j, int const il, int const iu,
       flx(ivy,k,j,i) -= 0.5*speed[r]*wave[r][2];
     }
   }
+
+#ifdef AFFINE // need of deprojection
+  {
+    // check if this is correct
+    switch (ivx) {
+      case IVY:
+        pmy_block->pcoord->FluxToGlobal2(k, j, il, iu, empty, empty, flx, empty, empty);
+        break;
+      case IVZ:
+        pmy_block->pcoord->FluxToGlobal3(k, j, il, iu, empty, empty, flx, empty, empty);
+        break;
+    }
+  }
+#endif  // AFFINE
 }

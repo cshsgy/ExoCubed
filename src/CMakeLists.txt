@@ -25,7 +25,7 @@ file(GLOB _src_files
   hydro/calculate_fluxes.cpp
   hydro/cubedsphere_fluxes.cpp
   hydro/rsolvers/hydro/${RiemannSolver}.cpp
-  hydro/rsolvers/hydro/hllc_transform.cpp
+  #hydro/rsolvers/hydro/hllc_transform.cpp
   eos/${EquationOfState}_hydro.cpp
   affine_coordinates.cpp
   )

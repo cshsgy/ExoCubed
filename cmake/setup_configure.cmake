@@ -26,10 +26,12 @@ if (${EquationOfState} STREQUAL "shallow_water")
   set(RiemannSolver roe_shallow_water
     CACHE STRING "Choose the Riemann Solver")
   option(Barotropic "Barotropic equation of state" ON)
+  option(Hydrostatic "Turn on hydrostatic assumption" ON)
 else()
   set(RiemannSolver hllc
     CACHE STRING "Choose the Riemann Solver")
   option(Barotropic "Barotropic equation of state" OFF)
+  option(Hydrostatic "Turn on hydrostatic assumption" OFF)
 endif()
 
 # riemann solver
@@ -40,7 +42,11 @@ set_property(CACHE RiemannSolver
   )
 
 # hydrostatic flag
-option(Hydrostatic "Turn on hydrostatic assumption" ON)
+if (${Hydrostatic})
+  set(HydrostaticOption HYDROSTATIC)
+else()
+  set(HydrostaticOption NOT_HYDROSTATIC)
+endif()
 
 # NetCDF output flag
 option(UseNetCDF "Enable NetCDF output" ON)
@@ -69,6 +75,8 @@ option(UseMPI "Enable MPI" ON)
 if (${UseMPI})
   find_package(MPI REQUIRED)
   set(MPIOption MPI_PARALLEL)
+else()
+  set(MPIOption NOT_MPI_PARALLEL)
 endif()
 
 # CubedSphere flag
@@ -78,6 +86,8 @@ option(UseCubedSphere "Enable CubedSphere" OFF)
 if (${UseCubedSphere})
   set(CubedSphereOption CUBED_SPHERE)
   set(CoordinateSystem gnomonic_equiangle)
+else()
+  set(CubedSphereOption NOT_CUBED_SPHERE)
 endif()
 
 # Affine Coordinates flag
@@ -85,8 +95,10 @@ option(UseAffine "Enable Affine Coordinate" ON)
 
 # Affine Coordinates flag
 if (${UseAffine})
-  set(UseAffine AFFINE)
+  set(AffineOption AFFINE)
   set(CoordinateSystem affine_coordinates)
+else()
+  set(AffineOption NOT_AFFINE)
 endif()
 
 # ghost zone size

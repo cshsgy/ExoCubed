@@ -10,13 +10,22 @@ enum {
   NumVapors = 0
 };
 
-// hydrostatic flag
-#define HYDROSTATIC @Hydrostatic@
+// hydrostatic option
+#define @HydrostaticOption@
+
+// affine option
+#define @AffineOption@
+
+// cubed sphere option
+#define @CubedSphereOption@
 
 // netcdf option
 #define @NetCDFOption@
 
 // pnetcdf option
 #define @PNetCDFOption@
+
+// mpi option
+#define @MPIOption@
 
 #endif
