@@ -97,73 +97,10 @@ AffineCoordinate::AffineCoordinate(MeshBlock *pmb, ParameterInput *pin, bool fla
 
   // Initialize coordinate-transfer related variables
   g_.NewAthenaArray(NMETRIC, nc1+1);
+  gi_.NewAthenaArray(NMETRIC, nc1+1);
 
   // Not needed here, but precalculation of the parts of metrics 
   // may be possible in gnomonic equiangle...
-}
-
-
-void ProjectLocalCartesianAffine(const AthenaArray<Real> &src, 
-        AthenaArray<Real> &tgt, Real affine_angle, int sn, int en, int si, int ei, int sj, 
-        int ej, int sk, int ek, int Dir)
-{
-  // int ivy = IVX + ((ivx-IVX)+1)%3;
-  // int ivz = IVX + ((ivx-IVX)+2)%3;
-  for(int n=sn; n<=en; n++)
-    for(int k=sk; k<=ek; k++)
-      for(int j=sj; j<=ej; j++)
-        for(int i=si; i<=ei; i++)
-          tgt(n,k,j,i) = src(n,k,j,i); // To ensure that the sources are in the right location
-
-  for(int k=sk; k<=ek; k++)
-    for(int j=sj; j<=ej; j++)
-      for(int i=si; i<=ei; i++){
-        Real vx = src(IVX,k,j,i);
-        Real vy = src(IVY,k,j,i);
-        Real vz = src(IVZ,k,j,i);
-        switch(Dir)
-        {
-          case X1DIR: // Projecting to X Direction
-            tgt(IVX,k,j,i) = vx*sin(affine_angle);
-            tgt(IVY,k,j,i) = vy + vx*cos(affine_angle);
-            tgt(IVZ,k,j,i) = vz;
-            break;
-          case X2DIR: // Projecting to Y Direction
-            tgt(IVX,k,j,i) = vx+vy*cos(affine_angle);
-            tgt(IVY,k,j,i) = vy*sin(affine_angle);
-            tgt(IVZ,k,j,i) = vz;
-            break;
-          case X3DIR: // Projecting to Z Direction, no need to project... (Both affine and cubed sphere not needed)
-            break;
-        }
-      }
-}
-
-void DeProjectLocalCartesianAffine(AthenaArray<Real> &flux, Real affine_angle, int sn, int en, int si, int ei, int sj, 
-        int ej, int sk, int ek, int Dir)
-{
-  for(int k=sk; k<=ek; k++)
-    for(int j=sj; j<=ej; j++)
-      for(int i=si; i<=ei; i++){
-        Real fx = flux(IVX,k,j,i);
-        Real fy = flux(IVY,k,j,i);
-        Real fz = flux(IVZ,k,j,i);
-        switch(Dir)
-        {
-          case X1DIR: // Projecting to X Direction
-            flux(IVX,k,j,i) = fx/sin(affine_angle);
-            flux(IVY,k,j,i) = fy - fx*cos(affine_angle)/sin(affine_angle);
-            flux(IVZ,k,j,i) = fz;
-            break;
-          case X2DIR: // Projecting to Y Direction
-            flux(IVX,k,j,i) = fx-fy*cos(affine_angle)/sin(affine_angle);
-            flux(IVY,k,j,i) = fy/sin(affine_angle);
-            flux(IVZ,k,j,i) = fz;
-            break;
-          case X3DIR: // Projecting to Z Direction, no need to project... (Both affine and cubed sphere not needed)
-            break;
-        }
-      }
 }
 
 // Put in the changes in face2area etc, similar to cylindrical.cpp
@@ -274,16 +211,10 @@ Real AffineCoordinate::GetCellVolume(const int k, const int j, const int i) {
 // For Affine coordinate: the metrics are all the same for volume, faces
 void AffineCoordinate::CellMetric(const int k, const int j, const int il, const int iu,
                                AthenaArray<Real> &g, AthenaArray<Real> &g_inv) {
-  // Extract geometric quantities that do not depend on r
-  const Real &sin_sq_theta = metric_cell_j1_(j);
 
   // Go through 1D block of cells
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
-    // Extract remaining geometric quantities
-    const Real sth = sin_theta_;
-    const Real cth = cos_theta_;
-
     // Extract metric terms
     Real &g11 = g(I11,i);
     Real &g22 = g(I22,i);
@@ -300,24 +231,20 @@ void AffineCoordinate::CellMetric(const int k, const int j, const int il, const 
     // Set metric terms, we only use covariant g for all calculations
     g11 = 1.0;
     g22 = 1.0;
-    g12 = cth;
-    g13 = 0;
-    g23 = 0;
+    g12 = 0.0;
+    g13 = 0.0;
+    g23 = cos_theta_;
     g33 = 1.0;
 
-    gi11 = 1.0/(sth*sth);
-    gi22 = 1.0/(sth*sth);
-    gi33 = 1.0;
+    gi11 = 1.0;
+    gi22 = 1.0/(sin_theta_*sin_theta_);
+    gi33 = 1.0/(sin_theta_*sin_theta_);
   }
   return;
 }
 
 void AffineCoordinate::Face1Metric(const int k, const int j, const int il, const int iu,
                                AthenaArray<Real> &g, AthenaArray<Real> &g_inv) {
-  // Extract geometric quantities that do not depend on r
-  const Real sth = sin_theta_;
-  const Real cth = cos_theta_;
-
   // Go through 1D block of cells
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
@@ -339,24 +266,20 @@ void AffineCoordinate::Face1Metric(const int k, const int j, const int il, const
     // Set metric terms, we only use covariant g for all calculations
     g11 = 1.0;
     g22 = 1.0;
-    g12 = cth;
-    g13 = 0;
-    g23 = 0;
+    g12 = 0.0;
+    g13 = 0.0;
+    g23 = cos_theta_;
     g33 = 1.0;
 
-    gi11 = 1.0/(sth*sth);
-    gi22 = 1.0/(sth*sth);
-    gi33 = 1.0;
+    gi11 = 1.0;
+    gi22 = 1.0/(sin_theta_*sin_theta_);
+    gi33 = 1.0/(sin_theta_*sin_theta_);
   }
   return;
 }
 
 void AffineCoordinate::Face2Metric(const int k, const int j, const int il, const int iu,
                                AthenaArray<Real> &g, AthenaArray<Real> &g_inv) {
-  // Extract geometric quantities that do not depend on r
-  const Real sth = sin_theta_;
-  const Real cth = cos_theta_;
-
   // Go through 1D block of cells
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
@@ -378,24 +301,20 @@ void AffineCoordinate::Face2Metric(const int k, const int j, const int il, const
     // Set metric terms, we only use covariant g for all calculations
     g11 = 1.0;
     g22 = 1.0;
-    g12 = cth;
-    g13 = 0;
-    g23 = 0;
+    g12 = 0.0;
+    g13 = 0.0;
+    g23 = cos_theta_;
     g33 = 1.0;
 
-    gi11 = 1.0/(sth*sth);
-    gi22 = 1.0/(sth*sth);
-    gi33 = 1.0;
+    gi11 = 1.0;
+    gi22 = 1.0/(sin_theta_*sin_theta_);
+    gi33 = 1.0/(sin_theta_*sin_theta_);
   }
   return;
 }
 
 void AffineCoordinate::Face3Metric(const int k, const int j, const int il, const int iu,
                                AthenaArray<Real> &g, AthenaArray<Real> &g_inv) {
-  // Extract geometric quantities that do not depend on r
-  const Real sth = sin_theta_;
-  const Real cth = cos_theta_;
-
   // Go through 1D block of cells
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
@@ -417,14 +336,14 @@ void AffineCoordinate::Face3Metric(const int k, const int j, const int il, const
     // Set metric terms, we only use covariant g for all calculations
     g11 = 1.0;
     g22 = 1.0;
-    g12 = cth;
+    g12 = 0.0;
     g13 = 0.0;
-    g23 = 0.0;
+    g23 = cos_theta_;
     g33 = 1.0;
 
-    gi11 = 1.0/(sth*sth);
-    gi22 = 1.0/(sth*sth);
-    gi33 = 1.0;
+    gi11 = 1.0;
+    gi22 = 1.0/(sin_theta_*sin_theta_);
+    gi33 = 1.0/(sin_theta_*sin_theta_);
   }
   return;
 }
@@ -439,189 +358,143 @@ void AffineCoordinate::Face3Metric(const int k, const int j, const int il, const
 // Outputs:
 //   prim_l: values overwritten in local coordinates
 //   prim_r: values overwritten in local coordinates
-// Notes:
-//   
-
-void AffineCoordinate::PrimToLocal1(
-    const int k, const int j, const int il, const int iu,
-    AthenaArray<Real> &prim_l, AthenaArray<Real> &prim_r) {
-  // Calculate metric coefficients for projection
-  Face1Metric(k, j, il, iu, g_, gi_);
-
-  // Go through 1D block of cells
-#pragma omp simd
-  for (int i=il; i<=iu; ++i) {
-    Real &g11 = g_(I11,i);
-    Real &g22 = g_(I22,i);
-    Real &g33 = g_(I33,i);
-
-    Real &gi11 = gi_(I11,i);
-    Real &gi22 = gi_(I22,i);
-    Real &gi33 = gi_(I33,i);
-
-    Real &g12 = g_(I12,i);
-    Real &g13 = g_(I13,i);
-    Real &g23 = g_(I23,i);
-
-    // Extract global projected 4-velocities
-    Real uu1_l = prim_l(IVX,i);
-    Real uu2_l = prim_l(IVY,i);
-    Real uu3_l = prim_l(IVZ,i);
-    Real uu1_r = prim_r(IVX,i);
-    Real uu2_r = prim_r(IVY,i);
-    Real uu3_r = prim_r(IVZ,i);
-
-    // Calculate transformation matrix
-    Real T11 = 1.0/sqrt(gi11);
-    Real T12 = 0.0;
-    Real T13 = 0.0;
-    Real T21 = g12/sqrt(g22);
-    Real T22 = sqrt(g22);
-    Real T23 = g23/sqrt(g22);
-    Real T31 = g13/sqrt(g33);
-    Real T32 = g23/sqrt(g33);
-    Real T33 = sqrt(g33);
-
-    // Transform projected 4-velocities
-    // Differ from Schwartzchild here only...
-    Real ux_l = T11*uu1_l+T12*uu2_l+T13*uu3_l;
-    Real uy_l = T21*uu1_l+T22*uu2_l+T23*uu3_l;
-    Real uz_l = T31*uu1_l+T32*uu2_l+T33*uu3_l;
-    Real ux_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
-    Real uy_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
-    Real uz_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
-
-    // Set local projected 4-velocities
-    prim_l(IVX,i) = ux_l;
-    prim_l(IVY,i) = uy_l;
-    prim_l(IVZ,i) = uz_l;
-    prim_r(IVX,i) = ux_r;
-    prim_r(IVY,i) = uy_r;
-    prim_r(IVZ,i) = uz_r;
-  }
-  return;
-}
-
-// Function for transforming x2 and x3 are similar
-// We still use i-bounds for the calculations
+// Notes: no notes
 
 void AffineCoordinate::PrimToLocal2(
-    const int k, const int j, const int il, const int iu,
-    AthenaArray<Real> &prim_l, AthenaArray<Real> &prim_r) {
+      const int k, const int j, const int il, const int iu,
+      const AthenaArray<Real> &b1_vals, AthenaArray<Real> &prim_left,
+      AthenaArray<Real> &prim_right, AthenaArray<Real> &bx) {
   // Calculate metric coefficients for projection
-  Face2Metric(k, j, il, iu, g_, gi_);
+  // Face2Metric(k, j, il, iu, g_, gi_);
 
   // Go through 1D block of cells
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
-    Real &g11 = g_(I11,i);
-    Real &g22 = g_(I22,i);
-    Real &g33 = g_(I33,i);
+    // Real &g11 = g_(I11,i);
+    // Real &g22 = g_(I22,i);
+    // Real &g33 = g_(I33,i);
 
-    Real &gi11 = gi_(I11,i);
-    Real &gi22 = gi_(I22,i);
-    Real &gi33 = gi_(I33,i);
+    // Real &gi11 = gi_(I11,i);
+    // Real &gi22 = gi_(I22,i);
+    // Real &gi33 = gi_(I33,i);
 
-    Real &g12 = g_(I12,i);
-    Real &g13 = g_(I13,i);
-    Real &g23 = g_(I23,i);
+    // Real &g12 = g_(I12,i);
+    // Real &g13 = g_(I13,i);
+    // Real &g23 = g_(I23,i);
 
     // Extract global projected 4-velocities
-    Real uu1_l = prim_l(IVX,i);
-    Real uu2_l = prim_l(IVY,i);
-    Real uu3_l = prim_l(IVZ,i);
-    Real uu1_r = prim_r(IVX,i);
-    Real uu2_r = prim_r(IVY,i);
-    Real uu3_r = prim_r(IVZ,i);
+    Real uu1_l = prim_left(IVX,i);
+    Real uu2_l = prim_left(IVY,i);
+    Real uu3_l = prim_left(IVZ,i);
+    Real uu1_r = prim_right(IVX,i);
+    Real uu2_r = prim_right(IVY,i);
+    Real uu3_r = prim_right(IVZ,i);
 
-    // Calculate transformation matrix
-    Real T11 = sqrt(g11);
-    Real T12 = g12/sqrt(g11);
-    Real T13 = g13/sqrt(g11);
-    Real T21 = 0.0;
-    Real T22 = 1.0/sqrt(gi22);
-    Real T23 = 0.0;
-    Real T31 = g13/sqrt(g33);
-    Real T32 = g23/sqrt(g33);
-    Real T33 = sqrt(g33);
+    // // Calculate transformation matrix
+    // Real T11 = sqrt(g11);
+    // Real T12 = g12/sqrt(g11);
+    // Real T13 = g13/sqrt(g11);
+    // Real T21 = 0.0;
+    // Real T22 = 1.0/sqrt(gi22);
+    // Real T23 = 0.0;
+    // Real T31 = g13/sqrt(g33);
+    // Real T32 = g23/sqrt(g33);
+    // Real T33 = sqrt(g33);
 
-    // Transform projected 4-velocities
-    // Differ from Schwartzchild here only...
-    Real ux_l = T11*uu1_l+T12*uu2_l+T13*uu3_l;
-    Real uy_l = T21*uu1_l+T22*uu2_l+T23*uu3_l;
-    Real uz_l = T31*uu1_l+T32*uu2_l+T33*uu3_l;
-    Real ux_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
-    Real uy_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
-    Real uz_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
+    // // Transform projected 4-velocities
+    // // Differ from Schwartzchild here only...
+    // Real ux_l = T11*uu1_l+T12*uu2_l+T13*uu3_l;
+    // Real uy_l = T21*uu1_l+T22*uu2_l+T23*uu3_l;
+    // Real uz_l = T31*uu1_l+T32*uu2_l+T33*uu3_l;
+    // Real ux_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
+    // Real uy_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
+    // Real uz_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
+
+    // affine: quick
+    Real ux_l = uu1_l;
+    Real uy_l = uu2_l*sin_theta_;
+    Real uz_l = uu2_l*cos_theta_+uu3_l;
+    Real ux_r = uu1_r;
+    Real uy_r = uu2_r*sin_theta_;
+    Real uz_r = uu2_r*cos_theta_+uu3_r;
 
     // Set local projected 4-velocities
-    prim_l(IVX,i) = ux_l;
-    prim_l(IVY,i) = uy_l;
-    prim_l(IVZ,i) = uz_l;
-    prim_r(IVX,i) = ux_r;
-    prim_r(IVY,i) = uy_r;
-    prim_r(IVZ,i) = uz_r;
+    prim_left(IVX,i) = ux_l;
+    prim_left(IVY,i) = uy_l;
+    prim_left(IVZ,i) = uz_l;
+    prim_right(IVX,i) = ux_r;
+    prim_right(IVY,i) = uy_r;
+    prim_right(IVZ,i) = uz_r;
   }
   return;
 }
 
 
 void AffineCoordinate::PrimToLocal3(
-    const int k, const int j, const int il, const int iu,
-    AthenaArray<Real> &prim_l, AthenaArray<Real> &prim_r) {
+      const int k, const int j, const int il, const int iu,
+      const AthenaArray<Real> &b1_vals, AthenaArray<Real> &prim_left,
+      AthenaArray<Real> &prim_right, AthenaArray<Real> &bx) {
   // Calculate metric coefficients for projection
-  Face3Metric(k, j, il, iu, g_, gi_);
+  // Face3Metric(k, j, il, iu, g_, gi_);
 
   // Go through 1D block of cells
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
-    Real &g11 = g_(I11,i);
-    Real &g22 = g_(I22,i);
-    Real &g33 = g_(I33,i);
+    // Real &g11 = g_(I11,i);
+    // Real &g22 = g_(I22,i);
+    // Real &g33 = g_(I33,i);
 
-    Real &gi11 = gi_(I11,i);
-    Real &gi22 = gi_(I22,i);
-    Real &gi33 = gi_(I33,i);
+    // Real &gi11 = gi_(I11,i);
+    // Real &gi22 = gi_(I22,i);
+    // Real &gi33 = gi_(I33,i);
 
-    Real &g12 = g_(I12,i);
-    Real &g13 = g_(I13,i);
-    Real &g23 = g_(I23,i);
+    // Real &g12 = g_(I12,i);
+    // Real &g13 = g_(I13,i);
+    // Real &g23 = g_(I23,i);
 
     // Extract global projected 4-velocities
-    Real uu1_l = prim_l(IVX,i);
-    Real uu2_l = prim_l(IVY,i);
-    Real uu3_l = prim_l(IVZ,i);
-    Real uu1_r = prim_r(IVX,i);
-    Real uu2_r = prim_r(IVY,i);
-    Real uu3_r = prim_r(IVZ,i);
+    Real uu1_l = prim_left(IVX,i);
+    Real uu2_l = prim_left(IVY,i);
+    Real uu3_l = prim_left(IVZ,i);
+    Real uu1_r = prim_right(IVX,i);
+    Real uu2_r = prim_right(IVY,i);
+    Real uu3_r = prim_right(IVZ,i);
 
     // Calculate transformation matrix
-    Real T11 = sqrt(g11);
-    Real T12 = g12/sqrt(g11);
-    Real T13 = g13/sqrt(g11);
-    Real T21 = g12/sqrt(g22);
-    Real T22 = sqrt(g22);
-    Real T23 = g23/sqrt(g22);
-    Real T31 = 0.0;
-    Real T32 = 0.0;
-    Real T33 = 1.0/sqrt(gi33);
+    // Real T11 = sqrt(g11);
+    // Real T12 = g12/sqrt(g11);
+    // Real T13 = g13/sqrt(g11);
+    // Real T21 = g12/sqrt(g22);
+    // Real T22 = sqrt(g22);
+    // Real T23 = g23/sqrt(g22);
+    // Real T31 = 0.0;
+    // Real T32 = 0.0;
+    // Real T33 = 1.0/sqrt(gi33);
 
     // Transform projected 4-velocities
     // Differ from Schwartzchild here only...
-    Real ux_l = T11*uu1_l+T12*uu2_l+T13*uu3_l;
-    Real uy_l = T21*uu1_l+T22*uu2_l+T23*uu3_l;
-    Real uz_l = T31*uu1_l+T32*uu2_l+T33*uu3_l;
-    Real ux_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
-    Real uy_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
-    Real uz_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
+    // Real ux_l = T11*uu1_l+T12*uu2_l+T13*uu3_l;
+    // Real uy_l = T21*uu1_l+T22*uu2_l+T23*uu3_l;
+    // Real uz_l = T31*uu1_l+T32*uu2_l+T33*uu3_l;
+    // Real ux_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
+    // Real uy_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
+    // Real uz_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
+
+    // affine: simple form
+    Real ux_l = uu1_l;
+    Real uy_l = uu2_l+uu3_l*cos_theta_;
+    Real uz_l = uu3_l*sin_theta_;
+    Real ux_r = uu1_r;
+    Real uy_r = uu2_r+uu3_r*cos_theta_;
+    Real uz_r = uu3_r*sin_theta_;
 
     // Set local projected 4-velocities
-    prim_l(IVX,i) = ux_l;
-    prim_l(IVY,i) = uy_l;
-    prim_l(IVZ,i) = uz_l;
-    prim_r(IVX,i) = ux_r;
-    prim_r(IVY,i) = uy_r;
-    prim_r(IVZ,i) = uz_r;
+    prim_left(IVX,i) = ux_l;
+    prim_left(IVY,i) = uy_l;
+    prim_left(IVZ,i) = uz_l;
+    prim_right(IVX,i) = ux_r;
+    prim_right(IVY,i) = uy_r;
+    prim_right(IVZ,i) = uz_r;
   }
   return;
 }
@@ -642,59 +515,10 @@ void AffineCoordinate::PrimToLocal3(
 //   expects values and x-fluxes of Mx/My/Mz in IM1/IM2/IM3 slots
 //   puts r-fluxes of M1/M2/M3 in IM1/IM2/IM3 slots
 
-void AffineCoordinate::FluxToGlobal1(
-    const int k, const int j, const int il, const int iu, AthenaArray<Real> &flux) {
-  // Extract metrics
-  Face1Metric(k, j, il, iu, g_, gi_);
-
-  // Go through 1D block of cells
-#pragma omp simd
-  for (int i=il; i<=iu; ++i) {
-    // Extract metric tensors
-    Real &g11 = g_(I11,i);
-    Real &g22 = g_(I22,i);
-    Real &g33 = g_(I33,i);
-
-    Real &gi11 = gi_(I11,i);
-    Real &gi22 = gi_(I22,i);
-    Real &gi33 = gi_(I33,i);
-
-    Real &g12 = g_(I12,i);
-    Real &g13 = g_(I13,i);
-    Real &g23 = g_(I23,i);
-
-    // Extract local conserved quantities and fluxes
-    const Real txx = flux(IM1,k,j,i);
-    const Real txy = flux(IM2,k,j,i);
-    const Real txz = flux(IM3,k,j,i);
-
-    // Calculate transformation matrix
-    const Real D = g22*g33-g23*g23;
-    Real T11 = sqrt(gi11);
-    Real T12 = 0.0;
-    Real T13 = 0.0;
-    Real T21 = sqrt(gi11)*(g23*g13-g12*g33)/D;
-    Real T22 = g33*sqrt(g22)/D;
-    Real T23 = -g23*sqrt(g33)/D;
-    Real T31 = sqrt(gi11)*(g12*g23-g13*g22)/D;
-    Real T32 = -g23*sqrt(g22)/D;
-    Real T33 = g22*sqrt(g33)/D;
-
-    // Extract global fluxes
-    Real &t1_1 = flux(IM1,k,j,i);
-    Real &t1_2 = flux(IM2,k,j,i);
-    Real &t1_3 = flux(IM3,k,j,i);
-
-    // Set fluxes
-    t1_1 = T11*txx+T12*txy+T13*txz;
-    t1_2 = T21*txx+T22*txy+T23*txz;
-    t1_3 = T31*txx+T32*txy+T33*txz;
-  }
-  return;
-}
-
 void AffineCoordinate::FluxToGlobal2(
-    const int k, const int j, const int il, const int iu, AthenaArray<Real> &flux) {
+      const int k, const int j, const int il, const int iu,
+      const AthenaArray<Real> &cons, const AthenaArray<Real> &bbx,
+      AthenaArray<Real> &flux, AthenaArray<Real> &ey, AthenaArray<Real> &ez) {
   // Extract metrics
   Face2Metric(k, j, il, iu, g_, gi_);
 
@@ -702,17 +526,17 @@ void AffineCoordinate::FluxToGlobal2(
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     // Extract metric tensors
-    Real &g11 = g_(I11,i);
-    Real &g22 = g_(I22,i);
-    Real &g33 = g_(I33,i);
+    // Real &g11 = g_(I11,i);
+    // Real &g22 = g_(I22,i);
+    // Real &g33 = g_(I33,i);
 
-    Real &gi11 = gi_(I11,i);
-    Real &gi22 = gi_(I22,i);
-    Real &gi33 = gi_(I33,i);
+    // Real &gi11 = gi_(I11,i);
+    // Real &gi22 = gi_(I22,i);
+    // Real &gi33 = gi_(I33,i);
 
-    Real &g12 = g_(I12,i);
-    Real &g13 = g_(I13,i);
-    Real &g23 = g_(I23,i);
+    // Real &g12 = g_(I12,i);
+    // Real &g13 = g_(I13,i);
+    // Real &g23 = g_(I23,i);
 
     // Extract local conserved quantities and fluxes
     const Real txx = flux(IM1,k,j,i);
@@ -720,16 +544,16 @@ void AffineCoordinate::FluxToGlobal2(
     const Real txz = flux(IM3,k,j,i);
 
     // Calculate transformation matrix
-    const Real D = g11*g33-g13*g13;
-    Real T11 = g33*sqrt(g11)/D;
-    Real T12 = sqrt(gi22)*(g13*g23-g12*g33)/D;
-    Real T13 = -g13*sqrt(g33)/D;
-    Real T21 = 0.0;
-    Real T22 = sqrt(gi22);
-    Real T23 = 0.0;
-    Real T31 = -g13*sqrt(g11)/D;
-    Real T32 = sqrt(gi22)*(g12*g13-g23*g11)/D;
-    Real T33 = g11*sqrt(g33)/D;
+    // const Real D = g11*g33-g13*g13;
+    // Real T11 = g33*sqrt(g11)/D;
+    // Real T12 = sqrt(gi22)*(g13*g23-g12*g33)/D;
+    // Real T13 = -g13*sqrt(g33)/D;
+    // Real T21 = 0.0;
+    // Real T22 = sqrt(gi22);
+    // Real T23 = 0.0;
+    // Real T31 = -g13*sqrt(g11)/D;
+    // Real T32 = sqrt(gi22)*(g12*g13-g23*g11)/D;
+    // Real T33 = g11*sqrt(g33)/D;
 
     // Extract global fluxes
     Real &t1_1 = flux(IM1,k,j,i);
@@ -737,15 +561,17 @@ void AffineCoordinate::FluxToGlobal2(
     Real &t1_3 = flux(IM3,k,j,i);
 
     // Set fluxes
-    t1_1 = T11*txx+T12*txy+T13*txz;
-    t1_2 = T21*txx+T22*txy+T23*txz;
-    t1_3 = T31*txx+T32*txy+T33*txz;
+    t1_1 = txx;
+    t1_2 = txy/sin_theta_;
+    t1_3 = -txy*cos_theta_/sin_theta_+txz;
   }
   return;
 }
 
 void AffineCoordinate::FluxToGlobal3(
-    const int k, const int j, const int il, const int iu, AthenaArray<Real> &flux) {
+      const int k, const int j, const int il, const int iu,
+      const AthenaArray<Real> &cons, const AthenaArray<Real> &bbx,
+      AthenaArray<Real> &flux, AthenaArray<Real> &ey, AthenaArray<Real> &ez)  {
   // Extract metrics
   Face3Metric(k, j, il, iu, g_, gi_);
 
@@ -753,17 +579,17 @@ void AffineCoordinate::FluxToGlobal3(
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     // Extract metric tensors
-    Real &g11 = g_(I11,i);
-    Real &g22 = g_(I22,i);
-    Real &g33 = g_(I33,i);
+    // Real &g11 = g_(I11,i);
+    // Real &g22 = g_(I22,i);
+    // Real &g33 = g_(I33,i);
 
-    Real &gi11 = gi_(I11,i);
-    Real &gi22 = gi_(I22,i);
-    Real &gi33 = gi_(I33,i);
+    // Real &gi11 = gi_(I11,i);
+    // Real &gi22 = gi_(I22,i);
+    // Real &gi33 = gi_(I33,i);
 
-    Real &g12 = g_(I12,i);
-    Real &g13 = g_(I13,i);
-    Real &g23 = g_(I23,i);
+    // Real &g12 = g_(I12,i);
+    // Real &g13 = g_(I13,i);
+    // Real &g23 = g_(I23,i);
 
     // Extract local conserved quantities and fluxes
     const Real txx = flux(IM1,k,j,i);
@@ -771,16 +597,16 @@ void AffineCoordinate::FluxToGlobal3(
     const Real txz = flux(IM3,k,j,i);
 
     // Calculate transformation matrix
-    const Real D = g11*g22-g12*g12;
-    Real T11 = g22*sqrt(g11)/D;
-    Real T12 = -g12*sqrt(g22)/D;
-    Real T13 = sqrt(gi33)*(g12*g23-g13*g22)/D;
-    Real T21 = -g12*sqrt(g11)/D;
-    Real T22 = g11*sqrt(g22)/D;
-    Real T23 = sqrt(gi33)*(g12*g13-g23*g11)/D;
-    Real T31 = 0.0;
-    Real T32 = 0.0;
-    Real T33 = sqrt(gi33);
+    // const Real D = g11*g22-g12*g12;
+    // Real T11 = g22*sqrt(g11)/D;
+    // Real T12 = -g12*sqrt(g22)/D;
+    // Real T13 = sqrt(gi33)*(g12*g23-g13*g22)/D;
+    // Real T21 = -g12*sqrt(g11)/D;
+    // Real T22 = g11*sqrt(g22)/D;
+    // Real T23 = sqrt(gi33)*(g12*g13-g23*g11)/D;
+    // Real T31 = 0.0;
+    // Real T32 = 0.0;
+    // Real T33 = sqrt(gi33);
 
     // Extract global fluxes
     Real &t1_1 = flux(IM1,k,j,i);
@@ -788,9 +614,9 @@ void AffineCoordinate::FluxToGlobal3(
     Real &t1_3 = flux(IM3,k,j,i);
 
     // Set fluxes
-    t1_1 = T11*txx+T12*txy+T13*txz;
-    t1_2 = T21*txx+T22*txy+T23*txz;
-    t1_3 = T31*txx+T32*txy+T33*txz;
+    t1_1 = txx;
+    t1_2 = txy-txz*cos_theta_/sin_theta_;
+    t1_3 = txz/sin_theta_;
   }
   return;
 }

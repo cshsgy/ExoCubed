@@ -17,8 +17,15 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
         phydro->u(IM2,k,j,is) = -uphi;
       else
         phydro->u(IM2,k,j,is) = uphi;
+#ifdef AFFINE
+      Real x1_car = pcoord->x2v(j) + pcoord->x3v(k) * cos(PI/3.0);
+      Real x2_car = pcoord->x3v(k) * sin(PI/3.0);
+      Real rad = sqrt(x1_car*x1_car + x2_car*x2_car);
+#else
+      Real rad = sqrt(pcoord->x3v(k) * pcoord->x3v(k) + pcoord->x2v(j) * pcoord->x2v(j));
+#endif
 
-      if (pcoord->x2v(j) > 0. && pcoord->x2v(j) < 5.)
+      if (rad < 2.) // Circular dam breaking
         phydro->u(IDN,k,j,is) += dphi;
     }
 }

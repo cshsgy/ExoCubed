@@ -46,26 +46,27 @@ void Hydro::RiemannSolver(const int k, const int j, const int il, const int iu,
   Real gm1 = gamma - 1.0;
   Real igm1 = 1.0/gm1;
 
-#if defined(AFFINE)// need of projection
+  AthenaArray<Real> empty{};
+#ifdef AFFINE// need of projection
   {
     switch (ivx) {
       case IVX:
-        pmb->pcoord->PrimToLocal1(k, j, il, iu, prim_l, prim_r);
+        pmy_block->pcoord->PrimToLocal2(k, j, il, iu, empty, wl, wr, empty);
         break;
       case IVY:
-        pmb->pcoord->PrimToLocal2(k, j, il, iu, prim_l, prim_r);
+        pmy_block->pcoord->PrimToLocal3(k, j, il, iu, empty, wl, wr, empty);
         break;
     }
   }
 #endif // AFFINE
-#if defined(CUBED_SPHERE)// need of projection
+#ifdef CUBED_SPHERE// need of projection
   {
     switch (ivx) {
       case IVY:
-        pmb->pcoord->PrimToLocal2(k, j, il, iu, prim_l, prim_r);
+        pmy_block->pcoord->PrimToLocal2(k, j, il, iu, empty, wl, wr, empty);
         break;
       case IVZ:
-        pmb->pcoord->PrimToLocal3(k, j, il, iu, prim_l, prim_r);
+        pmy_block->pcoord->PrimToLocal3(k, j, il, iu, empty, wl, wr, empty);
         break;
     }
   }
@@ -200,26 +201,26 @@ void Hydro::RiemannSolver(const int k, const int j, const int il, const int iu,
     flx(ivz,k,j,i) = flxi[IVZ];
     flx(IEN,k,j,i) = flxi[IEN];
   }
-#if defined(AFFINE) // need of deprojection
+#ifdef AFFINE // need of deprojection
   {
     switch (ivx) {
       case IVX:
-        pmb->pcoord->FluxToGlobal1(k, j, il, iu, flux);
+        pmy_block->pcoord->FluxToGlobal2(k, j, il, iu, empty, empty, flx, empty, empty);
         break;
       case IVY:
-        pmb->pcoord->FluxToGlobal2(k, j, il, iu, flux);
+        pmy_block->pcoord->FluxToGlobal3(k, j, il, iu, empty, empty, flx, empty, empty);
         break;
     }
   }
 #endif  // AFFINE
-#if defined(CUBED_SPHERE) // need of deprojection
+#ifdef CUBED_SPHERE // need of deprojection
   {
     switch (ivx) {
-      case IVY:
-        pmb->pcoord->FluxToGlobal2(k, j, il, iu, flux);
+      case IVX:
+        pmy_block->pcoord->FluxToGlobal2(k, j, il, iu, empty, empty, flx, empty, empty);
         break;
-      case IVZ:
-        pmb->pcoord->FluxToGlobal3(k, j, il, iu, flux);
+      case IVY:
+        pmy_block->pcoord->FluxToGlobal3(k, j, il, iu, empty, empty, flx, empty, empty);
         break;
     }
   }
