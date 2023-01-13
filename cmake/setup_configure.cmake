@@ -91,7 +91,7 @@ else()
 endif()
 
 # Affine Coordinates flag
-option(UseAffine "Enable Affine Coordinate" ON)
+option(UseAffine "Enable Affine Coordinate" OFF)
 
 # Affine Coordinates flag
 if (${UseAffine})
