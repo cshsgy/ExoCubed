@@ -52,5 +52,5 @@ nx3       = 128
 
 <problem>
 phi       = 10.
-uphi      = 10.
+uphi      = 0.
 dphi      = 2.
