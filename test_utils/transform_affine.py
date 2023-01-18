@@ -1,8 +1,8 @@
 # This util is used to transform the affine coordinate netcdf output 
 # to be compared with the cartesian outputs
 #! /usr/bin/env python3
-import matplotlib
-matplotlib.use('Agg')
+import matplotlib as mpl
+mpl.use('Agg')
 from matplotlib import pyplot as plt
 import argparse, os, shutil
 import netCDF4 as nc
@@ -11,18 +11,19 @@ from scipy.interpolate import interp2d
 from tqdm import tqdm
 
 fig = plt.figure()
+fig.set_size_inches(14.5, 6.5)
 
 # Set constants
 transform_angle = np.pi/3
-n = 500 # Final resolution
+n = 200 # Final resolution
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--input',
-    default = '../build/bin/affine_results/sw.out2.00000.nc',
+    default = '../build/bin/affine_results/sw.out2.00200.nc',
     help = 'file to be transformed and plotted'
     )
 parser.add_argument('-c', '--compare',
-    default = '../build/bin/sw.out2.00000.nc',
+    default = '../build/bin/cart_results/sw.out2.00200.nc',
     help = 'file to be compared with'
     )
 args = vars(parser.parse_args())
@@ -62,12 +63,16 @@ for i in tqdm(range(n)):
         # Do interpolation
         rhot[j,i] = f(x2_now,x3_now)
 
-ax = fig.add_subplot(121)
-ax.contourf(x2t,x3t,rhot)
-ax.set_xlim([-6,6])
-ax.set_ylim([-6,6])
-ax.set_clim([10,12])
+ax = fig.add_subplot(131)
+ax.contourf(x2t,x3t,rhot,cmap='Reds')
+ax.set_xlim([-4,4])
+ax.set_ylim([-4,4])
+ax.set_xlabel("x_2")
+ax.set_ylabel("x_3")
 ax.set_aspect(1)
+
+ax3 = fig.add_subplot(133)
+ax3.plot(x2t, rhot[int(rhot.shape[0]/2),:])
 
 # Compare file
 fn = args['compare']
@@ -100,11 +105,18 @@ for i in tqdm(range(n)):
         # Do interpolation
         rhot[j,i] = f(x2_now,x3_now)
 
-ax = fig.add_subplot(122)
-ax.contourf(x2t,x3t,rhot)
-ax.set_xlim([-6,6])
-ax.set_ylim([-6,6])
-ax.set_clim([10,12])
+ax = fig.add_subplot(132)
+ax.contourf(x2t,x3t,rhot,cmap='Reds')
+ax.set_xlim([-4,4])
+ax.set_ylim([-4,4])
+ax.set_xlabel("x_2")
+ax.set_ylabel("x_3")
 ax.set_aspect(1)
+
+ax3.plot(x2t, rhot[int(rhot.shape[0]/2),:])
+ax3.set_xlim([-4,4])
+ax3.set_xlabel("x_2")
+ax3.set_ylabel("H")
+ax3.set_aspect(4)
 
 fig.savefig(tmp_fign)
