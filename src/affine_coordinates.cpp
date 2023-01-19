@@ -15,6 +15,7 @@ AffineCoordinate::AffineCoordinate(MeshBlock *pmb, ParameterInput *pin, bool fla
   // Send something to confirm that we are using Affine
   std::cout << "===Note===: Affine coordinates activated" << std::endl;
   theta_ = PI/3.;
+  //theta_ = PI/2.;
   sin_theta_ = sin(theta_);
   cos_theta_ = cos(theta_);
 
@@ -124,7 +125,7 @@ void AffineCoordinate::Face2Area(const int k, const int j, const int il, const i
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     Real& area_i = area(i);
-    area_i = sin_theta_*dx1f(i)*dx3f(k);
+    area_i = dx1f(i)*dx3f(k);
   }
   return;
 }
@@ -134,7 +135,7 @@ void AffineCoordinate::Face3Area(const int k, const int j, const int il, const i
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     Real& area_i = area(i);
-    area_i = sin_theta_*dx1f(i)*dx2f(j);
+    area_i = dx1f(i)*dx2f(j);
   }
   return;
 }
@@ -147,11 +148,11 @@ Real AffineCoordinate::GetFace1Area(const int k, const int j, const int i) {
 }
 
 Real AffineCoordinate::GetFace2Area(const int k, const int j, const int i) {
-  return dx1f(i)*dx3f(k)*sin_theta_;
+  return dx1f(i)*dx3f(k);
 }
 
 Real AffineCoordinate::GetFace3Area(const int k, const int j, const int i) {
-  return dx1f(i)*dx2f(j)*sin_theta_;
+  return dx1f(i)*dx2f(j);
 }
 
 //----------------------------------------------------------------------------------------
@@ -174,7 +175,7 @@ void AffineCoordinate::VolCenterFace2Area(const int k, const int j, const int il
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     Real& area_i = area(i);
-    area_i = dx1v(i)*dx3v(k)*sin_theta_;
+    area_i = dx1v(i)*dx3v(k);
   }
   return;
 }
@@ -184,7 +185,7 @@ void AffineCoordinate::VolCenterFace3Area(const int k, const int j, const int il
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     Real& area_i = area(i);
-    area_i = dx1v(i)*dx2v(j)*sin_theta_;
+    area_i = dx1v(i)*dx2v(j);
   }
   return;
 }

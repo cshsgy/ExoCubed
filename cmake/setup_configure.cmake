@@ -39,6 +39,7 @@ set_property(CACHE RiemannSolver
   PROPERTY STRINGS
   hllc
   roe_shallow_water
+  lmars_shallow_water
   )
 
 # hydrostatic flag
