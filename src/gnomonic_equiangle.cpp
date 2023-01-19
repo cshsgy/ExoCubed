@@ -129,17 +129,11 @@ Real GnomonicEquiangle::GetFace1Area(const int k, const int j, const int i) {
 }
 
 Real GnomonicEquiangle::GetFace2Area(const int k, const int j, const int i) {
-  Real xt = tan(x2f(j));
-  Real yt = tan(x3v(k));
-  Real sin_theta = sqrt((1.0+xt*xt+yt*yt)/(1.0+xt*xt)/(1.0+yt*yt));
-  return dx1f(i)*dx3f(k)*sin_theta;
+  return dx1f(i)*dx3f(k);
 }
 
 Real GnomonicEquiangle::GetFace3Area(const int k, const int j, const int i) {
-  Real xt = tan(x2v(j));
-  Real yt = tan(x3f(k));
-  Real sin_theta = sqrt((1.0+xt*xt+yt*yt)/(1.0+xt*xt)/(1.0+yt*yt));
-  return dx1f(i)*dx2f(j)*sin_theta;
+  return dx1f(i)*dx2f(j);
 }
 
 //----------------------------------------------------------------------------------------
@@ -162,26 +156,20 @@ void GnomonicEquiangle::VolCenterFace1Area(const int k, const int j, const int i
 
 void GnomonicEquiangle::VolCenterFace2Area(const int k, const int j, const int il, const int iu,
                                      AthenaArray<Real> &area) {
-  Real xt = tan(x2f(j));
-  Real yt = tan(x3v(k));
-  Real sin_theta = sqrt((1.0+xt*xt+yt*yt)/(1.0+xt*xt)/(1.0+yt*yt));
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     Real& area_i = area(i);
-    area_i = dx1v(i)*dx3v(k)*sin_theta;
+    area_i = dx1v(i)*dx3v(k);
   }
   return;
 }
 
 void GnomonicEquiangle::VolCenterFace3Area(const int k, const int j, const int il, const int iu,
                                      AthenaArray<Real> &area) {
-  Real xt = tan(x2v(j));
-  Real yt = tan(x3f(k));
-  Real sin_theta = sqrt((1.0+xt*xt+yt*yt)/(1.0+xt*xt)/(1.0+yt*yt));
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     Real& area_i = area(i);
-    area_i = dx1v(i)*dx2v(j)*sin_theta;
+    area_i = dx1v(i)*dx2v(j);
   }
   return;
 }
