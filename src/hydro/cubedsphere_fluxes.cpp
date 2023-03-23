@@ -66,8 +66,20 @@ void Hydro::SendNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
     int ox2_bkp = ox2;
     int ox3_bkp = ox3;
     bool invDir, Left; // Marking whether need to reverse direction in packing or unpacking; Left marking left or right.
+    int target_dir; // Up=0, Down=1, Left=2, Right=3
+    // Number of counter-clockwise rotations needed to match target coord system
+    const int rot[6][4] = { // To access: rot[source_id][target_dir]
+        {2,0,1,3},
+        {0,0,0,0},
+        {3,1,0,0},
+        {1,3,0,0},
+        {0,2,3,1},
+        {2,2,0,0}
+    } ;
+
     // Hard code the boundary cases
-    if(local_lx2==bound_lim && ox2==1){
+    if(local_lx2==bound_lim && ox2==1){ // Down
+        target_dir = 1;
         TransformOxForCubedSphere(&ox2_bkp, &ox3_bkp, &tox2, &tox3, loc);
         Left = true;
         // Determine whether need to inverse direction
@@ -79,7 +91,8 @@ void Hydro::SendNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
             case 5: invDir = true; break;
             case 6: invDir = true; break;
         }
-    }else if(local_lx2==0 && ox2==-1){
+    }else if(local_lx2==0 && ox2==-1){ // Up
+        target_dir = 0;
         TransformOxForCubedSphere(&ox2_bkp, &ox3_bkp, &tox2, &tox3, loc);
         Left = false;
         switch(blockID){
@@ -90,7 +103,8 @@ void Hydro::SendNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
             case 5: invDir = false; break;
             case 6: invDir = true; break;
         }
-    }else if(local_lx3==bound_lim && ox3==1){
+    }else if(local_lx3==bound_lim && ox3==1){ // Right
+        target_dir = 3;
         TransformOxForCubedSphere(&ox2_bkp, &ox3_bkp, &tox2, &tox3, loc);
         Left = true;
         switch(blockID){
@@ -101,7 +115,8 @@ void Hydro::SendNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
             case 5: invDir = false; break;
             case 6: invDir = false; break;
         }
-    }else if(local_lx3==0 && ox3==-1){
+    }else if(local_lx3==0 && ox3==-1){ // Left
+        target_dir = 2;
         TransformOxForCubedSphere(&ox2_bkp, &ox3_bkp, &tox2, &tox3, loc);
         Left = false;
         switch(blockID){
@@ -156,24 +171,169 @@ void Hydro::SendNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
     int dsize = ((kb2 - kb1 + 1) * (jb2 - jb1 + 1) * (ib2 - ib1 + 1) * NWAVE);
     Real *data = new Real[dsize];
     int offset = 0;
+    // Added Feb 25: Calculate the basis vectors of source & target panels
     if (invDir){
         for (int n=0; n<NWAVE; n++)
             for (int k=kb2; k>=kb1; k--)
                 for (int j=jb2; j>=jb1; j--)
                     for (int i=ib1; i<=ib2; i++)
-                        if (Left)
-                            data[offset++] = L3DValues[DirNum](n,k,j,i);
-                        else
-                            data[offset++] = R3DValues[DirNum](k,j,i);
+                        if ((n==IVY)||(n==IVZ)){// Projection needed
+                            Real x2s,x3s,x2d,x3d; // Coordinates of source and dest
+                            Real pos_along;
+                            if(ox2==1){
+                                x2s = PI/4.0;
+                                x3s = pmb->pcoord->x3v(k); // Need to check, is k starting in the right position?
+                                pos_along = x3s;
+                            }else if(ox2==-1){
+                                x2s = -PI/4.0;
+                                x3s = pmb->pcoord->x3v(k);
+                                pos_along = x3s;
+                            }else if(ox3==1){
+                                x2s = pmb->pcoord->x2v(j);
+                                x3s = PI/4.0;
+                                pos_along = x2s;
+                            }else if(ox3==-1){
+                                x2s = pmb->pcoord->x2v(j);
+                                x3s = -PI/4.0;
+                                pos_along = x2s;
+                            }
+                            if(tox2==1){
+                                x2d = PI/4.0;
+                                x3d = -pos_along;
+                            }else if(tox2==-1){
+                                x2d = -PI/4.0;
+                                x3d = -pos_along;
+                            }else if(tox3==1){
+                                x2d = -pos_along;
+                                x3d = PI/4.0;
+                            }else if(tox3==-1){
+                                x2d = -pos_along;
+                                x3d = -PI/4.0;
+                            }
+                            // Angular positions to tan values
+                            x2d = tan(x2d);
+                            x2s = tan(x2s);
+                            x3d = tan(x3d);
+                            x3s = tan(x3s);                            
+                            // Calculate the transformation matrix
+                            Real o11, o12, o21, o22;
+                            Real s_sc = sqrt(1+x2s*x2s+x3s*x3s)/sqrt(1+x2s*x2s)/sqrt(1+x3s*x3s);
+                            Real c_sc = -x2s*x3s/sqrt(1+x2s*x2s)/sqrt(1+x3s*x3s);
+                            Real s_tg = sqrt(1+x2d*x2d+x3d*x3d)/sqrt(1+x2d*x2d)/sqrt(1+x3d*x3d);
+                            Real c_tg = -x2d*x3d/sqrt(1+x2d*x2d)/sqrt(1+x3d*x3d);
+                            o11 = 1.0;
+                            o12 = c_sc-c_tg/s_tg*s_sc;
+                            o21 = 0.0;
+                            o22 = s_sc/s_tg;
+                            for (int rt=0; rt<rot[blockID-1][target_dir]; rt++){
+                                Real o11t = -o21;
+                                Real o12t = -o22;
+                                Real o21t = o11;
+                                Real o22t = o12;
+                                o11 = o11t;
+                                o12 = o12t;
+                                o21 = o21t;
+                                o22 = o22t;
+                            }
+                            if(n==IVY){
+                                if (Left)
+                                    data[offset++] = o11*L3DValues[DirNum](IVY,k,j,i)+o12*L3DValues[DirNum](IVZ,k,j,i);
+                                else
+                                    data[offset++] = o11*R3DValues[DirNum](IVY,k,j,i)+o12*R3DValues[DirNum](IVZ,k,j,i);
+                            }
+                            else{ // n==IVZ
+                                if (Left)
+                                    data[offset++] = o21*L3DValues[DirNum](IVY,k,j,i)+o22*L3DValues[DirNum](IVZ,k,j,i);
+                                else
+                                    data[offset++] = o21*R3DValues[DirNum](IVY,k,j,i)+o22*R3DValues[DirNum](IVZ,k,j,i);
+                            }
+                        }
+                        else // No projection needed
+                            if (Left)
+                                data[offset++] = L3DValues[DirNum](n,k,j,i);
+                            else
+                                data[offset++] = R3DValues[DirNum](n,k,j,i);
     }else{
         for (int n=0; n<NWAVE; n++)
             for (int k=kb1; k<=kb2; k++)
                 for (int j=jb1; j<=jb2; j++)
                     for (int i=ib1; i<=ib2; i++)
-                        if (Left)
-                            data[offset++] = L3DValues[DirNum](n,k,j,i);
-                        else
-                            data[offset++] = R3DValues[DirNum](n,k,j,i);
+                        if ((n==IVY)||(n==IVZ)){// Projection needed
+                            Real x2s,x3s,x2d,x3d; // Coordinates of source and dest
+                            Real pos_along;
+                            if(ox2==1){
+                                x2s = PI/4.0;
+                                x3s = pmb->pcoord->x3v(k); // Need to check, is k starting in the right position?
+                                pos_along = x3s;
+                            }else if(ox2==-1){
+                                x2s = -PI/4.0;
+                                x3s = pmb->pcoord->x3v(k);
+                                pos_along = x3s;
+                            }else if(ox3==1){
+                                x2s = pmb->pcoord->x2v(j);
+                                x3s = PI/4.0;
+                                pos_along = x2s;
+                            }else if(ox3==-1){
+                                x2s = pmb->pcoord->x2v(j);
+                                x3s = -PI/4.0;
+                                pos_along = x2s;
+                            }
+                            if(tox2==1){
+                                x2d = PI/4.0;
+                                x3d = pos_along;
+                            }else if(tox2==-1){
+                                x2d = -PI/4.0;
+                                x3d = pos_along;
+                            }else if(tox3==1){
+                                x2d = pos_along;
+                                x3d = PI/4.0;
+                            }else if(tox3==-1){
+                                x2d = pos_along;
+                                x3d = -PI/4.0;
+                            }
+                            // Angular positions to tan values
+                            x2d = tan(x2d);
+                            x2s = tan(x2s);
+                            x3d = tan(x3d);
+                            x3s = tan(x3s);                            
+                            // Calculate the transformation matrix
+                            Real o11, o12, o21, o22;
+                            Real s_sc = sqrt(1+x2s*x2s+x3s*x3s)/sqrt(1+x2s*x2s)/sqrt(1+x3s*x3s);
+                            Real c_sc = -x2s*x3s/sqrt(1+x2s*x2s)/sqrt(1+x3s*x3s);
+                            Real s_tg = sqrt(1+x2d*x2d+x3d*x3d)/sqrt(1+x2d*x2d)/sqrt(1+x3d*x3d);
+                            Real c_tg = -x2d*x3d/sqrt(1+x2d*x2d)/sqrt(1+x3d*x3d);
+                            o11 = 1.0;
+                            o12 = c_sc-c_tg/s_tg*s_sc;
+                            o21 = 0.0;
+                            o22 = s_sc/s_tg;
+                            for (int rt=0; rt<rot[blockID][target_dir]; rt++){
+                                Real o11t = -o21;
+                                Real o12t = -o22;
+                                Real o21t = o11;
+                                Real o22t = o12;
+                                o11 = o11t;
+                                o12 = o12t;
+                                o21 = o21t;
+                                o22 = o22t;
+                            }
+                            if(n==IVY){
+                                if (Left)
+                                    data[offset++] = o11*L3DValues[DirNum](IVY,k,j,i)+o12*L3DValues[DirNum](IVZ,k,j,i);
+                                else
+                                    data[offset++] = o11*R3DValues[DirNum](IVY,k,j,i)+o12*R3DValues[DirNum](IVZ,k,j,i);
+                            }
+                            else{ // n==IVZ
+                                if (Left)
+                                    data[offset++] = o21*L3DValues[DirNum](IVY,k,j,i)+o22*L3DValues[DirNum](IVZ,k,j,i);
+                                else
+                                    data[offset++] = o21*R3DValues[DirNum](IVY,k,j,i)+o22*R3DValues[DirNum](IVZ,k,j,i);
+                            }
+                        }
+                        else // No projection needed
+                            if (Left)
+                                data[offset++] = L3DValues[DirNum](n,k,j,i);
+                            else
+                                data[offset++] = R3DValues[DirNum](n,k,j,i);
     }
 
     // Calculate the tag of destination
@@ -187,10 +347,10 @@ void Hydro::SendNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
     if (ox3==-1) ownTag = 2;
     if (ox3==1) ownTag = 3;
     MPI_Isend(data, dsize, MPI_DOUBLE, tg_rank, DirTag, MPI_COMM_WORLD, &send_request[ownTag]);
-    std::cout << "===============================" << std::endl;
-    std::cout << "MPI Message: Sent data with size " << dsize << " from rank " << Globals::my_rank << " to " << tg_rank << " on tag number " << DirTag << std::endl;
-    std::cout << "This is a message from block gid " << pmb->gid << " to " << tg_gid << std::endl;
-    std::cout << "The direction is ox2=" << ox2 << ", ox3=" << ox3 << " and inversion is " << invDir << std::endl;
+    // std::cout << "===============================" << std::endl;
+    // std::cout << "MPI Message: Sent data with size " << dsize << " from rank " << Globals::my_rank << " to " << tg_rank << " on tag number " << DirTag << std::endl;
+    // std::cout << "This is a message from block gid " << pmb->gid << " to " << tg_gid << std::endl;
+    // std::cout << "The direction is ox2=" << ox2 << ", ox3=" << ox3 << " and inversion is " << invDir << std::endl;
     delete[] data;
 }
 

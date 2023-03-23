@@ -39,8 +39,8 @@ ox3_bc     = periodic   # outer-X3 boundary flag
 
 <meshblock>
 nx1        = 4
-nx2        = 4
-nx3        = 4
+nx2        = 8
+nx3        = 8
 
 <hydro>
 gamma       = 1.4         # gamma = C_p/C_v

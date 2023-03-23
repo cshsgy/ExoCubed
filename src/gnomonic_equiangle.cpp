@@ -116,7 +116,18 @@ GnomonicEquiangle::GnomonicEquiangle(MeshBlock *pmb, ParameterInput *pin, bool f
 
 }
 
-
+void GnomonicEquiangle::Face1Area(const int k, const int j, const int il, const int iu,
+                            AthenaArray<Real> &area) {
+#pragma omp simd
+  Real xt = tan(x2v(j));
+  Real yt = tan(x3v(k));
+  Real sin_theta = sqrt((1.0+xt*xt+yt*yt)/(1.0+xt*xt)/(1.0+yt*yt));
+  for (int i=il; i<=iu; ++i) {
+    area(i) = dx2f(j)*dx3f(k)*sin_theta;
+  }
+  return;
+}
+// Face 2 and 3 no need to specify, will use coordinates.cpp expressions
 
 //----------------------------------------------------------------------------------------
 // GetFaceXArea functions: return area of face with normal in X-dir at (i,j,k)
@@ -276,7 +287,7 @@ void GnomonicEquiangle::Face1Metric(const int k, const int j, const int il, cons
   return;
 }
 
-void AffineCoordinate::Face2Metric(const int k, const int j, const int il, const int iu,
+void GnomonicEquiangle::Face2Metric(const int k, const int j, const int il, const int iu,
                                AthenaArray<Real> &g, AthenaArray<Real> &g_inv) {
   // Go through 1D block of cells
   Real xt = tan(x2f(j));
@@ -315,7 +326,7 @@ void AffineCoordinate::Face2Metric(const int k, const int j, const int il, const
   return;
 }
 
-void AffineCoordinate::Face3Metric(const int k, const int j, const int il, const int iu,
+void GnomonicEquiangle::Face3Metric(const int k, const int j, const int il, const int iu,
                                AthenaArray<Real> &g, AthenaArray<Real> &g_inv) {
   // Go through 1D block of cells
   Real xt = tan(x2v(j));
@@ -366,7 +377,7 @@ void AffineCoordinate::Face3Metric(const int k, const int j, const int il, const
 //   prim_r: values overwritten in local coordinates
 // Notes: no notes
 
-void AffineCoordinate::PrimToLocal2(
+void GnomonicEquiangle::PrimToLocal2(
       const int k, const int j, const int il, const int iu,
       const AthenaArray<Real> &b1_vals, AthenaArray<Real> &prim_left,
       AthenaArray<Real> &prim_right, AthenaArray<Real> &bx) {
@@ -427,7 +438,7 @@ void AffineCoordinate::PrimToLocal2(
   return;
 }
 
-void AffineCoordinate::PrimToLocal3(
+void GnomonicEquiangle::PrimToLocal3(
       const int k, const int j, const int il, const int iu,
       const AthenaArray<Real> &b1_vals, AthenaArray<Real> &prim_left,
       AthenaArray<Real> &prim_right, AthenaArray<Real> &bx) {

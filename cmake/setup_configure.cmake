@@ -81,7 +81,7 @@ else()
 endif()
 
 # CubedSphere flag
-option(UseCubedSphere "Enable CubedSphere" OFF)
+option(UseCubedSphere "Enable CubedSphere" ON)
 
 # CubedSphere flag
 if (${UseCubedSphere})
