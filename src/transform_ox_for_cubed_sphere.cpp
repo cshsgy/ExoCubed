@@ -353,7 +353,7 @@ Real CalculateInterpLocationsCubedSphere(int loc_n, int N_blk, int k, bool Ghost
   // Calculate the angular locations of the ghost zone interpolations
   // N_blk: the total number of points along the boundary
   // k: levels into the ghost zone (0, 1, 2 in interior = -1, -2, -3 in ghost)
-  // loc_n: local index in the panel
+  // loc_n: local index in the panel (-N_blk/2 to N_blk/2+1)
   Real temp0 = tan((Real)1.0*(N_blk-1-2*k)/(N_blk*4)*PI);
   if(GhostZone){
     temp0 = 1.0/temp0;
@@ -386,7 +386,7 @@ void InteprolateX2CubedSphere(const AthenaArray<Real> &src, AthenaArray<Real> &t
     for (int k=sk; k<=ek; k++) {
       int k_now;
       if(sk<ej-NGHOST){ // Calculate the location into the ghost zones
-        k_now = k;
+        k_now = k-sk;
         SrcSide = -1;
       }else{
         k_now = ek-k;
@@ -405,9 +405,9 @@ void InteprolateX2CubedSphere(const AthenaArray<Real> &src, AthenaArray<Real> &t
             // Calculate coefficients for tgt
             tgt_x2[j-sj] = CalculateInterpLocationsCubedSphere(n_start+j-sj, N_blk, k_now, true);
             if(DirInv==1){
-              tgt_coord[j-sj] = -src_coord[n_start+j-sj];
+              tgt_coord[j-sj] = -src_coord[n_start+N_blk/2+j-sj];
             }else{
-              tgt_coord[j-sj] = src_coord[n_start+j-sj];
+              tgt_coord[j-sj] = src_coord[n_start+N_blk/2+j-sj];
             }
           }
           int src_pointer = 0;
@@ -420,10 +420,10 @@ void InteprolateX2CubedSphere(const AthenaArray<Real> &src, AthenaArray<Real> &t
             Real yq = tgt_x2[j-sj];
             if (n==IVY || n==IVZ){
               // Projection needed, find the tgt locations first
-              Real v1y = src(IVY, k, src_pointer-n_start+sj, i);
-              Real v1z = src(IVZ, k, src_pointer-n_start+sj, i);
-              Real v2y = src(IVY, k, src_pointer+1-n_start+sj, i);
-              Real v2z = src(IVZ, k, src_pointer+1-n_start+sj, i);
+              Real v1y = src(IVY, k, src_pointer-n_start-N_blk/2+sj, i); // When pointing at n_start+N_blk, we are looking at sj
+              Real v1z = src(IVZ, k, src_pointer-n_start-N_blk/2+sj, i);
+              Real v2y = src(IVY, k, src_pointer+1-n_start-N_blk/2+sj, i);
+              Real v2z = src(IVZ, k, src_pointer+1-n_start-N_blk/2+sj, i);
               Real tgt_cy = tgt_coord[j-sj];
               Real tgt_cz = TgtSide * (PI/2.0/(N_blk)*(NGHOST-k_now-0.5)+PI/4.0);
               Real src_cy1 = src_coord[src_pointer];
@@ -456,8 +456,8 @@ void InteprolateX2CubedSphere(const AthenaArray<Real> &src, AthenaArray<Real> &t
                 tgt(n-sn, k-sk, j-sj, i-si) = o21*vy+o22*vz;
               }
             }else{
-              Real v1 = src(n, k, src_pointer-n_start+sj, i);
-              Real v2 = src(n, k, src_pointer+1-n_start+sj, i);
+              Real v1 = src(n, k, src_pointer-n_start-N_blk/2+sj, i);
+              Real v2 = src(n, k, src_pointer+1-n_start-N_blk/2+sj, i);
               tgt(n-sn, k-sk, j-sj, i-si) = ((y2-yq)*v1 + (yq-y1)*v2) / (y2-y1);
             }
           }
@@ -486,7 +486,7 @@ void InteprolateX3CubedSphere(const AthenaArray<Real> &src, AthenaArray<Real> &t
     for (int j=sj; j<=ej; j++) {
       int k_now;
       if(sj<ek-NGHOST) // Calculate the location into the ghost zones
-        k_now = j;
+        k_now = j-sj;
       else
         k_now = ej-j;
 #pragma omp simd
@@ -501,25 +501,24 @@ void InteprolateX3CubedSphere(const AthenaArray<Real> &src, AthenaArray<Real> &t
             // Calculate coefficients for tgt
             tgt_x3[k-sk] = CalculateInterpLocationsCubedSphere(n_start+k-sk, N_blk, k_now, true);
             if(DirInv==1){
-              tgt_coord[k-sk] = -src_coord[n_start+k-sk];
+              tgt_coord[k-sk] = -src_coord[n_start+N_blk/2+k-sk];
             }else{
-              tgt_coord[k-sk] = src_coord[n_start+k-sk];
+              tgt_coord[k-sk] = src_coord[n_start+N_blk/2+k-sk];
             }
           }
           int src_pointer = 0;
           for (int k=sk; k<=ek; k++) {
             // Interpolate to target array, linear interpolation used here
             while(tgt_x3[k-sk]>src_x3[src_pointer+1]) src_pointer++; // Find the left location of src
-
             Real y1 = src_x3[src_pointer];
             Real y2 = src_x3[src_pointer+1];
             Real yq = tgt_x3[k-sk];
             if (n==IVY || n==IVZ){
               // Projection needed, find the tgt locations first
-              Real v1y = src(IVY, src_pointer-n_start+sk, j, i);
-              Real v1z = src(IVZ, src_pointer-n_start+sk, j, i);
-              Real v2y = src(IVY, src_pointer+1-n_start+sk, j, i);
-              Real v2z = src(IVZ, src_pointer+1-n_start+sk, j, i);
+              Real v1y = src(IVY, src_pointer-n_start-N_blk/2+sk, j, i);
+              Real v1z = src(IVZ, src_pointer-n_start-N_blk/2+sk, j, i);
+              Real v2y = src(IVY, src_pointer+1-n_start-N_blk/2+sk, j, i);
+              Real v2z = src(IVZ, src_pointer+1-n_start-N_blk/2+sk, j, i);
               Real tgt_cz = tgt_coord[k-sk];
               Real tgt_cy = TgtSide * (PI/2.0/(N_blk)*(NGHOST-k_now-0.5)+PI/4.0);
               Real src_cz1 = src_coord[src_pointer];
@@ -552,11 +551,10 @@ void InteprolateX3CubedSphere(const AthenaArray<Real> &src, AthenaArray<Real> &t
                 tgt(n-sn, k-sk, j-sj, i-si) = o21*vy+o22*vz;
               }
             }else{
-              if((src_pointer-n_start+sk>ek)||(src_pointer-n_start+sk<sk)){
-                std::cout<< "N_blk=" << N_blk << "|n_start=" << n_start << "|src_pt=" << src_pointer << "|start_k=" << sk <<std::endl;
+              if((src_pointer-n_start-N_blk/2+sk>ek)||(src_pointer-n_start-N_blk/2+sk<sk)){
               }
-              Real v1 = src(n, src_pointer-n_start+sk, j, i);
-              Real v2 = src(n, src_pointer+1-n_start+sk, j, i);
+              Real v1 = src(n, src_pointer-n_start-N_blk/2+sk, j, i);
+              Real v2 = src(n, src_pointer+1-n_start-N_blk/2+sk, j, i);
               tgt(n-sn, k-sk, j-sj, i-si) = ((y2-yq)*v1 + (yq-y1)*v2) / (y2-y1);
             }
           }

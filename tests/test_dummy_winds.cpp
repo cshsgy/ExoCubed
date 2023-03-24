@@ -16,7 +16,7 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
   for (int k = ks; k <= ke; ++k)
     for (int j = js; j <= je; ++j)
       for (int i = is; i <= ie; ++i) {
-        phydro->w(IDN,k,j,i) = 100.0;
+        phydro->w(IDN,k,j,i) = 100.0*j;
         // (*Following used for comm test*) (k-ks)*(je-js)*(ie-is) + (j-js)*(ie-is) + (i-is) + 0.1*(loc.lx2+1) + 0.01*(loc.lx3+1);
         phydro->w(IPR,k,j,i) = 1.0;
         Real Vy, Vz;
@@ -31,9 +31,9 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
 void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
 {
   // Calculate lat, lon, U, V for output and visualization
-  for (int k = ks; k <= ke; ++k)
-    for (int j = js; j <= je; ++j)
-      for (int i = is; i <= ie; ++i) {
+  for (int k = ks-NGHOST; k <= ke+NGHOST; ++k)
+    for (int j = js-NGHOST; j <= je+NGHOST; ++j)
+      for (int i = is-NGHOST; i <= ie+NGHOST; ++i) {
         Real Vy = phydro->w(IVY,k,j,i);
         Real Vz = phydro->w(IVZ,k,j,i);
         Real lat, lon;
