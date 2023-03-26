@@ -9,14 +9,14 @@
 void MeshBlock::ProblemGenerator(ParameterInput *pin)
 {
   // Input field is a uniform 10 m/s zonal wind
-  Real U=0.0;
-  Real V = 10.0/6371000.0;
+  Real V = 0.0;
+  Real U = 10.0/6371000.0;
 
   std::cout << "======Start of Problem generator======" << loc.lx2 << "||" << loc.lx3 <<std::endl;
   for (int k = ks; k <= ke; ++k)
     for (int j = js; j <= je; ++j)
       for (int i = is; i <= ie; ++i) {
-        phydro->w(IDN,k,j,i) = 100.0*j;
+        phydro->w(IDN,k,j,i) = 100.0;
         // (*Following used for comm test*) (k-ks)*(je-js)*(ie-is) + (j-js)*(ie-is) + (i-is) + 0.1*(loc.lx2+1) + 0.01*(loc.lx3+1);
         phydro->w(IPR,k,j,i) = 1.0;
         Real Vy, Vz;

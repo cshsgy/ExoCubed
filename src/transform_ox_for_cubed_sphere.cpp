@@ -424,14 +424,14 @@ void InteprolateX2CubedSphere(const AthenaArray<Real> &src, AthenaArray<Real> &t
               Real v1z = src(IVZ, k, src_pointer-n_start-N_blk/2+sj, i);
               Real v2y = src(IVY, k, src_pointer+1-n_start-N_blk/2+sj, i);
               Real v2z = src(IVZ, k, src_pointer+1-n_start-N_blk/2+sj, i);
-              Real tgt_cy = tgt_coord[j-sj];
-              Real tgt_cz = TgtSide * (PI/2.0/(N_blk)*(NGHOST-k_now-0.5)+PI/4.0);
+              Real tgt_cy = tan(tgt_coord[j-sj]);
+              Real tgt_cz = tan(TgtSide * (PI/2.0/(N_blk)*(k_now+0.5)+PI/4.0));
               Real src_cy1 = src_coord[src_pointer];
               Real src_cy2 = src_coord[src_pointer+1];
-              Real src_cz = SrcSide * (-PI/2.0/(N_blk)*(NGHOST-k_now-0.5)+PI/4.0);
+              Real src_cz = tan(SrcSide * (-PI/2.0/(N_blk)*(k_now+0.5)+PI/4.0));
               Real vy = ((y2-yq)*v1y + (yq-y1)*v2y) / (y2-y1);
               Real vz = ((y2-yq)*v1z + (yq-y1)*v2z) / (y2-y1);
-              Real src_cy = ((y2-yq)*src_cy1 + (yq-y1)*src_cy2) / (y2-y1);
+              Real src_cy = tan(((y2-yq)*src_cy1 + (yq-y1)*src_cy2) / (y2-y1));
               Real s_sc = sqrt(1+src_cy*src_cy+src_cz*src_cz)/sqrt(1+src_cy*src_cy)/sqrt(1+src_cz*src_cz);
               Real c_sc = -src_cy*src_cz/sqrt(1+src_cy*src_cy)/sqrt(1+src_cz*src_cz);
               Real s_tg = sqrt(1+tgt_cy*tgt_cy+tgt_cz*tgt_cz)/sqrt(1+tgt_cy*tgt_cy)/sqrt(1+tgt_cz*tgt_cz);
@@ -519,14 +519,14 @@ void InteprolateX3CubedSphere(const AthenaArray<Real> &src, AthenaArray<Real> &t
               Real v1z = src(IVZ, src_pointer-n_start-N_blk/2+sk, j, i);
               Real v2y = src(IVY, src_pointer+1-n_start-N_blk/2+sk, j, i);
               Real v2z = src(IVZ, src_pointer+1-n_start-N_blk/2+sk, j, i);
-              Real tgt_cz = tgt_coord[k-sk];
-              Real tgt_cy = TgtSide * (PI/2.0/(N_blk)*(NGHOST-k_now-0.5)+PI/4.0);
+              Real tgt_cz = tan(tgt_coord[k-sk]);
+              Real tgt_cy = tan(TgtSide * (PI/2.0/(N_blk)*(k_now+0.5)+PI/4.0));
               Real src_cz1 = src_coord[src_pointer];
               Real src_cz2 = src_coord[src_pointer+1];
-              Real src_cy = SrcSide * (-PI/2.0/(N_blk)*(NGHOST-k_now-0.5)+PI/4.0);
+              Real src_cy = tan(SrcSide * (-PI/2.0/(N_blk)*(k_now+0.5)+PI/4.0));
               Real vy = ((y2-yq)*v1y + (yq-y1)*v2y) / (y2-y1);
               Real vz = ((y2-yq)*v1z + (yq-y1)*v2z) / (y2-y1);
-              Real src_cz = ((y2-yq)*src_cz1 + (yq-y1)*src_cz2) / (y2-y1);
+              Real src_cz = tan(((y2-yq)*src_cz1 + (yq-y1)*src_cz2) / (y2-y1));
               Real s_sc = sqrt(1+src_cy*src_cy+src_cz*src_cz)/sqrt(1+src_cy*src_cy)/sqrt(1+src_cz*src_cz);
               Real c_sc = -src_cy*src_cz/sqrt(1+src_cy*src_cy)/sqrt(1+src_cz*src_cz);
               Real s_tg = sqrt(1+tgt_cy*tgt_cy+tgt_cz*tgt_cz)/sqrt(1+tgt_cy*tgt_cy)/sqrt(1+tgt_cz*tgt_cz);
@@ -547,6 +547,19 @@ void InteprolateX3CubedSphere(const AthenaArray<Real> &src, AthenaArray<Real> &t
               }
               if (n==IVY){
                 tgt(n-sn, k-sk, j-sj, i-si) = o11*vy+o12*vz;
+                int blockID = FindBlockID(loc);
+                if (((j==2)||(j==9)) && (i==2) && (blockID==1)){
+                  Real U, V;
+                  Real R = 6371000.0 / src(IDN, 1, 1, 1); // times R divided by rho
+                  VecTransRLLFromABP(src_cy, src_cz, blockID, vy, vz, &U, &V);
+                  std::cout << "|k=" << k << ", j=" << j << ", U=" << U*R << ", V=" << V*R << ", E=" << U*U+V*V << std::endl;
+                  // Real vzt = o21*vy+o22*vz;
+                  // Real vyt = o11*vy+o12*vz;
+                  // if (j==9){ // connecting to panel 2
+                  //   VecTransRLLFromABP(tgt_cy, tgt_cz, 2, vyt, vzt, &U, &V);
+                  //   std::cout << "After transfer: y=" << atan(tgt_cy) << ", z=" << atan(tgt_cz) << ", U=" << U*R << ", V=" << V*R << ", E=" << U*U+V*V << std::endl;
+                  // }
+                }
               }else{ // n==IVZ
                 tgt(n-sn, k-sk, j-sj, i-si) = o21*vy+o22*vz;
               }
@@ -759,10 +772,6 @@ return;
 
 
 
-
-
-
-
 // #include <sstream>
 // #include <ostream>
 // #include <iostream>
@@ -785,8 +794,8 @@ void GetLatLon(Real *lat, Real *lon, Coordinates *pcoord, int k, int j, int i){
     int lv2_lx3 = loc.lx3 >> (loc.level - 2);
     int blockID = lv2_lx2 + lv2_lx3 * 2 + 1;
     // Calculate the needed parameters
-    Real dX = pcoord->x2v(j);
-    Real dY = pcoord->x3v(k);
+    Real dX = tan(pcoord->x2v(j));
+    Real dY = tan(pcoord->x3v(k));
     RLLFromXYP(dY, -dX, blockID-1, *lon, *lat);
 }
 
@@ -799,14 +808,9 @@ void GetUV(Real *U, Real *V, Coordinates *pcoord, Real V2, Real V3, int k, int j
     int lv2_lx2 = loc.lx2 >> (loc.level - 2);
     int lv2_lx3 = loc.lx3 >> (loc.level - 2);
     int blockID = lv2_lx2 + lv2_lx3 * 2 + 1;
-    // Calculate the needed parameters
-    Real dX = pcoord->x2v(j);
-    Real dY = pcoord->x3v(k);
-    Real tmp_U, tmp_V;
-    // Calls Paul Ullrich's code. Note how the values are transformed here.
-    VecTransRLLFromABP(dY, -dX, blockID-1, V3, -V2, tmp_V, tmp_U);
-    *U = tmp_U;
-    *V = tmp_V;
+    Real X = tan(pcoord->x2v(j));
+    Real Y = tan(pcoord->x3v(k));
+    VecTransRLLFromABP(X, Y, blockID, V2, V3, U, V);
 }
 
 void GetVyVz(Real *V2, Real *V3, Coordinates *pcoord, Real U, Real V, int k, int j, int i){
@@ -819,173 +823,77 @@ void GetVyVz(Real *V2, Real *V3, Coordinates *pcoord, Real U, Real V, int k, int
     int lv2_lx3 = loc.lx3 >> (loc.level - 2);
     int blockID = lv2_lx2 + lv2_lx3 * 2 + 1;
     // Calculate the needed parameters
-    Real dX = pcoord->x2v(j);
-    Real dY = pcoord->x3v(k);
-    Real tmp_V2, tmp_V3;
-    // Calls Paul Ullrich's code. Note how the values are transformed here.
-    VecTransABPFromRLL(dY, -dX, blockID-1, V, U, tmp_V2, tmp_V3);
-    *V2 = -tmp_V3;
-    *V3 = tmp_V2;
+    Real X = tan(pcoord->x2v(j));
+    Real Y = tan(pcoord->x3v(k));
+    VecTransABPFromRLL(X, Y, blockID, U, V, V2, V3);
 }
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Following are codes adapted from P.U. tempest model 
-// https://github.com/paullric/tempestmodel/blob/master/src/atm/CubedSphereTrans.cpp
-////////////////////////////////////////////////////////////////////////////////
 
 void VecTransABPFromRLL(
-	Real dX,
-	Real dY,
-	int nP,
-	Real dUlon,
-	Real dUlat,
-	Real & dUalpha,
-	Real & dUbeta
-) {
-	Real dDelta2 = 1.0 + dX * dX + dY * dY;
-	Real dRadius;
+	Real X,
+	Real Y,
+	int blockID,
+	Real U,
+	Real V,
+	Real *V2,
+	Real *V3
+){
+    Real C = sqrt(1+X*X);
+    Real D = sqrt(1+Y*Y);
+    Real E = sqrt(X*X+Y*Y);
+    Real delta = sqrt(1+X*X+Y*Y);
+    switch(blockID){
+      case 2:
+      case 3:
+      case 4:
+      case 6:
+        *V2 = X*Y/delta * U - V;
+        *V3 = C*D/delta * U;
+        break;
+      case 1:
+        *V2 = -D*Y/(delta*E) * U - D*X/E * V;
+        *V3 = C*X/(delta*E) * U - C*Y/E * V;
+        break;
+      case 5:
+        *V2 = D*Y/(delta*E) * U + D*X/E * V;
+        *V3 = -C*X/(delta*E) * U + C*Y/E * V;
+        break;
+    }
+};
 
-	Real lat;
-
-	if (((nP==0)||(nP==4)) && (fabs(dX) < 1.0e-13) && (fabs(dY) < 1.0e-13)) {
-		if (nP == 0) {
-			dUalpha = dUlon;
-		} else {
-			dUalpha = - dUlon;
-		}
-		dUbeta = dUlat;
-		return;
-	}
-
-	switch (nP) {
-		// Equatorial panels
-		case 1:
-		case 2:
-		case 3:
-		case 5:
-			// Convert spherical coords to geometric basis
-			lat = atan(dY / sqrt(1.0 + dX * dX));
-			dUlon = dUlon / cos(lat);
-
-			// Calculate new vector components
-			dUalpha = dUlon;
-			dUbeta =
-				dX * dY / (1.0 + dY * dY) * dUlon
-				+ dDelta2 / ((1.0 + dY * dY) * sqrt(1.0 + dX * dX)) * dUlat;
-			break;
-
-		// North polar panel
-		case 0:
-			// Convert spherical coords to geometric basis
-			lat = 0.5 * M_PI - atan(sqrt(dX * dX + dY * dY));
-			dUlon = dUlon / cos(lat);
-
-			// Calculate new vector components
-			dRadius = sqrt(dX * dX + dY * dY);
-
-			dUalpha =
-				- dY / (1.0 + dX * dX) * dUlon
-				- dDelta2 * dX / ((1.0 + dX * dX) * dRadius) * dUlat;
-
-			dUbeta =
-				dX / (1.0 + dY * dY) * dUlon
-				- dDelta2 * dY / ((1.0 + dY * dY) * dRadius) * dUlat;
-			break;
-
-		// South polar panel
-		case 4:
-			// Convert spherical coords to geometric basis
-			lat = -0.5 * M_PI + atan(sqrt(dX * dX + dY * dY));
-			dUlon = dUlon / cos(lat);
-
-			// Calculate new vector components
-			dRadius = sqrt(dX * dX + dY * dY);
-
-			dUalpha =
-				dY / (1.0 + dX * dX) * dUlon
-				+ dDelta2 * dX / ((1.0 + dX * dX) * dRadius) * dUlat;
-
-			dUbeta =
-				- dX / (1.0 + dY * dY) * dUlon
-				+ dDelta2 * dY / ((1.0 + dY * dY) * dRadius) * dUlat;
-			break;
-
-	}
-}
-
-////////////////////////////////////////////////////////////////////////////////
 
 void VecTransRLLFromABP(
-	Real dX,
-	Real dY,
-	int nP,
-	Real dUalpha,
-	Real dUbeta,
-	Real & dUlon,
-	Real & dUlat
-) {
-	Real dDelta2 = 1.0 + dX * dX + dY * dY;
-	Real dRadius;
+	Real X,
+	Real Y,
+	int blockID,
+	Real V2,
+	Real V3,
+	Real *U,
+	Real *V
+){
+    // Calculate the needed parameters
+    Real C = sqrt(1+X*X);
+    Real D = sqrt(1+Y*Y);
+    Real E = sqrt(X*X+Y*Y);
+    Real delta = sqrt(1+X*X+Y*Y);
 
-	Real lat;
-
-	switch (nP) {
-		// Equatorial panels
-		case 1:
-		case 2:
-		case 3:
-		case 5:
-			// Calculate new vector components
-			dUlon = dUalpha;
-			dUlat = 
-				- dX * dY * sqrt(1.0 + dX * dX) / dDelta2 * dUalpha
-				+ (1.0 + dY * dY) * sqrt(1.0 + dX * dX) / dDelta2 * dUbeta;
-
-			// Convert spherical coords to unit basis
-			lat = atan(dY / sqrt(1.0 + dX * dX));
-			dUlon = dUlon * cos(lat);
-			break;
-
-		// North polar panel
-		case 0:
-			// Calculate new vector components
-			dRadius = sqrt(dX * dX + dY * dY);
-
-			dUlon = 
-				- dY * (1.0 + dX * dX) / (dRadius * dRadius) * dUalpha
-				+ dX * (1.0 + dY * dY) / (dRadius * dRadius) * dUbeta;
-
-			dUlat =
-				- dX * (1.0 + dX * dX) / (dDelta2 * dRadius) * dUalpha
-				- dY * (1.0 + dY * dY) / (dDelta2 * dRadius) * dUbeta;
-
-			// Convert spherical coords to unit basis
-			lat = 0.5 * M_PI - atan(sqrt(dX * dX + dY * dY));
-			dUlon = dUlon * cos(lat);
-
-			break;
-
-		// South polar panel
-		case 4:
-			// Calculate new vector components
-			dRadius = sqrt(dX * dX + dY * dY);
-
-			dUlon =
-				dY * (1.0 + dX * dX) / (dRadius * dRadius) * dUalpha
-				- dX * (1.0 + dY * dY) / (dRadius * dRadius) * dUbeta;
-
-			dUlat =
-				dX * (1.0 + dX * dX) / (dDelta2 * dRadius) * dUalpha
-				+ dY * (1.0 + dY * dY) / (dDelta2 * dRadius) * dUbeta;
-		
-			// Convert spherical coords to unit basis
-			lat = -0.5 * M_PI + atan(sqrt(dX * dX + dY * dY));
-			dUlon = dUlon * cos(lat);
-
-			break;
-	}
-}
+    switch(blockID){
+      case 2:
+      case 3:
+      case 4:
+      case 6:
+        *U = delta/(C*D) * V3;
+        *V = X*Y/(C*D) * V3 - V2;
+        break;
+      case 1:
+        *U = -delta*Y/(D*E) * V2 + delta*X/(C*E) * V3;
+        *V = -X/(D*E) * V2 - Y/(C*E) * V3;
+        break;
+      case 5:
+        *U = delta*Y/(D*E) * V2 - delta*X/(C*E) * V3;
+        *V = X/(D*E) * V2 + Y/(C*E) * V3;
+        break;
+    }
+};
 
 void RLLFromXYP(
 	Real dX,
