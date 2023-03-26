@@ -485,10 +485,14 @@ void InteprolateX3CubedSphere(const AthenaArray<Real> &src, AthenaArray<Real> &t
   for (int n=sn; n<=en; n++){
     for (int j=sj; j<=ej; j++) {
       int k_now;
-      if(sj<ek-NGHOST) // Calculate the location into the ghost zones
+      if(sj<ek-NGHOST){ // Calculate the location into the ghost zones
         k_now = j-sj;
-      else
+        SrcSide = -1;
+      }
+      else{
         k_now = ej-j;
+        SrcSide = 1;
+      }
 #pragma omp simd
         for (int i=si; i<=ei; i++){
           for (int k=0; k<N_blk; k++){
@@ -550,15 +554,15 @@ void InteprolateX3CubedSphere(const AthenaArray<Real> &src, AthenaArray<Real> &t
                 int blockID = FindBlockID(loc);
                 if (((j==2)||(j==9)) && (i==2) && (blockID==1)){
                   Real U, V;
-                  Real R = 6371000.0 / src(IDN, 1, 1, 1); // times R divided by rho
+                  Real R = 6371000.0 / 100.0;
                   VecTransRLLFromABP(src_cy, src_cz, blockID, vy, vz, &U, &V);
                   std::cout << "|k=" << k << ", j=" << j << ", U=" << U*R << ", V=" << V*R << ", E=" << U*U+V*V << std::endl;
-                  // Real vzt = o21*vy+o22*vz;
-                  // Real vyt = o11*vy+o12*vz;
-                  // if (j==9){ // connecting to panel 2
-                  //   VecTransRLLFromABP(tgt_cy, tgt_cz, 2, vyt, vzt, &U, &V);
-                  //   std::cout << "After transfer: y=" << atan(tgt_cy) << ", z=" << atan(tgt_cz) << ", U=" << U*R << ", V=" << V*R << ", E=" << U*U+V*V << std::endl;
-                  // }
+                  Real vzt = o21*vy+o22*vz;
+                  Real vyt = o11*vy+o12*vz;
+                  if (j==9){ // connecting to panel 2
+                    VecTransRLLFromABP(tgt_cy, tgt_cz, 2, vyt, vzt, &U, &V);
+                    std::cout << "After transfer: y=" << atan(tgt_cy) << ", z=" << atan(tgt_cz) << ", U=" << U*R << ", V=" << V*R << ", E=" << U*U+V*V << std::endl;
+                  }
                 }
               }else{ // n==IVZ
                 tgt(n-sn, k-sk, j-sj, i-si) = o21*vy+o22*vz;
