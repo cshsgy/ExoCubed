@@ -367,7 +367,7 @@ Real CalculateInterpLocationsCubedSphere(int loc_n, int N_blk, int k, bool Ghost
     return acos(sqrt(temp0/(temp0 + pow(tan((Real)1.0*(2*loc_n+1)/(N_blk*4)*PI),2.0))));
 }
 
-void InteprolateX2CubedSphere(const AthenaArray<Real> &src, AthenaArray<Real> &tgt, LogicalLocation const& loc, int NRot, int DirInv, int TgtSide, int sn, int en, int si, int ei, int sj, int ej, int sk, int ek){
+void InteprolateX2CubedSphere(const AthenaArray<Real> &src, AthenaArray<Real> &tgt, LogicalLocation const& loc, int DirInv, int TgtSide, int TgtID, int sn, int en, int si, int ei, int sj, int ej, int sk, int ek){
   // Interpolation along X2 (j) axis, used before sending data to X3 (k) axis
   // Get the local indices
   int lv2_lx2 = loc.lx2 >> (loc.level - 2);
@@ -432,28 +432,15 @@ void InteprolateX2CubedSphere(const AthenaArray<Real> &src, AthenaArray<Real> &t
               Real vy = ((y2-yq)*v1y + (yq-y1)*v2y) / (y2-y1);
               Real vz = ((y2-yq)*v1z + (yq-y1)*v2z) / (y2-y1);
               Real src_cy = tan(((y2-yq)*src_cy1 + (yq-y1)*src_cy2) / (y2-y1));
-              Real s_sc = sqrt(1+src_cy*src_cy+src_cz*src_cz)/sqrt(1+src_cy*src_cy)/sqrt(1+src_cz*src_cz);
-              Real c_sc = -src_cy*src_cz/sqrt(1+src_cy*src_cy)/sqrt(1+src_cz*src_cz);
-              Real s_tg = sqrt(1+tgt_cy*tgt_cy+tgt_cz*tgt_cz)/sqrt(1+tgt_cy*tgt_cy)/sqrt(1+tgt_cz*tgt_cz);
-              Real c_tg = -tgt_cy*tgt_cz/sqrt(1+tgt_cy*tgt_cy)/sqrt(1+tgt_cz*tgt_cz);
-              Real o11 = 1.0;
-              Real o12 = c_sc-c_tg/s_tg*s_sc;
-              Real o21 = 0.0;
-              Real o22 = s_sc/s_tg;
-              for (int rt=0; rt<NRot; rt++){
-                  Real o11t = -o21;
-                  Real o12t = -o22;
-                  Real o21t = o11;
-                  Real o22t = o12;
-                  o11 = o11t;
-                  o12 = o12t;
-                  o21 = o21t;
-                  o22 = o22t;
-              }
+              int blockID = FindBlockID(loc);
+              Real U, V;
+              // Trasform to global coordinate and back
+              VecTransRLLFromABP(src_cy, src_cz, blockID, vy, vz, &U, &V);
+              VecTransABPFromRLL(tgt_cy, tgt_cz, TgtID, U, V, &vy, &vz);
               if (n==IVY){
-                tgt(n-sn, k-sk, j-sj, i-si) = o11*vy+o12*vz;
+                tgt(n-sn, k-sk, j-sj, i-si) = vy;
               }else{ // n==IVZ
-                tgt(n-sn, k-sk, j-sj, i-si) = o21*vy+o22*vz;
+                tgt(n-sn, k-sk, j-sj, i-si) = vz;
               }
             }else{
               Real v1 = src(n, k, src_pointer-n_start-N_blk/2+sj, i);
@@ -467,7 +454,8 @@ void InteprolateX2CubedSphere(const AthenaArray<Real> &src, AthenaArray<Real> &t
   delete[] src_x2, tgt_x2, src_coord, tgt_coord; // Release memory
 }
 
-void InteprolateX3CubedSphere(const AthenaArray<Real> &src, AthenaArray<Real> &tgt, LogicalLocation const& loc, int NRot, int DirInv, int TgtSide, int sn, int en, int si, int ei, int sj, int ej, int sk, int ek){
+
+void InteprolateX3CubedSphere(const AthenaArray<Real> &src, AthenaArray<Real> &tgt, LogicalLocation const& loc, int DirInv, int TgtSide, int TgtID, int sn, int en, int si, int ei, int sj, int ej, int sk, int ek){
   // Interpolation along X3 (k) axis, used before sending data to ghost zone in X2 (j) direction
   // Get the local indices
   int lv2_lx2 = loc.lx2 >> (loc.level - 2);
@@ -531,41 +519,26 @@ void InteprolateX3CubedSphere(const AthenaArray<Real> &src, AthenaArray<Real> &t
               Real vy = ((y2-yq)*v1y + (yq-y1)*v2y) / (y2-y1);
               Real vz = ((y2-yq)*v1z + (yq-y1)*v2z) / (y2-y1);
               Real src_cz = tan(((y2-yq)*src_cz1 + (yq-y1)*src_cz2) / (y2-y1));
-              Real s_sc = sqrt(1+src_cy*src_cy+src_cz*src_cz)/sqrt(1+src_cy*src_cy)/sqrt(1+src_cz*src_cz);
-              Real c_sc = -src_cy*src_cz/sqrt(1+src_cy*src_cy)/sqrt(1+src_cz*src_cz);
-              Real s_tg = sqrt(1+tgt_cy*tgt_cy+tgt_cz*tgt_cz)/sqrt(1+tgt_cy*tgt_cy)/sqrt(1+tgt_cz*tgt_cz);
-              Real c_tg = -tgt_cy*tgt_cz/sqrt(1+tgt_cy*tgt_cy)/sqrt(1+tgt_cz*tgt_cz);
-              Real o11 = 1.0;
-              Real o12 = c_sc-c_tg/s_tg*s_sc;
-              Real o21 = 0.0;
-              Real o22 = s_sc/s_tg;
-              for (int rt=0; rt<NRot; rt++){
-                  Real o11t = -o21;
-                  Real o12t = -o22;
-                  Real o21t = o11;
-                  Real o22t = o12;
-                  o11 = o11t;
-                  o12 = o12t;
-                  o21 = o21t;
-                  o22 = o22t;
+              int blockID = FindBlockID(loc);
+              Real U, V;
+              // Trasform to global coordinate and back
+              VecTransRLLFromABP(src_cy, src_cz, blockID, vy, vz, &U, &V);
+              if(((TgtID==1)&&(blockID==3)) || ((TgtID==1) && (blockID==4)) || ((TgtID==5) && (blockID==3)) || ((TgtID==5) && (blockID==4))
+              || ((TgtID==3)&&(blockID==1)) || ((TgtID==4) && (blockID==1)) || ((TgtID==3) && (blockID==5)) || ((TgtID==4) && (blockID==5))){
+                Real tmp = tgt_cy;
+                tgt_cy = tgt_cz;
+                tgt_cz = tmp;
+              }
+              VecTransABPFromRLL(tgt_cy, tgt_cz, TgtID, U, V, &vy, &vz);
+              if (n==IVY){
+                tgt(n-sn, k-sk, j-sj, i-si) = vy;
+              }else{ // n==IVZ
+                tgt(n-sn, k-sk, j-sj, i-si) = vz;
               }
               if (n==IVY){
-                tgt(n-sn, k-sk, j-sj, i-si) = o11*vy+o12*vz;
-                int blockID = FindBlockID(loc);
-                if (((j==2)||(j==9)) && (i==2) && (blockID==1)){
-                  Real U, V;
-                  Real R = 6371000.0 / 100.0;
-                  VecTransRLLFromABP(src_cy, src_cz, blockID, vy, vz, &U, &V);
-                  std::cout << "|k=" << k << ", j=" << j << ", U=" << U*R << ", V=" << V*R << ", E=" << U*U+V*V << std::endl;
-                  Real vzt = o21*vy+o22*vz;
-                  Real vyt = o11*vy+o12*vz;
-                  if (j==9){ // connecting to panel 2
-                    VecTransRLLFromABP(tgt_cy, tgt_cz, 2, vyt, vzt, &U, &V);
-                    std::cout << "After transfer: y=" << atan(tgt_cy) << ", z=" << atan(tgt_cz) << ", U=" << U*R << ", V=" << V*R << ", E=" << U*U+V*V << std::endl;
-                  }
-                }
+                tgt(n-sn, k-sk, j-sj, i-si) = vy;
               }else{ // n==IVZ
-                tgt(n-sn, k-sk, j-sj, i-si) = o21*vy+o22*vz;
+                tgt(n-sn, k-sk, j-sj, i-si) = vz;
               }
             }else{
               if((src_pointer-n_start-N_blk/2+sk>ek)||(src_pointer-n_start-N_blk/2+sk<sk)){
@@ -587,16 +560,6 @@ void PackDataCubedSphere(const AthenaArray<Real> &src, Real *buf,
 // Find the block ID
 int blockID = FindBlockID(loc);
 
-// Table of #rot needed
-const int rot[6][4] = { // To access: rot[source_id][target_dir]
-    {2,0,1,3},
-    {0,0,0,0},
-    {3,1,0,0},
-    {1,3,0,0},
-    {0,2,3,1},
-    {2,2,0,0}
-} ;
-
 // Table of wether direction inversion is needed
 const int dinv[6][4] = { // To access: dinv[source_id][target_dir]
     {1,0,0,1},
@@ -615,6 +578,16 @@ const int tgside[6][4] = { // To access: dinv[source_id][target_dir]
     {1,1,1,-1},
     {1,1,1,1},
     {-1,1,1,-1}
+} ;
+
+// Table of which panel is in touch with this panel
+const int tgbid[6][4] = { // To access: tgbid[source_id][target_dir]
+    {6,2,3,4},
+    {1,5,3,4},
+    {1,5,6,2},
+    {1,5,2,6},
+    {2,6,3,4},
+    {1,5,4,3}
 } ;
 
 // Bypass Corner cases
@@ -636,132 +609,132 @@ interpolatedSrc.NewAthenaArray(en-sn+1, ek-sk+1, ej-sj+1, ei-si+1);
 switch(blockID){
   case 1:
     if(ox3==1 && local_lx3==bound_lim){
-      InteprolateX2CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][3], dinv[blockID-1][3], tgside[blockID-1][3], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX2CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][3], tgside[blockID-1][3], tgbid[blockID-1][3], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR1(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset); 
       return;
     }
     if(ox2==1 && local_lx2==bound_lim){
-      InteprolateX3CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][1], dinv[blockID-1][1], tgside[blockID-1][1], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX3CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][1], tgside[blockID-1][1], tgbid[blockID-1][1], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR0(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset);  
       return;
     }
     if(ox2==-1 && local_lx2==0){
-      InteprolateX3CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][0], dinv[blockID-1][0], tgside[blockID-1][0], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX3CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][0], tgside[blockID-1][0], tgbid[blockID-1][0], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR2(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset);  
       return;
     }
     if(ox3==-1 && local_lx3==0){
-      InteprolateX2CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][2], dinv[blockID-1][2], tgside[blockID-1][2], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX2CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][2], tgside[blockID-1][2], tgbid[blockID-1][2], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR3(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset);  
       return;
     }
     break;
   case 2:
     if(ox3==1 && local_lx3==bound_lim){
-      InteprolateX2CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][3], dinv[blockID-1][3], tgside[blockID-1][3], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX2CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][3], tgside[blockID-1][3], tgbid[blockID-1][3], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR0(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset); 
       return;
     }
     if(ox2==1 && local_lx2==bound_lim){
-      InteprolateX3CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][1], dinv[blockID-1][1], tgside[blockID-1][1], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX3CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][1], tgside[blockID-1][1], tgbid[blockID-1][1], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR0(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset);  
       return;
     }
     if(ox2==-1 && local_lx2==0){
-      InteprolateX3CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][0], dinv[blockID-1][0], tgside[blockID-1][0], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX3CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][0], tgside[blockID-1][0], tgbid[blockID-1][0], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR0(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset);  
       return;
     }
     if(ox3==-1 && local_lx3==0){
-      InteprolateX2CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][2], dinv[blockID-1][2], tgside[blockID-1][2], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX2CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][2], tgside[blockID-1][2], tgbid[blockID-1][2], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR0(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset);  
       return;
     }
     break;
   case 3:
     if(ox2==1 && local_lx2==bound_lim){
-      InteprolateX3CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][1], dinv[blockID-1][1], tgside[blockID-1][1], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX3CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][1], tgside[blockID-1][1], tgbid[blockID-1][1], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR3(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset);
       return; 
     }
     if(ox2==-1 && local_lx2==0){
-      InteprolateX3CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][0], dinv[blockID-1][0], tgside[blockID-1][0], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX3CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][0], tgside[blockID-1][0], tgbid[blockID-1][0], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR1(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset); 
       return;
     }
     if(ox3==1 && local_lx3==bound_lim){
-      InteprolateX2CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][3], dinv[blockID-1][3], tgside[blockID-1][3], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX2CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][3], tgside[blockID-1][3], tgbid[blockID-1][3], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR0(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset); 
       return;
     }
     if(ox3==-1 && local_lx3==0){
-      InteprolateX2CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][2], dinv[blockID-1][2], tgside[blockID-1][2], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX2CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][2], tgside[blockID-1][2], tgbid[blockID-1][2], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR0(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset);  
       return;
     }
     break;
   case 4:
     if(ox2==1 && local_lx2==bound_lim){
-      InteprolateX3CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][1], dinv[blockID-1][1], tgside[blockID-1][1], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX3CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][1], tgside[blockID-1][1], tgbid[blockID-1][1], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR1(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset);  
       return;
     }
     if(ox2==-1 && local_lx2==0){
-      InteprolateX3CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][0], dinv[blockID-1][0], tgside[blockID-1][0], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX3CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][0], tgside[blockID-1][0], tgbid[blockID-1][0], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR3(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset);  
       return;
     }
     if(ox3==1 && local_lx3==bound_lim){
-      InteprolateX2CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][3], dinv[blockID-1][3], tgside[blockID-1][3], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX2CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][3], tgside[blockID-1][3], tgbid[blockID-1][3], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR0(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset); 
       return;
     }
     if(ox3==-1 && local_lx3==0){
-      InteprolateX2CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][2], dinv[blockID-1][2], tgside[blockID-1][2], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX2CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][2], tgside[blockID-1][2], tgbid[blockID-1][2], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR0(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset);  
       return;
     }
     break;
   case 5:
     if(ox3==1 && local_lx3==bound_lim){
-      InteprolateX2CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][3], dinv[blockID-1][3], tgside[blockID-1][3], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX2CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][3], tgside[blockID-1][3], tgbid[blockID-1][3], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR3(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset);  
       return;
     }
     if(ox2==1 && local_lx2==bound_lim){
-      InteprolateX3CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][1], dinv[blockID-1][1], tgside[blockID-1][1], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX3CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][1], tgside[blockID-1][1], tgbid[blockID-1][1], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR2(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset);  
       return;
     }
     if(ox3==-1 && local_lx3==0){
-      InteprolateX2CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][2], dinv[blockID-1][2], tgside[blockID-1][2], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX2CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][2], tgside[blockID-1][2], tgbid[blockID-1][2], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR1(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset); 
       return;
     }
     if(ox2==-1 && local_lx2==0){
-      InteprolateX3CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][0], dinv[blockID-1][0], tgside[blockID-1][0], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX3CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][0], tgside[blockID-1][0], tgbid[blockID-1][0], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR0(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset);  
       return;
     }
     break;
   case 6:
     if(ox2==1 && local_lx2==bound_lim){
-      InteprolateX3CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][1], dinv[blockID-1][1], tgside[blockID-1][1], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX3CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][1], tgside[blockID-1][1], tgbid[blockID-1][1], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR2(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset); 
       return;
     }
     if(ox2==-1 && local_lx2==0){
-      InteprolateX3CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][0], dinv[blockID-1][0], tgside[blockID-1][0], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX3CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][0], tgside[blockID-1][0], tgbid[blockID-1][0], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR2(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset);  
       return;
     }
     if(ox3==1 && local_lx3==bound_lim){
-      InteprolateX2CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][3], dinv[blockID-1][3], tgside[blockID-1][3], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX2CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][3], tgside[blockID-1][3], tgbid[blockID-1][3], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR0(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset); 
       return;
     }
     if(ox3==-1 && local_lx3==0){
-      InteprolateX2CubedSphere(src, interpolatedSrc, loc, rot[blockID-1][2], dinv[blockID-1][2], tgside[blockID-1][2], sn, en, si, ei, sj, ej, sk, ek);
+      InteprolateX2CubedSphere(src, interpolatedSrc, loc, dinv[blockID-1][2], tgside[blockID-1][2], tgbid[blockID-1][2], sn, en, si, ei, sj, ej, sk, ek);
       PackDataCubedSphereR0(interpolatedSrc, buf, 0, en-sn, 0, ei-si, 0, ej-sj, 0, ek-sk, offset);  
       return;
     }
@@ -770,22 +743,6 @@ PackDataCubedSphereR0(src, buf, sn, en, si, ei, sj, ej, sk, ek, offset);
 return;
 }
 
-
-
-
-
-
-
-// #include <sstream>
-// #include <ostream>
-// #include <iostream>
-// #include <athena.hpp>
-// #include <athena_arrays.hpp>
-// #include <coordinates/coordinates.hpp>
-// #include <field/field.hpp>
-// #include <cubed_sphere.hpp>
-// #include <cmath>
-// #include <algorithm>
 
 #define DBL_EPSILON 1.0e-10
 

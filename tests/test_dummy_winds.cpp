@@ -9,16 +9,21 @@
 void MeshBlock::ProblemGenerator(ParameterInput *pin)
 {
   // Input field is a uniform 10 m/s zonal wind
+  Real R = 6371000.0;
   Real V = 0.0;
-  Real U = 10.0/6371000.0;
+  Real U = 10.0/R;
 
   std::cout << "======Start of Problem generator======" << loc.lx2 << "||" << loc.lx3 <<std::endl;
   for (int k = ks; k <= ke; ++k)
     for (int j = js; j <= je; ++j)
       for (int i = is; i <= ie; ++i) {
-        phydro->w(IDN,k,j,i) = 100.0;
+      Real rad = sqrt(pcoord->x3v(k) * pcoord->x3v(k) + pcoord->x2v(j) * pcoord->x2v(j));
+      if ((rad < 0.1) && (i == ie)) // Circular dam breaking
+        phydro->w(IDN,k,j,i) = 1.2E6 / R;
+      else
+        phydro->w(IDN,k,j,i) = 1E6 / R;
         // (*Following used for comm test*) (k-ks)*(je-js)*(ie-is) + (j-js)*(ie-is) + (i-is) + 0.1*(loc.lx2+1) + 0.01*(loc.lx3+1);
-        phydro->w(IPR,k,j,i) = 1.0;
+        //phydro->w(IPR,k,j,i) = 1.0;
         Real Vy, Vz;
         GetVyVz(&Vy, &Vz, pcoord, U, V, k, j, i);
         phydro->w(IVY,k,j,i) = Vy;
