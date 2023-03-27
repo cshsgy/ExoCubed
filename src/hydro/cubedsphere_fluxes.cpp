@@ -432,8 +432,6 @@ void Hydro::RecvNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
     if (ox3==-1) DirTag = 2 + 4 * tg_gid + 24*(1 << (loc.level - 2)) * pmb->gid;
     if (ox3==1) DirTag = 3 + 4 * tg_gid + 24*(1 << (loc.level - 2)) * pmb->gid;
     MPI_Recv(data, dsize, MPI_DOUBLE, tg_rank, DirTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);    
-    std::cout << "===============================" << std::endl;
-    std::cout << "MPI Message: Received data from " << tg_gid << " to " << pmb->gid << " on tag number " << DirTag << std::endl;
 
     // =======
     // int test;

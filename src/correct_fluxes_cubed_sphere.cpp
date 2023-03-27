@@ -182,7 +182,7 @@ void CubedSphereLR::SendNeighborBlocks(LogicalLocation const& loc, int ox2, int 
     }
     // Send by MPI: we don't care whether it is in the same process for now
     MPI_Send(&data, dsize, MPI_DOUBLE, tg_rank, DirTag, MPI_COMM_WORLD);
-    std::cout << "MPI Message: Sent data with size " << dsize << " from rank " << Globals::my_rank << " to " << tg_rank << " on tag number " << DirTag << std::endl;
+    // std::cout << "MPI Message: Sent data with size " << dsize << " from rank " << Globals::my_rank << " to " << tg_rank << " on tag number " << DirTag << std::endl;
 }
 
 void CubedSphereLR::RecvNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int tg_rank, int tg_gid){
@@ -263,7 +263,7 @@ void CubedSphereLR::RecvNeighborBlocks(LogicalLocation const& loc, int ox2, int 
 
     // Receive from MPI
     MPI_Recv(&data, dsize, MPI_DOUBLE, tg_rank, DirTag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    std::cout << "MPI Message: Received data with size " << dsize << " from rank " << tg_rank << " to " << Globals::my_rank << " on tag number " << DirTag << std::endl;
+    // std::cout << "MPI Message: Received data with size " << dsize << " from rank " << tg_rank << " to " << Globals::my_rank << " on tag number " << DirTag << std::endl;
     int offset = 0;
     for (int n=0; n<NWAVE; n++)
         for (int k=kb1; k<=kb2; k++)
