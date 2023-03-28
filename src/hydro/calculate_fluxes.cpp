@@ -160,8 +160,9 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
 
 // Cubed Sphere: recover the stored values, run riemann solvers
 #ifdef CUBED_SPHERE
-  SynchronizeFluxesSend();
-  SynchronizeFluxesRecv();
+  // Temporarily comment out the following 2 lines to avoid the error
+  // SynchronizeFluxesSend();
+  // SynchronizeFluxesRecv();
   //--------------------------------------------------------------------------------------
   // i-direction
 #ifndef HYDROSTATIC

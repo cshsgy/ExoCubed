@@ -35,6 +35,18 @@ void Hydro::RiemannSolver(int const k, int const j, int const il, int const iu,
     }
   }
 #endif // AFFINE
+#ifdef CUBED_SPHERE // need of projection
+  {
+    switch (ivx) {
+      case IVY:
+        pmy_block->pcoord->PrimToLocal2(k, j, il, iu, empty, wl, wr, empty);
+        break;
+      case IVZ:
+        pmy_block->pcoord->PrimToLocal3(k, j, il, iu, empty, wl, wr, empty);
+        break;
+    }
+  }
+#endif // CUBED_SPHERE
 
   for (int i = il; i <= iu; ++i) {
     for (int n = 0; n < NHYDRO; ++n) {
@@ -91,4 +103,16 @@ void Hydro::RiemannSolver(int const k, int const j, int const il, int const iu,
     }
   }
 #endif  // AFFINE
+#ifdef CUBED_SPHERE // need of projection
+  {
+    switch (ivx) {
+      case IVY:
+        pmy_block->pcoord->PrimToLocal2(k, j, il, iu, empty, wl, wr, empty);
+        break;
+      case IVZ:
+        pmy_block->pcoord->PrimToLocal3(k, j, il, iu, empty, wl, wr, empty);
+        break;
+    }
+  }
+#endif // CUBER_SPHERE
 }

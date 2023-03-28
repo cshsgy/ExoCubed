@@ -253,7 +253,7 @@ void GnomonicEquiangle::Face1Metric(const int k, const int j, const int il, cons
                                AthenaArray<Real> &g, AthenaArray<Real> &g_inv) {
   Real xt = tan(x2v(j));
   Real yt = tan(x3v(k));
-  Real cos_theta = xt*yt/sqrt((1.0+xt*xt)*(1.0+yt*yt));
+  Real cos_theta = -xt*yt/sqrt((1.0+xt*xt)*(1.0+yt*yt));
   Real sin_theta = sqrt((1.0+xt*xt+yt*yt)/(1.0+xt*xt)/(1.0+yt*yt));
   // Go through 1D block of cells
   
@@ -272,11 +272,11 @@ void GnomonicEquiangle::Face1Metric(const int k, const int j, const int il, cons
     Real &g13 = g(I13,i);
     Real &g23 = g(I23,i);
 
-    // Set metric terms, we only use covariant g for all calculations
+    // Set metric terms
     g11 = 1.0;
     g22 = 1.0;
     g12 = 0.0;
-    g13 = cos_theta;
+    g13 = 0.0;
     g23 = cos_theta;
     g33 = 1.0;
 
@@ -292,7 +292,7 @@ void GnomonicEquiangle::Face2Metric(const int k, const int j, const int il, cons
   // Go through 1D block of cells
   Real xt = tan(x2f(j));
   Real yt = tan(x3v(k));
-  Real cos_theta = xt*yt/sqrt((1.0+xt*xt)*(1.0+yt*yt));
+  Real cos_theta = -xt*yt/sqrt((1.0+xt*xt)*(1.0+yt*yt));
   Real sin_theta = sqrt((1.0+xt*xt+yt*yt)/(1.0+xt*xt)/(1.0+yt*yt));
   // Go through 1D block of cells
   
@@ -311,11 +311,11 @@ void GnomonicEquiangle::Face2Metric(const int k, const int j, const int il, cons
     Real &g13 = g(I13,i);
     Real &g23 = g(I23,i);
 
-    // Set metric terms, we only use covariant g for all calculations
+    // Set metric terms
     g11 = 1.0;
     g22 = 1.0;
     g12 = 0.0;
-    g13 = cos_theta;
+    g13 = 0.0;
     g23 = cos_theta;
     g33 = 1.0;
 
@@ -331,7 +331,7 @@ void GnomonicEquiangle::Face3Metric(const int k, const int j, const int il, cons
   // Go through 1D block of cells
   Real xt = tan(x2v(j));
   Real yt = tan(x3f(k));
-  Real cos_theta = xt*yt/sqrt((1.0+xt*xt)*(1.0+yt*yt));
+  Real cos_theta = -xt*yt/sqrt((1.0+xt*xt)*(1.0+yt*yt));
   Real sin_theta = sqrt((1.0+xt*xt+yt*yt)/(1.0+xt*xt)/(1.0+yt*yt));
   // Go through 1D block of cells
   
@@ -350,11 +350,11 @@ void GnomonicEquiangle::Face3Metric(const int k, const int j, const int il, cons
     Real &g13 = g(I13,i);
     Real &g23 = g(I23,i);
 
-    // Set metric terms, we only use covariant g for all calculations
+    // Set metric terms
     g11 = 1.0;
     g22 = 1.0;
     g12 = 0.0;
-    g13 = cos_theta;
+    g13 = 0.0;
     g23 = cos_theta;
     g33 = 1.0;
 
@@ -383,7 +383,6 @@ void GnomonicEquiangle::PrimToLocal2(
       AthenaArray<Real> &prim_right, AthenaArray<Real> &bx) {
   // Calculate metric coefficients for projection
   Face2Metric(k, j, il, iu, g_, gi_);
-
   // Go through 1D block of cells
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
@@ -423,8 +422,8 @@ void GnomonicEquiangle::PrimToLocal2(
     Real uy_l = T21*uu1_l+T22*uu2_l+T23*uu3_l;
     Real uz_l = T31*uu1_l+T32*uu2_l+T33*uu3_l;
     Real ux_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
-    Real uy_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
-    Real uz_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
+    Real uy_r = T21*uu1_r+T22*uu2_r+T23*uu3_r;
+    Real uz_r = T31*uu1_r+T32*uu2_r+T33*uu3_r;
 
 
     // Set local projected 4-velocities
@@ -484,8 +483,8 @@ void GnomonicEquiangle::PrimToLocal3(
     Real uy_l = T21*uu1_l+T22*uu2_l+T23*uu3_l;
     Real uz_l = T31*uu1_l+T32*uu2_l+T33*uu3_l;
     Real ux_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
-    Real uy_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
-    Real uz_r = T11*uu1_r+T12*uu2_r+T13*uu3_r;
+    Real uy_r = T21*uu1_r+T22*uu2_r+T23*uu3_r;
+    Real uz_r = T31*uu1_r+T32*uu2_r+T33*uu3_r;
 
 
     // Set local projected 4-velocities
