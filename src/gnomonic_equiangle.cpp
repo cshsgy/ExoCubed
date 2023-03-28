@@ -12,6 +12,7 @@
 GnomonicEquiangle::GnomonicEquiangle(MeshBlock *pmb, ParameterInput *pin, bool flag)
     : Coordinates(pmb, pin, flag)
 {
+  std::cout << "Gnomonic Equiangle Coordinate Activated" << std::endl;
   // initialize volume-averaged coordinates and spacing
   // x1-direction: x1v = dx/2
   for (int i=il-ng; i<=iu+ng; ++i) {
@@ -127,7 +128,8 @@ void GnomonicEquiangle::Face1Area(const int k, const int j, const int il, const 
   }
   return;
 }
-void AffineCoordinate::Face2Area(const int k, const int j, const int il, const int iu,
+
+void GnomonicEquiangle::Face2Area(const int k, const int j, const int il, const int iu,
                             AthenaArray<Real> &area) {
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
@@ -137,7 +139,7 @@ void AffineCoordinate::Face2Area(const int k, const int j, const int il, const i
   return;
 }
 
-void AffineCoordinate::Face3Area(const int k, const int j, const int il, const int iu,
+void GnomonicEquiangle::Face3Area(const int k, const int j, const int il, const int iu,
                             AthenaArray<Real> &area) {
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {

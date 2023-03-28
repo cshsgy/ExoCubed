@@ -84,16 +84,16 @@ void Hydro::RiemannSolver(int const k, int const j, int const il, int const iu,
     }
   }
 #endif  // AFFINE
-#ifdef CUBED_SPHERE // need of projection
+#ifdef CUBED_SPHERE // need of deprojection
   {
     switch (ivx) {
       case IVY:
-        pmy_block->pcoord->PrimToLocal2(k, j, il, iu, empty, wl, wr, empty);
+        pmy_block->pcoord->FluxToGlobal2(k, j, il, iu, empty, empty, flx, empty, empty);
         break;
       case IVZ:
-        pmy_block->pcoord->PrimToLocal3(k, j, il, iu, empty, wl, wr, empty);
+        pmy_block->pcoord->FluxToGlobal3(k, j, il, iu, empty, empty, flx, empty, empty);
         break;
     }
   }
-#endif // CUBED_SPHERE
+#endif // CUBER_SPHERE
 }
