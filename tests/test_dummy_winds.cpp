@@ -19,9 +19,9 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
       for (int i = is; i <= ie; ++i) {
         Real rad = sqrt(pcoord->x3v(k) * pcoord->x3v(k) + pcoord->x2v(j) * pcoord->x2v(j));
         if ((rad < 0.4) && (i == is)) // Circular dam breaking
-          phydro->w(IDN,k,j,i) = 1.2E6 / (R*R);
+          phydro->w(IDN,k,j,i) = 1.2; // / (R*R);
         else
-          phydro->w(IDN,k,j,i) = 1E6 / (R*R);
+          phydro->w(IDN,k,j,i) = 1.0; // / (R*R);
         // (*Following used for comm test*) (k-ks)*(je-js)*(ie-is) + (j-js)*(ie-is) + (i-is) + 0.1*(loc.lx2+1) + 0.01*(loc.lx3+1);
         //phydro->w(IPR,k,j,i) = 1.0;
         Real Vy, Vz;
@@ -32,6 +32,29 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
   std::cout << "Done with problem generator..." << std::endl;
   peos->PrimitiveToConserved(phydro->w, pfield->bcc, phydro->u, pcoord, is, ie, js, je, ks, ke);
 }
+
+// void MeshBlock::UserWorkInLoop()
+// {
+//   // Print density if not equal to 1.0
+//   int flag = 0;
+//   for (int k = ks; k <= ke; ++k)
+//     for (int j = js; j <= je; ++j)
+//       for (int i = is; i <= ie; ++i) {
+//         if (phydro->w(IDN,k,j,i) != 1.0) {
+//           std::cout << "Density not equal to 1.0 at (" << i << "," << j << "," << k << "): " << phydro->w(IDN,k,j,i) << std::endl;
+//           // print the velocities at the location
+//           std::cout << "Velocities: " << phydro->w(IVX,k,j,i) << "," << phydro->w(IVY,k,j,i) << "," << phydro->w(IVZ,k,j,i) << std::endl;
+//           std::cout << "Location: " << loc.lx2 << "," << loc.lx3 << std::endl;
+//           std::cout << "Time: " << pmy_mesh->time << std::endl;
+//           // Terminate the program after loops done
+//           flag = 1;
+//         }
+//       }
+//   // if (flag == 1){
+//   //   std::cout << "Terminating the program..." << std::endl;
+//   //   exit(EXIT_FAILURE);
+//   // }
+// }
 
 void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
 {

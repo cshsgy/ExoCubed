@@ -50,4 +50,4 @@ nx3        = 80
 
 <hydro>
 gamma       = 1.4         # gamma = C_p/C_v
-active      = disabled
+#active      = disabled
