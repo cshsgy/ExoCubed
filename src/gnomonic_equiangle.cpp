@@ -5,6 +5,7 @@
 #include <parameter_input.hpp>
 #include <coordinates/coordinates.hpp>
 #include <cubed_sphere.hpp>
+#include <cmath>
 
 //----------------------------------------------------------------------------------------
 //! Cartesian coordinates constructor
@@ -226,25 +227,37 @@ void GnomonicEquiangle::CenterWidth1(const int k, const int j, const int il, con
                                AthenaArray<Real> &dx1) {
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
-    dx1(i) = dx1f(i);
+    dx1(i) = dx1f(i); // Same as cartesian
   }
   return;
 }
 
 void GnomonicEquiangle::CenterWidth2(const int k, const int j, const int il, const int iu,
                                AthenaArray<Real> &dx2) {
+  Real x = tan(x2v(j));
+  Real y1 = tan(x3f(k));
+  Real y2 = tan(x3f(k+1));
+  Real delta1 = sqrt(1.0+x*x+y1*y1);
+  Real delta2 = sqrt(1.0+x*x+y2*y2);
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
-    dx2(i) = dx2f(j);
+    Real r = x1v(i);
+    dx2(i) = r*acos(1/(delta1*delta2)*(1+x*x+y1*y2));
   }
   return;
 }
 
 void GnomonicEquiangle::CenterWidth3(const int k, const int j, const int il, const int iu,
                                AthenaArray<Real> &dx3) {
+  Real x1 = tan(x2f(j));
+  Real x2 = tan(x2f(j+1));
+  Real y = tan(x3v(k));
+  Real delta1 = sqrt(1.0+x1*x1+y*y);
+  Real delta2 = sqrt(1.0+x2*x2+y*y);
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
-    dx3(i) = dx3f(k);
+    Real r = x1v(i);
+    dx3(i) = r*acos(1/(delta1*delta2)*(1+x1*x2+y*y));
   }
   return;
 }
