@@ -12,7 +12,7 @@
 GnomonicEquiangle::GnomonicEquiangle(MeshBlock *pmb, ParameterInput *pin, bool flag)
     : Coordinates(pmb, pin, flag)
 {
-  std::cout << "Gnomonic Equiangle Coordinate Activated" << std::endl;
+  std::cout << "Gnomonic Equiangle Coordinate " << std::endl;
   // initialize volume-averaged coordinates and spacing
   // x1-direction: x1v = dx/2
   for (int i=il-ng; i<=iu+ng; ++i) {
@@ -218,6 +218,38 @@ void GnomonicEquiangle::CellVolume(const int k, const int j, const int il, const
   }
   return;
 }
+
+//----------------------------------------------------------------------------------------
+// CenterWidthX functions: return physical width in X-dir at (i,j,k) cell-center
+
+void GnomonicEquiangle::CenterWidth1(const int k, const int j, const int il, const int iu,
+                               AthenaArray<Real> &dx1) {
+#pragma omp simd
+  for (int i=il; i<=iu; ++i) {
+    dx1(i) = dx1f(i);
+  }
+  return;
+}
+
+void GnomonicEquiangle::CenterWidth2(const int k, const int j, const int il, const int iu,
+                               AthenaArray<Real> &dx2) {
+#pragma omp simd
+  for (int i=il; i<=iu; ++i) {
+    dx2(i) = dx2f(j);
+  }
+  return;
+}
+
+void GnomonicEquiangle::CenterWidth3(const int k, const int j, const int il, const int iu,
+                               AthenaArray<Real> &dx3) {
+#pragma omp simd
+  for (int i=il; i<=iu; ++i) {
+    dx3(i) = dx3f(k);
+  }
+  return;
+}
+
+
 
 //----------------------------------------------------------------------------------------
 // GetCellVolume: returns cell volume at (i,j,k)
