@@ -127,7 +127,25 @@ void GnomonicEquiangle::Face1Area(const int k, const int j, const int il, const 
   }
   return;
 }
-// Face 2 and 3 no need to specify, will use coordinates.cpp expressions
+void AffineCoordinate::Face2Area(const int k, const int j, const int il, const int iu,
+                            AthenaArray<Real> &area) {
+#pragma omp simd
+  for (int i=il; i<=iu; ++i) {
+    Real& area_i = area(i);
+    area_i = dx1f(i)*dx3f(k);
+  }
+  return;
+}
+
+void AffineCoordinate::Face3Area(const int k, const int j, const int il, const int iu,
+                            AthenaArray<Real> &area) {
+#pragma omp simd
+  for (int i=il; i<=iu; ++i) {
+    Real& area_i = area(i);
+    area_i = dx1f(i)*dx2f(j);
+  }
+  return;
+}
 
 //----------------------------------------------------------------------------------------
 // GetFaceXArea functions: return area of face with normal in X-dir at (i,j,k)
