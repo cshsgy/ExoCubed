@@ -71,12 +71,7 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
         pmb->precon->PiecewiseParabolicX1(k, j, is-1, ie+1, w, bcc, wl_, wr_);
       }
       pmb->pcoord->CenterWidth1(k, j, is, ie+1, dxw_);
-#ifdef CUBED_SPHERE // Rieman solver run later
-      SaveLR3DValues(wl_, wr_, X1DIR, k, j, is, ie+1); // is to ie+1 is what the RiemannSolver below uses...
-#else
       RiemannSolver(k, j, is, ie+1, IVX, wl_, wr_, x1flux, dxw_);
-
-#endif
     }
   }
 #endif  // end HYDROSTATIC
@@ -165,20 +160,6 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
   // Temporarily comment out the following 2 lines to avoid the error
   SynchronizeFluxesSend();
   SynchronizeFluxesRecv();
-  //--------------------------------------------------------------------------------------
-  // i-direction
-#ifndef HYDROSTATIC
-  jl = js, ju = je, kl = ks, ku = ke;
-
-  for (int k=kl; k<=ku; ++k) {
-    for (int j=jl; j<=ju; ++j) {
-      // reconstruct L/R states
-      LoadLR3DValues(wl_, wr_, X1DIR, k, j, is, ie+1);
-      pmb->pcoord->CenterWidth1(k, j, is, ie+1, dxw_);
-      RiemannSolver(k, j, is, ie+1, IVX, wl_, wr_, x1flux, dxw_);
-    }
-  }
-#endif // HYDROSTATIC
 
   //--------------------------------------------------------------------------------------
   // j-direction

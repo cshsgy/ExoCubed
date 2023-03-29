@@ -1,5 +1,6 @@
 // Athena++ headers
 #include <athena.hpp>
+#include <defs.hpp>
 #include <athena_arrays.hpp>
 #include <mesh/mesh.hpp>
 #include <parameter_input.hpp>
@@ -124,8 +125,23 @@ void GnomonicEquiangle::Face1Area(const int k, const int j, const int il, const 
   Real xt = tan(x2v(j));
   Real yt = tan(x3v(k));
   Real sin_theta = sqrt((1.0+xt*xt+yt*yt)/(1.0+xt*xt)/(1.0+yt*yt));
+
+  Real x1 = tan(x2f(j));
+  Real x2 = tan(x2f(j+1));
+  Real y = tan(x3v(k));
+  Real delta1 = sqrt(1.0+x1*x1+y*y);
+  Real delta2 = sqrt(1.0+x2*x2+y*y);
+  Real dx2_ang = acos(1/(delta1*delta2)*(1+x1*x2+y*y));
+
+  Real x = tan(x2v(j));
+  Real y1 = tan(x3f(k));
+  Real y2 = tan(x3f(k+1));
+  delta1 = sqrt(1.0+x*x+y1*y1);
+  delta2 = sqrt(1.0+x*x+y2*y2);
+  Real dx3_ang = acos(1/(delta1*delta2)*(1+x*x+y1*y2));
+
   for (int i=il; i<=iu; ++i) {
-    area(i) = dx2f(j)*dx3f(k)*sin_theta;
+    area(i) = dx2_ang*dx3_ang*x1f(i)*x1f(i)*sin_theta;
   }
   return;
 }
@@ -142,7 +158,6 @@ void GnomonicEquiangle::Face2Area(const int k, const int j, const int il, const 
     Real dx3_lin = x1v(i)*acos(1/(delta1*delta2)*(1+x*x+y1*y2));
     Real& area_i = area(i);
     area_i = dx3_lin*dx1f(i);
-    // area_i = dx1f(i)*dx3f(k);
   }
   return;
 }
@@ -158,7 +173,6 @@ void GnomonicEquiangle::Face3Area(const int k, const int j, const int il, const 
   for (int i=il; i<=iu; ++i) {
     Real dx2_lin = x1v(i)*acos(1/(delta1*delta2)*(1+x1*x2+y*y));
     Real& area_i = area(i);
-    // area_i = dx1f(i)*dx2f(j);
     area_i = dx2_lin*dx1f(i);
   }
   return;
@@ -171,7 +185,22 @@ Real GnomonicEquiangle::GetFace1Area(const int k, const int j, const int i) {
   Real xt = tan(x2v(j));
   Real yt = tan(x3v(k));
   Real sin_theta = sqrt((1.0+xt*xt+yt*yt)/(1.0+xt*xt)/(1.0+yt*yt));
-  return dx2f(j)*dx3f(k)*sin_theta;
+  
+  Real x1 = tan(x2f(j));
+  Real x2 = tan(x2f(j+1));
+  Real y = tan(x3v(k));
+  Real delta1 = sqrt(1.0+x1*x1+y*y);
+  Real delta2 = sqrt(1.0+x2*x2+y*y);
+  Real dx2_ang = acos(1/(delta1*delta2)*(1+x1*x2+y*y));
+
+  Real x = tan(x2v(j));
+  Real y1 = tan(x3f(k));
+  Real y2 = tan(x3f(k+1));
+  delta1 = sqrt(1.0+x*x+y1*y1);
+  delta2 = sqrt(1.0+x*x+y2*y2);
+  Real dx3_ang = acos(1/(delta1*delta2)*(1+x*x+y1*y2));
+
+  return dx2_ang*dx3_ang*x1f(i)*x1f(i)*sin_theta;
 }
 
 Real GnomonicEquiangle::GetFace2Area(const int k, const int j, const int i) {
@@ -181,8 +210,7 @@ Real GnomonicEquiangle::GetFace2Area(const int k, const int j, const int i) {
   Real delta1 = sqrt(1.0+x*x+y1*y1);
   Real delta2 = sqrt(1.0+x*x+y2*y2);
   Real dx3_lin = x1v(i)*acos(1/(delta1*delta2)*(1+x*x+y1*y2));
-  // return dx1f(i)*dx3_lin;
-  return dx1f(i)*dx3f(k);
+  return dx1f(i)*dx3_lin;
 }
 
 Real GnomonicEquiangle::GetFace3Area(const int k, const int j, const int i) {
@@ -193,7 +221,6 @@ Real GnomonicEquiangle::GetFace3Area(const int k, const int j, const int i) {
   Real delta2 = sqrt(1.0+x2*x2+y*y);
   Real dx2_lin = x1v(i)*acos(1/(delta1*delta2)*(1+x1*x2+y*y));
   return dx1f(i)*dx2_lin;
-  // return dx1f(i)*dx2f(j);
 }
 
 //----------------------------------------------------------------------------------------
@@ -206,10 +233,25 @@ void GnomonicEquiangle::VolCenterFace1Area(const int k, const int j, const int i
   Real xt = tan(x2v(j));
   Real yt = tan(x3v(k));
   Real sin_theta = sqrt((1.0+xt*xt+yt*yt)/(1.0+xt*xt)/(1.0+yt*yt));
+
+  Real x1 = tan(x2f(j));
+  Real x2 = tan(x2f(j+1));
+  Real y = tan(x3v(k));
+  Real delta1 = sqrt(1.0+x1*x1+y*y);
+  Real delta2 = sqrt(1.0+x2*x2+y*y);
+  Real dx2_ang = acos(1/(delta1*delta2)*(1+x1*x2+y*y));
+
+  Real x = tan(x2v(j));
+  Real y1 = tan(x3f(k));
+  Real y2 = tan(x3f(k+1));
+  delta1 = sqrt(1.0+x*x+y1*y1);
+  delta2 = sqrt(1.0+x*x+y2*y2);
+  Real dx3_ang = acos(1/(delta1*delta2)*(1+x*x+y1*y2));
+
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     Real& area_i = area(i);
-    area_i = dx2v(j)*dx3v(k)*sin_theta;
+    area_i = dx2_ang*dx3_ang*x1v(i)*x1v(i)*sin_theta;
   }
   return;
 }
@@ -226,7 +268,6 @@ void GnomonicEquiangle::VolCenterFace2Area(const int k, const int j, const int i
     Real dx3_lin = x1v(i)*acos(1/(delta1*delta2)*(1+x*x+y1*y2));
     Real& area_i = area(i);
     area_i = dx1v(i)*dx3_lin;
-    // area_i = dx1v(i)*dx3f(k);
   }
   return;
 }
@@ -243,7 +284,6 @@ void GnomonicEquiangle::VolCenterFace3Area(const int k, const int j, const int i
     Real dx2_lin = x1v(i)*acos(1/(delta1*delta2)*(1+x1*x2+y*y));
     Real& area_i = area(i);
     area_i = dx1v(i)*dx2_lin;
-    // area_i = dx1v(i)*dx2f(j);
   }
   return;
 }
@@ -273,7 +313,6 @@ void GnomonicEquiangle::CellVolume(const int k, const int j, const int il, const
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
     vol(i) = dx1f(i)*dx2_ang*dx3_ang*x1v(i)*x1v(i)*sin_theta;
-    // vol(i) = dx1f(i)*dx2f(j)*dx3f(k)*sin_theta;
   }
   return;
 }
@@ -756,15 +795,18 @@ void GnomonicEquiangle::AddCoordTermsDivergence(
         Real C = sqrt(1.0+x*x);
         Real D = sqrt(1.0+y*y);
         Real delta = 1.0/(1.0+x*x+y*y);
-
-        // if shallow water
-        Real pr = 0.5 * prim(IDN,k,j,i) * prim(IDN,k,j,i);
-        Real rho = prim(IDN,k,j,i);
-        
-        // if not shallow water, update flux 1
-        // Real src1 = 2.0*pr/r+rho*(v2*v2+v3*v3-2*v2*v3*x*y/(C*D));
-        // u(IM1,k,j,i) += dt*src1;
-
+        Real pr;
+        Real rho;
+        if (EQUATION_OF_STATE == "shallow_water") {
+          pr = 0.5 * prim(IDN,k,j,i) * prim(IDN,k,j,i);
+          rho = prim(IDN,k,j,i);
+        }else{
+          pr = prim(IPR,k,j,i);
+          rho = prim(IDN,k,j,i);
+          // Update flux 1 (excluded from shallow water case)
+          Real src1 = 2.0*pr/r+rho*(v2*v2+v3*v3-2*v2*v3*x*y/(C*D));
+          u(IM1,k,j,i) += dt*src1;
+        }
         // Update flux 2
         Real src2 = pr*y*y/r*x/D-rho*v2/r*(v1-y*v3*delta*delta/(C*D*D));
         u(IM2,k,j,i) += dt*src2;
