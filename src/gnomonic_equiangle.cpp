@@ -738,3 +738,42 @@ void GnomonicEquiangle::FluxToGlobal3(
   }
   return;
 }
+
+void GnomonicEquiangle::AddCoordTermsDivergence(
+    const Real dt, const AthenaArray<Real> *flux,
+    const AthenaArray<Real> &prim, const AthenaArray<Real> &bcc, AthenaArray<Real> &u) {
+  for (int k=pmy_block->ks; k<=pmy_block->ke; ++k) {
+    for (int j=pmy_block->js; j<=pmy_block->je; ++j) {
+#pragma omp simd
+      for (int i=pmy_block->is; i<=pmy_block->ie; ++i) {
+        // General variables
+        Real v1 = prim(IVX,k,j,i);
+        Real v2 = prim(IVY,k,j,i);
+        Real v3 = prim(IVZ,k,j,i);
+        Real r = x1v(i);
+        Real x = tan(x2v(j));
+        Real y = tan(x3v(k));
+        Real C = sqrt(1.0+x*x);
+        Real D = sqrt(1.0+y*y);
+        Real delta = 1.0/(1.0+x*x+y*y);
+
+        // if shallow water
+        Real pr = 0.5 * prim(IDN,k,j,i) * prim(IDN,k,j,i);
+        Real rho = prim(IDN,k,j,i);
+        
+        // if not shallow water, update flux 1
+        // Real src1 = 2.0*pr/r+rho*(v2*v2+v3*v3-2*v2*v3*x*y/(C*D));
+        // u(IM1,k,j,i) += dt*src1;
+
+        // Update flux 2
+        Real src2 = pr*y*y/r*x/D-rho*v2/r*(v1-y*v3*delta*delta/(C*D*D));
+        u(IM2,k,j,i) += dt*src2;
+
+        // Update flux 3
+        Real src3 = pr*x*x/r*y/C-rho*v3/r*(v1-x*v2*delta*delta/(C*C*D));
+        u(IM3,k,j,i) += dt*src3;
+      }
+    }
+  }
+  return;
+}
