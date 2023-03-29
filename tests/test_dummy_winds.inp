@@ -9,25 +9,25 @@ dt         = 15.        # time increment between outputs
 #ghost_zones= true
 file_type  = netcdf    # Binary data dump
 variable   = prim        # variables to be output
-dt         = 15.         # time increment between outputs
+dt         = 0.1         # time increment between outputs
 
 <output3>
 #ghost_zones= true
 file_type  = netcdf
 variable   = uov
-dt         = 15.
+dt         = 0.1
 
 <time>
-cfl_number = 0.3          # The Courant, Friedrichs, & Lewy (CFL) Number
-nlim       = 1000         # cycle limit
-tlim       = 90           # time limit
-xorder     = 1            # horizontal reconstruction order
+cfl_number = 0.7          # The Courant, Friedrichs, & Lewy (CFL) Number
+nlim       = -1         # cycle limit
+tlim       = 1.           # time limit
+xorder     = 2            # horizontal reconstruction order
 integrator = rk3          # integration method
 
 <mesh>
-nx1        = 4            # Number of zones in X1-direction
-x1min      = 0.           # minimum value of X1
-x1max      = 1.           # maximum value of X1
+nx1        = 2            # Number of zones in X1-direction
+x1min      = 1.           # minimum value of X1
+x1max      = 2.           # maximum value of X1
 ix1_bc     = reflecting   # inner-X1 boundary flag
 ox1_bc     = reflecting   # outer-X1 boundary flag
 
@@ -44,9 +44,9 @@ ix3_bc     = periodic   # inner-X3 boundary flag
 ox3_bc     = periodic   # outer-X3 boundary flag
 
 <meshblock>
-nx1        = 4
-nx2        = 80
-nx3        = 80
+nx1        = 2
+nx2        = 40
+nx3        = 40
 
 <hydro>
 gamma       = 1.4         # gamma = C_p/C_v
