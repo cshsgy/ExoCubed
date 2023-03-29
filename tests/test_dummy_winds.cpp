@@ -19,7 +19,7 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
       for (int i = is; i <= ie; ++i) {
         Real rad = sqrt((pcoord->x3v(k)) * (pcoord->x3v(k)) + (pcoord->x2v(j)) * (pcoord->x2v(j)));
         if ((rad < 0.4) && (i == is)) // Circular dam breaking
-          phydro->w(IDN,k,j,i) = 1.2; // / (R*R);
+          phydro->w(IDN,k,j,i) = 1.0; // / (R*R);
         else
           phydro->w(IDN,k,j,i) = 1.0; // / (R*R);
         // (*Following used for comm test*) (k-ks)*(je-js)*(ie-is) + (j-js)*(ie-is) + (i-is) + 0.1*(loc.lx2+1) + 0.01*(loc.lx3+1);

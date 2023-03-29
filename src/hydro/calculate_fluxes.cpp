@@ -163,8 +163,8 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
 // Cubed Sphere: recover the stored values, run riemann solvers
 #ifdef CUBED_SPHERE
   // Temporarily comment out the following 2 lines to avoid the error
-  SynchronizeFluxesSend();
-  SynchronizeFluxesRecv();
+  // SynchronizeFluxesSend();
+  // SynchronizeFluxesRecv();
   //--------------------------------------------------------------------------------------
   // i-direction
 #ifndef HYDROSTATIC
@@ -211,7 +211,6 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
       for (int k=ks; k<=ke+1; ++k) {
         pmb->pcoord->CenterWidth3(k, j, il, iu, dxw_);
         LoadLR3DValues(wl_, wr_, X3DIR, k, j, il, iu);
-
         RiemannSolver(k, j, il, iu, IVZ, wl_, wr_, x3flux, dxw_);
       }
     }
