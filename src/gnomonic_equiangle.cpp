@@ -132,20 +132,34 @@ void GnomonicEquiangle::Face1Area(const int k, const int j, const int il, const 
 
 void GnomonicEquiangle::Face2Area(const int k, const int j, const int il, const int iu,
                             AthenaArray<Real> &area) {
+  Real x = tan(x2f(j));
+  Real y1 = tan(x3f(k));
+  Real y2 = tan(x3f(k+1));
+  Real delta1 = sqrt(1.0+x*x+y1*y1);
+  Real delta2 = sqrt(1.0+x*x+y2*y2);
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
+    Real dx3_lin = x1v(i)*acos(1/(delta1*delta2)*(1+x*x+y1*y2));
     Real& area_i = area(i);
-    area_i = dx1f(i)*dx3f(k);
+    area_i = dx3_lin*dx1f(i);
+    // area_i = dx1f(i)*dx3f(k);
   }
   return;
 }
 
 void GnomonicEquiangle::Face3Area(const int k, const int j, const int il, const int iu,
                             AthenaArray<Real> &area) {
+  Real x1 = tan(x2f(j));
+  Real x2 = tan(x2f(j+1));
+  Real y = tan(x3f(k));
+  Real delta1 = sqrt(1.0+x1*x1+y*y);
+  Real delta2 = sqrt(1.0+x2*x2+y*y);
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
+    Real dx2_lin = x1v(i)*acos(1/(delta1*delta2)*(1+x1*x2+y*y));
     Real& area_i = area(i);
-    area_i = dx1f(i)*dx2f(j);
+    // area_i = dx1f(i)*dx2f(j);
+    area_i = dx2_lin*dx1f(i);
   }
   return;
 }
@@ -178,8 +192,8 @@ Real GnomonicEquiangle::GetFace3Area(const int k, const int j, const int i) {
   Real delta1 = sqrt(1.0+x1*x1+y*y);
   Real delta2 = sqrt(1.0+x2*x2+y*y);
   Real dx2_lin = x1v(i)*acos(1/(delta1*delta2)*(1+x1*x2+y*y));
-  // return dx1f(i)*dx2_lin;
-  return dx1f(i)*dx2f(j);
+  return dx1f(i)*dx2_lin;
+  // return dx1f(i)*dx2f(j);
 }
 
 //----------------------------------------------------------------------------------------
@@ -211,8 +225,8 @@ void GnomonicEquiangle::VolCenterFace2Area(const int k, const int j, const int i
   for (int i=il; i<=iu; ++i) {
     Real dx3_lin = x1v(i)*acos(1/(delta1*delta2)*(1+x*x+y1*y2));
     Real& area_i = area(i);
-    // area_i = dx1v(i)*dx3_lin;
-    area_i = dx1v(i)*dx3f(k);
+    area_i = dx1v(i)*dx3_lin;
+    // area_i = dx1v(i)*dx3f(k);
   }
   return;
 }
@@ -228,8 +242,8 @@ void GnomonicEquiangle::VolCenterFace3Area(const int k, const int j, const int i
   for (int i=il; i<=iu; ++i) {
     Real dx2_lin = x1v(i)*acos(1/(delta1*delta2)*(1+x1*x2+y*y));
     Real& area_i = area(i);
-    // area_i = dx1v(i)*dx2_lin;
-    area_i = dx1v(i)*dx2f(j);
+    area_i = dx1v(i)*dx2_lin;
+    // area_i = dx1v(i)*dx2f(j);
   }
   return;
 }
@@ -258,8 +272,8 @@ void GnomonicEquiangle::CellVolume(const int k, const int j, const int il, const
 
 #pragma omp simd
   for (int i=il; i<=iu; ++i) {
-    // vol(i) = dx1f(i)*dx2_ang*dx3_ang*x1v(i)*x1v(i)*sin_theta;
-    vol(i) = dx1f(i)*dx2f(j)*dx3f(k)*sin_theta;
+    vol(i) = dx1f(i)*dx2_ang*dx3_ang*x1v(i)*x1v(i)*sin_theta;
+    // vol(i) = dx1f(i)*dx2f(j)*dx3f(k)*sin_theta;
   }
   return;
 }
