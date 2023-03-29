@@ -118,7 +118,7 @@ void Hydro::SendNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
         ib1 = pmb->is - 1;
         ib2 = pmb->ie + 1;
         kb1 = pmb->ks;
-        kb2 = pmb->ke + 1;
+        kb2 = pmb->ke;
     }
     if (ox2==-1){
         DirNum = X2DIR;
@@ -127,12 +127,12 @@ void Hydro::SendNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
         ib1 = pmb->is - 1;
         ib2 = pmb->ie + 1;
         kb1 = pmb->ks;
-        kb2 = pmb->ke + 1;
+        kb2 = pmb->ke;
     }
     if (ox3==1){
         DirNum = X3DIR;
         jb1 = pmb->js;
-        jb2 = pmb->je + 1;
+        jb2 = pmb->je;
         ib1 = pmb->is - 1;
         ib2 = pmb->ie + 1;
         kb1 = pmb->ke + 1;
@@ -141,7 +141,7 @@ void Hydro::SendNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
     if (ox3==-1){
         DirNum = X3DIR;
         jb1 = pmb->js;
-        jb2 = pmb->je + 1;
+        jb2 = pmb->je;
         ib1 = pmb->is - 1;
         ib2 = pmb->ie + 1;
         kb1 = pmb->ks;
@@ -331,7 +331,7 @@ void Hydro::RecvNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
         ib1 = pmb->is - 1;
         ib2 = pmb->ie + 1;
         kb1 = pmb->ks;
-        kb2 = pmb->ke + 1;
+        kb2 = pmb->ke;
     }
     if (ox2==-1){
         DirNum = X2DIR;
@@ -340,12 +340,12 @@ void Hydro::RecvNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
         ib1 = pmb->is - 1;
         ib2 = pmb->ie + 1;
         kb1 = pmb->ks;
-        kb2 = pmb->ke + 1;
+        kb2 = pmb->ke;
     }
     if (ox3==1){
         DirNum = X3DIR;
         jb1 = pmb->js;
-        jb2 = pmb->je + 1;
+        jb2 = pmb->je;
         ib1 = pmb->is - 1;
         ib2 = pmb->ie + 1;
         kb1 = pmb->ke + 1;
@@ -354,7 +354,7 @@ void Hydro::RecvNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
     if (ox3==-1){
         DirNum = X3DIR;
         jb1 = pmb->js;
-        jb2 = pmb->je + 1;
+        jb2 = pmb->je;
         ib1 = pmb->is - 1;
         ib2 = pmb->ie + 1;
         kb1 = pmb->ks;
