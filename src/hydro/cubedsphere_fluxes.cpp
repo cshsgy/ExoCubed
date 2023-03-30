@@ -148,7 +148,8 @@ void Hydro::SendNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
         kb2 = pmb->ks;
     }
     int dsize = ((kb2 - kb1 + 1) * (jb2 - jb1 + 1) * (ib2 - ib1 + 1) * NWAVE);
-    Real *data = new Real[dsize];
+    LRDataBuffer[target_dir].resize(dsize);
+    Real *data = LRDataBuffer[target_dir].data();
     int offset = 0;
     // Added Feb 25: Calculate the basis vectors of source & target panels
     if (dinv[blockID-1][target_dir]==1){
@@ -287,7 +288,6 @@ void Hydro::SendNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
     if (ox3==-1) ownTag = 2;
     if (ox3==1) ownTag = 3;
     MPI_Isend(data, dsize, MPI_DOUBLE, tg_rank, DirTag, MPI_COMM_WORLD, &send_request[ownTag]);
-    delete[] data;
 }
 
 void Hydro::RecvNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int tg_rank, int tg_gid){

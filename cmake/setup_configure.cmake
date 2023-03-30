@@ -28,7 +28,7 @@ if (${EquationOfState} STREQUAL "shallow_water")
   option(Barotropic "Barotropic equation of state" ON)
   option(Hydrostatic "Turn on hydrostatic assumption" ON)
 else()
-  set(RiemannSolver hllc
+  set(RiemannSolver hllc_transform
     CACHE STRING "Choose the Riemann Solver")
   option(Barotropic "Barotropic equation of state" OFF)
   option(Hydrostatic "Turn on hydrostatic assumption" OFF)

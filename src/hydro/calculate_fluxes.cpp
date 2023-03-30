@@ -121,6 +121,10 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
     AthenaArray<Real> &x3flux = flux[X3DIR];
     // set the loop limits
     il = is, iu = ie, jl = js, ju = je;
+#ifdef CUBED_SPHERE
+    il = is-1;
+    iu = ie+1;
+#endif
 
     for (int j=jl; j<=ju; ++j) { // this loop ordering is intentional
       // reconstruct the first row

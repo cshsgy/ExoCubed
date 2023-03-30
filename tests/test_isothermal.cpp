@@ -14,9 +14,9 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
   Real U = 0.0/R;
 
   std::cout << "======Start of Problem generator======" << loc.lx2 << "||" << loc.lx3 <<std::endl;
-  for (int k = ks; k <= ke; ++k)
-    for (int j = js; j <= je; ++j)
-      for (int i = is; i <= ie; ++i) {
+  for (int k = ks - NGHOST; k <= ke + NGHOST; ++k)
+    for (int j = js - NGHOST; j <= je + NGHOST; ++j)
+      for (int i = is - NGHOST; i <= ie + NGHOST; ++i) {
         Real rad = sqrt((pcoord->x3v(k)) * (pcoord->x3v(k)) + (pcoord->x2v(j)) * (pcoord->x2v(j)));
         phydro->w(IDN,k,j,i) = 1.0;
         phydro->w(IPR,k,j,i) = 1.0;
