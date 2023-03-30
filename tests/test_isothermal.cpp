@@ -18,8 +18,11 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
     for (int j = js; j <= je; ++j)
       for (int i = is; i <= ie; ++i) {
         Real rad = sqrt((pcoord->x3v(k)) * (pcoord->x3v(k)) + (pcoord->x2v(j)) * (pcoord->x2v(j)));
-        phydro->w(IDN,k,j,i) = 1.0; // / (R*R);
+        phydro->w(IDN,k,j,i) = 1.0;
         phydro->w(IPR,k,j,i) = 1.0;
+        if(rad < 0.4){
+          phydro->w(IPR,k,j,i) = 1.2;
+        }
         Real Vy, Vz;
         GetVyVz(&Vy, &Vz, pcoord, U, V, k, j, i);
         phydro->w(IVX,k,j,i) = 0.0;
