@@ -62,6 +62,8 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
   // set the loop limits
 
 #ifndef HYDROSTATIC // sw not do X1
+  // decompose pressure to pertubation pressure and hydrostatic pressure
+  pmb->pimpl->pdec->ChangeToPerturbation(w, kl, ku, jl, ju);
 
   jl = js, ju = je, kl = ks, ku = ke;
 
@@ -77,10 +79,15 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
       } else {
         pmb->precon->PiecewiseParabolicX1(k, j, is-1, ie+1, w, bcc, wl_, wr_);
       }
+
+      // assemble pressure pertubation
+      pmb->pimpl->pdec->RestoreFromPerturbation(w, wl_, wr_, k, j, is, ie+1);
+
       pmb->pcoord->CenterWidth1(k, j, is, ie+1, dxw_);
       RiemannSolver(k, j, is, ie+1, IVX, wl_, wr_, x1flux, dxw_);
     }
   }
+
 #endif  // end HYDROSTATIC
 
   //--------------------------------------------------------------------------------------
