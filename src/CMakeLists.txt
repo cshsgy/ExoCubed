@@ -22,9 +22,13 @@ file(GLOB _src_files
   setup_input_and_init_mesh.cpp
   gnomonic_equiangle.cpp
   correct_fluxes_cubed_sphere.cpp
+  mesh/*.cpp
+  reconstruct/*.cpp
   hydro/calculate_fluxes.cpp
   hydro/cubedsphere_fluxes.cpp
   hydro/rsolvers/hydro/${RiemannSolver}.cpp
+  hydro/decomposition/*.cpp
+  hydro/implicit/*.cpp
   #hydro/rsolvers/hydro/hllc_transform.cpp
   eos/${EquationOfState}_hydro.cpp
   affine_coordinates.cpp
@@ -45,6 +49,7 @@ foreach(build ${BUILD_TYPES})
     ${DEBUGGER_INCLUDE_DIR}
     ${ATHENAPP_INCLUDE_DIR}
     ${CLIUTILS_INCLUDE_DIR}
+    ${EIGEN3_INCLUDE_DIR}
     ${NETCDF_INCLUDES}
     ${PNETCDF_INCLUDE_DIR}
     ${MPI_CXX_INCLUDE_PATH}

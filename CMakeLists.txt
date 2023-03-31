@@ -33,6 +33,8 @@ message(STATUS "4. Set up project system libraries ...")
 message(STATUS "5. Set up project external libraries ...")
 set(HAS_EXTERNAL_LIBRARY FALSE)
 
+find_package(Eigen3 3.3 REQUIRED)
+
 # compile debugger
 if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
   add_subdirectory(debugger)

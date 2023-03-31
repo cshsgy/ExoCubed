@@ -7,8 +7,29 @@ enum {
 };
 
 enum {
-  NumVapors = 0
+  NumVapors = 0,
+  NumHydros = 5
 };
+
+// hydro primitive indices
+enum {
+  idn = 0,
+  iv1 = 1 + NumVapors,
+  iv2 = 2 + NumVapors,
+  iv3 = 3 + NumVapors,
+  ipr = 4 + NumVapors,
+};
+
+// hydro conserved indices
+enum {
+  im1 = 1 + NumVapors,
+  im2 = 2 + NumVapors,
+  im3 = 3 + NumVapors,
+  ien = 4 + NumVapors,
+};
+
+
+double const GasConstant = @GasConstant@;  // Joule/(kg K)
 
 // hydrostatic option
 #define @HydrostaticOption@
