@@ -12,7 +12,7 @@
 
 // canoe headers
 #include <configure.hpp>
-//#include "mesh/meshblock_impl.hpp"
+#include "mesh/meshblock_impl.hpp"
 
 // MPI headers
 #ifdef MPI_PARALLEL
@@ -93,11 +93,11 @@ void setup_input_and_init_mesh(ParameterInput* &pinput, Mesh* &pmesh)
     exit(0);
   }
 
-  /* set up additional components
+  // set up additional components
   for (int b = 0; b < pmesh->nblocal; ++b) {
     MeshBlock *pmb = pmesh->my_blocks(b);
     pmb->pimpl = std::make_shared<MeshBlock::Impl>(pmb, pinput);
-  }*/
+  }
 
   // initialize mesh
   pmesh->Initialize(CL::res_flag, pinput);
