@@ -1,54 +1,52 @@
 <job>
-problem_id = cubed  # problem ID: basename of output filenames
+problem_id = blast_48/cubed  # problem ID: basename of output filenames
 
 <output1>
 file_type  = hst         # History data dump
-dt         = 0.1        # time increment between outputs
+dt         = 1E4        # time increment between outputs
 
 <output2>
 #ghost_zones= true
 file_type  = netcdf    # Binary data dump
 variable   = prim        # variables to be output
-dt         = 0.1         # time increment between outputs
+dt         = 1E4         # time increment between outputs
 
 <output3>
 #ghost_zones= true
 file_type  = netcdf
 variable   = uov
-dt         = 0.1
+dt         = 1E4
 
 <time>
-cfl_number = 0.3          # The Courant, Friedrichs, & Lewy (CFL) Number
+cfl_number = 0.7          # The Courant, Friedrichs, & Lewy (CFL) Number
 nlim       = -1         # cycle limit
-tlim       = 10.           # time limit
+tlim       = 8.E6           # time limit
 xorder     = 2            # horizontal reconstruction order
 integrator = rk3          # integration method
 
 <mesh>
-nx1        = 40            # Number of zones in X1-direction
-x1min      = 0.8           # minimum value of X1
-x1max      = 1.2           # maximum value of X1
+nx1        = 2            # Number of zones in X1-direction
+x1min      = 6371000.           # minimum value of X1
+x1max      = 6371001.           # maximum value of X1
 ix1_bc     = reflecting   # inner-X1 boundary flag
 ox1_bc     = reflecting   # outer-X1 boundary flag
 
-nx2        = 160           # Number of zones in X2-direction
+nx2        = 96            # Number of zones in X2-direction
 x2min      = 0.           # minimum value of X2
 x2max      = 1.E3         # maximum value of X2
 ix2_bc     = periodic   # inner-X2 boundary flag
 ox2_bc     = periodic   # outer-X2 boundary flag
 
-nx3        = 240          # Number of zones in X3-direction
+nx3        = 144           # Number of zones in X3-direction
 x3min      = 0.           # minimum value of X3
 x3max      = 1.E3         # maximum value of X3
 ix3_bc     = periodic   # inner-X3 boundary flag
 ox3_bc     = periodic   # outer-X3 boundary flag
 
 <meshblock>
-nx1        = 40
-nx2        = 40
-nx3        = 40
+nx1        = 2
+nx2        = 48
+nx3        = 48
 
 <hydro>
 gamma       = 1.4         # gamma = C_p/C_v
-grav_acc1   = -1.0
-#active      = disabled

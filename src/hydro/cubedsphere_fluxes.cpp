@@ -295,7 +295,7 @@ void Hydro::RecvNeighborBlocks(LogicalLocation const& loc, int ox2, int ox3, int
 
     int lv2_lx2 = loc.lx2 >> (loc.level - 2);
     int lv2_lx3 = loc.lx3 >> (loc.level - 2);
-    int blockID = lv2_lx2 + lv2_lx3 * 2 + 1;
+    int blockID = FindBlockID(loc);
     // Calculate local ID
     int local_lx2 = loc.lx2 - (lv2_lx2<<(loc.level - 2));
     int local_lx3 = loc.lx3 - (lv2_lx3<<(loc.level - 2));
