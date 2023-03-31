@@ -37,7 +37,7 @@ void FaceReconstruct::Weno5X1(const int k, const int j, const int il, const int 
   if (pmb->pbval->block_bcs[outer_x1] != BoundaryFlag::block)
     ng2 = GhostZoneSize;
 
-  for (int n=iv1; n<NumHydros; ++n) {
+  for (int n=IVX; n<NHYDRO; ++n) {
     // left boundary
     for (int i=il; i<il+ng1; ++i) {
       wl(n,i+1) = interp_weno5(w(n,k,j,i+2),w(n,k,j,i+1),w(n,k,j,i),w(n,k,j,i-1),w(n,k,j,i-2));
@@ -78,7 +78,7 @@ void FaceReconstruct::Weno5X2(const int k, const int j, const int il, const int 
     }
   }
 
-  for (int n=iv1; n<NumHydros; ++n) {
+  for (int n=IVX; n<NHYDRO; ++n) {
 #pragma omp simd
     for (int i=il; i<=iu; ++i) {
       wl(n,i) = interp_cp5(w(n,k,j+2,i),w(n,k,j+1,i),w(n,k,j,i),w(n,k,j-1,i),w(n,k,j-2,i));
@@ -106,7 +106,7 @@ void FaceReconstruct::Weno5X3(const int k, const int j, const int il, const int 
     }
   }
 
-  for (int n=iv1; n<NumHydros; ++n) {
+  for (int n=IVX; n<NHYDRO; ++n) {
 #pragma omp simd
     for (int i=il; i<=iu; ++i) {
       wl(n,i) = interp_cp5(w(n,k+2,j,i),w(n,k+1,j,i),w(n,k,j,i),w(n,k-1,j,i),w(n,k-2,j,i));

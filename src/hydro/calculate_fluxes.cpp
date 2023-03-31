@@ -62,10 +62,11 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
   // set the loop limits
 
 #ifndef HYDROSTATIC // sw not do X1
-  // decompose pressure to pertubation pressure and hydrostatic pressure
-  pmb->pimpl->pdec->ChangeToPerturbation(w, kl, ku, jl, ju);
 
   jl = js, ju = je, kl = ks, ku = ke;
+  
+  // decompose pressure to pertubation pressure and hydrostatic pressure
+  pmb->pimpl->pdec->ChangeToPerturbation(w, kl, ku, jl, ju);
 
   for (int k=kl; k<=ku; ++k) {
     for (int j=jl; j<=ju; ++j) {
