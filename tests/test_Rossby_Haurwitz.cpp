@@ -6,13 +6,20 @@
 #include "../src/eos/eos.hpp"
 #include "../src/field/field.hpp"
 
-Real omega;
 
 void MeshBlock::ProblemGenerator(ParameterInput *pin)
 {
   // Input field is a uniform 10 m/s zonal wind
-  Real V = 0.0;
-  Real U = 0.0;
+  Real U, V;
+  Real Vy, Vz;
+
+  // Constants of the test
+  Real a = 6.37122e6;
+  Real R = 4.0;
+  Real omega = 7.292e-5;
+  Real g = 9.80616;
+  Real K = 7.848e-6;
+  Real h0 = 8000.0;
 
   std::cout << "======Start of Problem generator======" << loc.lx2 << "||" << loc.lx3 <<std::endl;
   for (int k = ks; k <= ke; ++k)
@@ -20,17 +27,21 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
       for (int i = is; i <= ie; ++i) {
         Real x = tan(pcoord->x2v(j));
         Real y = tan(pcoord->x3v(k));
-        Real R = pcoord->x1v(i);
-        Real R0 = 5E5;
         Real lat, lon;
         GetLatLon(&lat, &lon, pcoord, k, j, i);
         Real rad = (PI/2.0-lat)*R;
-        if ((rad < R0) && (lat>PI/4.0))
-          phydro->w(IDN,k,j,i) = 500.0 + 10.0 * cos(PI/2.0*rad/R0);
-        else
-          phydro->w(IDN,k,j,i) = 500.0; // / (R*R);
-        Real Vy, Vz;
+        Real f = omega * sin(lat);
+        
+        U = a*K*cos(lat)+a*K*pow(cos(lat),R-1.0)*(R*sin(lat)*sin(lat)-cos(lat)*cos(lat))*cos(R*lon);
+        V = -a*K*R*pow(cos(lat),R-1.0)*sin(R*lon)*sin(lat);
+        Real A = K/2.0*(2.0*omega+K)*cos(lat)*cos(lat)+0.25*K*K*pow(cos(lat),R*2.0)*((R+1.0)*cos(lat)*cos(lat)+(2.0*R*R-R-2.0)-2.0*R*R*pow(cos(lat),-2.0));
+        Real B = 2.0*(omega+K)*K/(R+1.0)/(R+2.0)*pow(cos(lat),R)*((R*R+2.0*R+2.0)-(R*R+2.0*R+1.0)*cos(lat)*cos(lat));
+        Real C = 0.25*K*K*pow(cos(lat),R*2.0)*((R+1.0)*cos(lat)*cos(lat)-(R+2.0));
+        Real dphi = a*a*A+a*a*B*cos(R*lon)+a*a*C*cos(2.0*R*lon);
+
         GetVyVz(&Vy, &Vz, pcoord, U, V, k, j, i);
+
+        phydro->w(IDN,k,j,i) = g*h0+dphi;
         phydro->w(IVY,k,j,i) = Vy;
         phydro->w(IVZ,k,j,i) = Vz;
       }
@@ -75,36 +86,25 @@ void CoriolisForcing(MeshBlock *pmb, const Real time, const Real dt,
   const AthenaArray<Real> &w, const AthenaArray<Real> &prim_scalar, AthenaArray<Real> const &bcc, 
   AthenaArray<Real> &u, AthenaArray<Real> &cons_scalar)
 {
+    int is = pmb->is;
+    Real omega = 7.292e-5;
     for (int k = pmb->ks; k<=pmb->ke; ++k)
-        for (int j = pmb->js; j <= pmb->je; ++j)
-            for (int i = pmb->is; i <= pmb->ie; ++i) {
-                Real R = pmb->pcoord->x1v(i);
-                Real x2 = tan(pmb->pcoord->x2v(j));
-                Real x3 = tan(pmb->pcoord->x3v(k));
-                Real lat, lon;
-                GetLatLon(&lat, &lon, pmb->pcoord, k, j, i);
-                // coriolis force
-                Real f = 2.*omega*sin(lat);
-                u(IM1,j,i) += dt*f*w(IDN,j,i)*w(IVY,j,i);
-                u(IM2,j,i) += -dt*f*w(IDN,j,i)*w(IVX,j,i);
-
-      // topography and viscosity
-    //   Real phib = Phib(pmb->pcoord,j,i);
-    //   u(IM1,j,i) += dt*w(IDN,j,i)*phib*x1*pow(dist/lambda,alpha)/(dist * dist);
-    //   u(IM2,j,i) += dt*w(IDN,j,i)*phib*x2*pow(dist/lambda,alpha)/(dist * dist);
-    //   Real lat_now = 90. - dist/radius/M_PI*180.;
-    //   Real dx = pmb->pcoord->dx1f(i);
-    //   Real dy = pmb->pcoord->dx2f(j);
-    //   u(IM1,j,i) += vis*dt/(dx*dy)*w(IDN,j,i)*
-    //       (w(IM1,j+1,i)+w(IM1,j-1,i)+w(IM1,j,i+1)+w(IM1,j,i-1)-4*w(IM1,j,i));
-    //   u(IM2,j,i) += vis*dt/(dx*dy)*w(IDN,j,i)*
-    //       (w(IM2,j+1,i)+w(IM2,j-1,i)+w(IM2,j,i+1)+w(IM2,j,i-1)-4*w(IM2,j,i));
+        for (int j = pmb->js; j <= pmb->je; ++j){
+          Real lat, lon;
+          GetLatLon(&lat, &lon, pmb->pcoord, k, j, is);
+          // coriolis force
+          Real f = 2.*omega*sin(lat);
+          Real U, V;
+          GetUV(&U, &V, pmb->pcoord, w(IVY,k,j,is), w(IVZ,k,j,is), k, j, is);
+          Real ll_acc_U = -f*V;
+          Real ll_acc_V = f*U;
+          Real acc2, acc3;
+          GetVyVz(&acc2, &acc3, pmb->pcoord, ll_acc_U, ll_acc_V, k, j, is);
+          u(IM2,k,j,is) += dt*w(IDN,k,j,is)*acc2;
+          u(IM3,k,j,is) += dt*w(IDN,k,j,is)*acc3;
     }
 }
-
-
 void Mesh::InitUserMeshData(ParameterInput *pin)
 {
-  omega = pin->GetOrAddReal("problem", "omega", 0.);
   EnrollUserExplicitSourceFunction(CoriolisForcing);
 }

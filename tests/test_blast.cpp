@@ -23,10 +23,10 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin)
         Real lat, lon;
         GetLatLon(&lat, &lon, pcoord, k, j, i);
         Real rad = (PI/2.0-lat)*R;
-        if ((rad < R0) && (lat>PI/4.0))
-          phydro->w(IDN,k,j,i) = 500.0 + 10.0 * cos(PI/2.0*rad/R0);
-        else
-          phydro->w(IDN,k,j,i) = 500.0; // / (R*R);
+        // if ((rad < R0) && (lat>PI/4.0))
+        //   phydro->w(IDN,k,j,i) = 500.0 + 10.0 * cos(PI/2.0*rad/R0);
+        // else
+          phydro->w(IDN,k,j,i) = 1.0; // / (R*R);
         Real Vy, Vz;
         GetVyVz(&Vy, &Vz, pcoord, U, V, k, j, i);
         phydro->w(IVY,k,j,i) = Vy;
@@ -56,14 +56,16 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin)
         GetUV(&U, &V, pcoord, Vy, Vz, k, j, i);
         user_out_var(2,k,j,i) = U;
         user_out_var(3,k,j,i) = V;
+        user_out_var(4,k,j,i) = pcoord->GetFace1Area(k,j,i);
       }
 }
 
 void MeshBlock::InitUserMeshBlockData(ParameterInput *pin)
 {
-  AllocateUserOutputVariables(4);
+  AllocateUserOutputVariables(5);
   SetUserOutputVariableName(0, "lat");
   SetUserOutputVariableName(1, "lon");
   SetUserOutputVariableName(2, "U");
   SetUserOutputVariableName(3, "V");
+  SetUserOutputVariableName(4, "Area");
 }

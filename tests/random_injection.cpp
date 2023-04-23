@@ -101,30 +101,43 @@ void MeshBlock::UserWorkInLoop()
         vpol *= skewness;
       Real vlat = -PI/2.0+uniform(gen)*PI;
       Real vlon = uniform(gen)*2.*M_PI;
-    for (int k = ks - NGHOST; k <= ke + NGHOST; ++k)
-      for (int j = js - NGHOST; j <= je + NGHOST; ++j)
-        for (int i = is - NGHOST; i <= ie + NGHOST; ++i) {
-          Real lat, lon, vel;
-          GetLatLon(&lat, &lon, pcoord, k, j, i);
-          Real radius = pcoord -> x1v(i); // Earth's radius in km
-          Real dlat = (lat - vlat) * M_PI / 180.0;
-          Real dlon = (lon - vlon) * M_PI / 180.0;
-          Real a = sin(dlat / 2.0) * sin(dlat / 2.0) +
-                cos(vlat * M_PI / 180.0) * cos(lat * M_PI / 180.0) *
-                sin(dlon / 2.0) * sin(dlon / 2.0);
-          Real c = 2.0 * atan2(sqrt(a), sqrt(1.0 - a));
-          Real dist = radius * c;
-          Real phi = vpol*vphi*exp(-0.5*(dist * dist)/(vrad * vrad));
-          Real fcor = 2.*omega*sin(lat);
+      for (int k = ks - NGHOST; k <= ke + NGHOST; ++k)
+        for (int j = js - NGHOST; j <= je + NGHOST; ++j){
+            Real lat, lon, vel;
+            GetLatLon(&lat, &lon, pcoord, k, j, is);
+            Real radius = pcoord -> x1v(is);
+            Real dlat = lat - vlat;
+            Real dlon = lon - vlon;
+            Real a = sin(dlat / 2.0) * sin(dlat / 2.0) +
+                  cos(vlat) * cos(lat) *
+                  sin(dlon / 2.0) * sin(dlon / 2.0);
+            Real c = 2.0 * atan2(sqrt(a), sqrt(1.0 - a));
+            Real a_lon = sin(dlat / 2.0) * sin(dlat / 2.0);
+            Real y = 2.0 * atan2(sqrt(a_lon), sqrt(1.0 - a_lon)); // Distance along constant longitude
+            Real a_lat = cos(vlat) * cos(lat) * sin(dlon / 2.0) * sin(dlon / 2.0);
+            Real x = 2.0 * atan2(sqrt(a_lat), sqrt(1.0 - a_lat)); // Distance along constant latitude
+            // Recover the signs
+            if (dlat < 0)
+              y = -y;
+            if (dlon < 0)
+              x = -x;
 
-          if (vpol > 0)  // cyclone
-            vel = -dist*fcor/2. + dist*fcor/2.*sqrt(1. - 4.*phi/((fcor*vrad)*(fcor*vrad)));
-          else  // anticyclone
-            vel = -phi*dist/(fcor*vrad*vrad);
-          phydro->w(IDN,j,i) += phi;
-          // Geostrophic balance still need to be implemented
-        //   phydro->w(IVY,j,i) += vel*(x2 - pcoord->x2v(j))/dist;
-        //   phydro->w(IVZ,j,i) += -vel*(x1 - pcoord->x1v(i))/dist;
+            Real dist = radius * c;
+            Real phi = vpol*vphi*exp(-0.5*(dist * dist)/(vrad * vrad));
+            Real fcor = 2.*omega*sin(lat);
+
+            if (vpol > 0)  // cyclone
+              vel = phi*dist/(fcor*vrad*vrad);
+            else  // anticyclone
+              vel = -phi*dist/(fcor*vrad*vrad);
+            phydro->w(IDN,k,j,is) += phi;
+            // Geostrophic balance
+            Real accU = -vel*y/sqrt(x*x+y*y);
+            Real accV = vel*x/sqrt(x*x+y*y);
+            Real acc2, acc3;
+            GetVyVz(&acc2, &acc3, pcoord, accU, accV, k, j, is);
+            // phydro->w(IVY,k,j,is) += acc2;
+            // phydro->w(IVZ,k,j,is) += acc3;
         }
       peos->PrimitiveToConserved(phydro->w, pfield->bcc, phydro->u, pcoord,
         is - NGHOST, ie + NGHOST, js - NGHOST, je + NGHOST, ks, ke);
@@ -138,18 +151,21 @@ void CoriolisForcing(MeshBlock *pmb, const Real time, const Real dt,
   const AthenaArray<Real> &w, const AthenaArray<Real> &prim_scalar, AthenaArray<Real> const &bcc, 
   AthenaArray<Real> &u, AthenaArray<Real> &cons_scalar)
 {
+    int is = pmb->is;
     for (int k = pmb->ks; k<=pmb->ke; ++k)
-        for (int j = pmb->js; j <= pmb->je; ++j)
-            for (int i = pmb->is; i <= pmb->ie; ++i) {
-                Real R = pmb->pcoord->x1v(i);
-                Real x2 = tan(pmb->pcoord->x2v(j));
-                Real x3 = tan(pmb->pcoord->x3v(k));
-                Real lat, lon;
-                GetLatLon(&lat, &lon, pmb->pcoord, k, j, i);
-                // coriolis force
-                Real f = 2.*omega*sin(lat);
-                u(IM1,j,i) += dt*f*w(IDN,j,i)*w(IVY,j,i);
-                u(IM2,j,i) += -dt*f*w(IDN,j,i)*w(IVX,j,i);
+        for (int j = pmb->js; j <= pmb->je; ++j){
+          Real lat, lon;
+          GetLatLon(&lat, &lon, pmb->pcoord, k, j, is);
+          // coriolis force
+          Real f = 2.*omega*sin(lat);
+          Real U, V;
+          GetUV(&U, &V, pmb->pcoord, w(IVY,k,j,is), w(IVZ,k,j,is), k, j, is);
+          Real ll_acc_U = -f*V;
+          Real ll_acc_V = f*U;
+          Real acc2, acc3;
+          GetVyVz(&acc2, &acc3, pmb->pcoord, ll_acc_U, ll_acc_V, k, j, is);
+          u(IM2,k,j,is) += dt*w(IDN,k,j,is)*acc2;
+          u(IM3,k,j,is) += dt*w(IDN,k,j,is)*acc3;
 
       // topography and viscosity
     //   Real phib = Phib(pmb->pcoord,j,i);
