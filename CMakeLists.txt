@@ -33,6 +33,7 @@ message(STATUS "4. Set up project system libraries ...")
 message(STATUS "5. Set up project external libraries ...")
 set(HAS_EXTERNAL_LIBRARY FALSE)
 
+#find_package(Eigen3 3.3 REQUIRED HINTS ${HOME}/opt)
 find_package(Eigen3 3.3 REQUIRED)
 
 # compile debugger
