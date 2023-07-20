@@ -1,3 +1,9 @@
+// C/C++
+#include <cmath>
+
+// athena
+#include <athena/athena.hpp>
+#include <athena/coordinates/coordinates.hpp>
 
 namespace CubedSphere {
 

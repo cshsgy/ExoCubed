@@ -8,7 +8,6 @@
 // athena
 #include <athena/bvals/bvals.hpp>
 #include <athena/coordinates/coordinates.hpp>
-#include <athena/field/field.hpp>
 
 // exo3
 #include "cubed_sphere_funcs.hpp"

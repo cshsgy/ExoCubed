@@ -1,3 +1,5 @@
+// athena
+#include <athena/coordinates/coordinates.hpp>
 
 namespace CubedSphere {
 
