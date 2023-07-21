@@ -33,6 +33,9 @@
 // inversion
 #include "inversion/inversion.hpp"
 
+// exo3
+#include "exo3/cubed_sphere_lr.hpp"
+
 class ParameterInput;
 
 //! \class MeshBlock::Impl
@@ -55,6 +58,7 @@ class MeshBlock::Impl {
 
   RadiationPtr prad;
   InversionQueue fitq;
+  CubedSpherePtr pexo3;
 
   Real GetReferencePressure() const { return reference_pressure_; }
   Real GetPressureScaleHeight() const { return pressure_scale_height_; }

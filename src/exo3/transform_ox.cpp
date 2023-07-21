@@ -1,10 +1,8 @@
 // athena
 #include <athena/athena.hpp>
 
-namespace CubedSphere {
-
-void TransformOx(int *ox2, int *ox3, int *tox2, int *tox3,
-                 LogicalLocation const &loc) {
+void CubedSphere::TransformOX(int *ox2, int *ox3, int *tox2, int *tox3) {
+  auto &loc = pmy_block_->loc;
   // Find the block ID
   int block_id = FindBlockID(loc);
 
@@ -224,5 +222,3 @@ void TransformOx(int *ox2, int *ox3, int *tox2, int *tox3,
   // << *tox3 << std::endl;
   return;
 }
-
-}  // namespace CubedSphere
