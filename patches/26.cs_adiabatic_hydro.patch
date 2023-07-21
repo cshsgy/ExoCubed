@@ -2,10 +2,12 @@ diff --git a/src/eos/adiabatic_hydro.cpp b/src/eos/adiabatic_hydro.cpp
 index e61ff205..49aba323 100644
 --- a/src/eos/adiabatic_hydro.cpp
 +++ b/src/eos/adiabatic_hydro.cpp
-@@ -19,6 +19,8 @@
+@@ -19,6 +19,10 @@
  #include "../mesh/mesh.hpp"
  #include "../parameter_input.hpp"
  #include "eos.hpp"
++
++#include <configure.hpp>
 +#include <impl.hpp>
 +#include <exo3/cubed_sphere.hpp>
  

@@ -2,12 +2,14 @@ diff --git a/src/bvals/bvals_var.cpp b/src/bvals/bvals_var.cpp
 index 6d2460f1..5dac314b 100644
 --- a/src/bvals/bvals_var.cpp
 +++ b/src/bvals/bvals_var.cpp
-@@ -22,6 +22,8 @@
+@@ -22,6 +22,10 @@
  #include "../mesh/mesh.hpp"
  #include "bvals_interfaces.hpp"
  
-+#include <exo3/cubed_sphere.hpp>
++#include <configure.hpp>
 +#include <impl.hpp>
++#include <exo3/cubed_sphere.hpp>
++
  // MPI header
  #ifdef MPI_PARALLEL
  #include <mpi.h>

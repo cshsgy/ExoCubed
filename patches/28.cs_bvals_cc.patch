@@ -2,10 +2,12 @@ diff --git a/src/bvals/cc/bvals_cc.cpp b/src/bvals/cc/bvals_cc.cpp
 index eb6f6039..d8b328b0 100644
 --- a/src/bvals/cc/bvals_cc.cpp
 +++ b/src/bvals/cc/bvals_cc.cpp
-@@ -30,6 +30,7 @@
+@@ -30,6 +30,9 @@
  #include "../../utils/buffer_utils.hpp"
  #include "../bvals.hpp"
  #include "bvals_cc.hpp"
++
++#include <configure.hpp>
 +#include <exo3/cubed_sphere_utility.hpp>
  
  // MPI header

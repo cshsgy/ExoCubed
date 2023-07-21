@@ -2,12 +2,14 @@ diff --git a/src/coordinates/coordinates.cpp b/src/coordinates/coordinates.cpp
 index c11dd078..d594699e 100644
 --- a/src/coordinates/coordinates.cpp
 +++ b/src/coordinates/coordinates.cpp
-@@ -20,6 +20,8 @@
+@@ -20,6 +20,10 @@
  #include "../nr_radiation/radiation.hpp"
  #include "../parameter_input.hpp"
  #include "coordinates.hpp"
-+#include <exo3/cubed_sphere.hpp>
++
++#include <configure.hpp>
 +#include <impl.hpp>
++#include <exo3/cubed_sphere.hpp>
  
  //----------------------------------------------------------------------------------------
  //! Coordinates constructor: sets coordinates and coordinate spacing of cell FACES
