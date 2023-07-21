@@ -10,6 +10,7 @@
 #include <athena/coordinates/coordinates.hpp>
 
 // exo3
+#include "cubed_sphere.hpp"
 #include "cubed_sphere_utility.hpp"
 
 namespace CubedSphereUtility {
@@ -171,7 +172,7 @@ void InteprolateX2(const AthenaArray<Real> &src, AthenaArray<Real> &tgt,
             Real vz = ((y2 - yq) * v1z + (yq - y1) * v2z) / (y2 - y1);
             Real src_cy =
                 tan(((y2 - yq) * src_cy1 + (yq - y1) * src_cy2) / (y2 - y1));
-            int blockID = FindBlockID(loc);
+            int blockID = CubedSphere::FindBlockID(loc);
             Real U, V;
             // Trasform to global coordinate and back
             VecTransRLLFromABP(src_cy, src_cz, blockID, vy, vz, &U, &V);
@@ -191,7 +192,10 @@ void InteprolateX2(const AthenaArray<Real> &src, AthenaArray<Real> &tgt,
       }
     }
   }
-  delete[] src_x2, tgt_x2, src_coord, tgt_coord;  // Release memory
+  delete[] src_x2;
+  delete[] tgt_x2;
+  delete[] src_coord;
+  delete[] tgt_coord;  // Release memory
 }
 
 void InteprolateX3(const AthenaArray<Real> &src, AthenaArray<Real> &tgt,
@@ -273,7 +277,7 @@ void InteprolateX3(const AthenaArray<Real> &src, AthenaArray<Real> &tgt,
             Real vz = ((y2 - yq) * v1z + (yq - y1) * v2z) / (y2 - y1);
             Real src_cz =
                 tan(((y2 - yq) * src_cz1 + (yq - y1) * src_cz2) / (y2 - y1));
-            int blockID = FindBlockID(loc);
+            int blockID = CubedSphere::FindBlockID(loc);
             Real U, V;
             // Trasform to global coordinate and back
             VecTransRLLFromABP(src_cy, src_cz, blockID, vy, vz, &U, &V);
@@ -313,14 +317,17 @@ void InteprolateX3(const AthenaArray<Real> &src, AthenaArray<Real> &tgt,
       }
     }
   }
-  delete[] src_x3, tgt_x3, src_coord, tgt_coord;  // Release memory
+  delete[] src_x3;
+  delete[] tgt_x3;
+  delete[] src_coord;
+  delete[] tgt_coord;  // Release memory
 }
 
 void PackData(const AthenaArray<Real> &src, Real *buf, int sn, int en, int si,
               int ei, int sj, int ej, int sk, int ek, int &offset, int ox1,
               int ox2, int ox3, LogicalLocation const &loc) {
   // Find the block ID
-  int blockID = FindBlockID(loc);
+  int blockID = CubedSphere::FindBlockID(loc);
 
   // Table of wether direction inversion is needed
   const int dinv[6][4] = {// To access: dinv[source_id][target_dir]

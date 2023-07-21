@@ -1,12 +1,15 @@
-// Athena++ headers
-#include <athena.hpp>
-#include <athena_arrays.hpp>
+// C/C++
 #include <cmath>
-#include <coordinates/coordinates.hpp>
-#include <cubed_sphere.hpp>
-#include <defs.hpp>
-#include <mesh/mesh.hpp>
-#include <parameter_input.hpp>
+
+// Athena++ headers
+#include <athena/athena.hpp>
+#include <athena/athena_arrays.hpp>
+#include <athena/coordinates/coordinates.hpp>
+#include <athena/defs.hpp>
+#include <athena/mesh/mesh.hpp>
+#include <athena/parameter_input.hpp>
+
+#include "gnomonic_equiangle.hpp"
 
 //----------------------------------------------------------------------------------------
 //! Cartesian coordinates constructor
@@ -818,7 +821,7 @@ void GnomonicEquiangle::AddCoordTermsDivergence(const Real dt,
         Real delta = 1.0 / (1.0 + x * x + y * y);
         Real pr;
         Real rho;
-        if (EQUATION_OF_STATE == "shallow_yz") {
+        if (strcmp(EQUATION_OF_STATE, "shallow_yz") == 0) {
           pr = 0.5 * prim(IDN, k, j, i) * prim(IDN, k, j, i);
           rho = prim(IDN, k, j, i);
         } else {

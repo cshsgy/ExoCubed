@@ -6,11 +6,10 @@
 
 // athena
 #include <athena/athena.hpp>
+#include <athena/mesh/mesh.hpp>
 
 // canoe
 #include <configure.hpp>
-
-class MeshBlock;
 
 class CubedSphere {
  public:
@@ -19,7 +18,7 @@ class CubedSphere {
 
   static int FindBlockID(LogicalLocation const &loc);
   static void TransformOX(int *ox2, int *ox3, int *tox2, int *tox3,
-                          LogicalLoction const &loc);
+                          LogicalLocation const &loc);
 
   Real GenerateMeshX2(Real x) const;
   Real GenerateMeshX3(Real x) const;

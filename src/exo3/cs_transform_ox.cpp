@@ -1,5 +1,12 @@
+// C/C++
+#include <iostream>
+#include <sstream>
+
 // athena
 #include <athena/athena.hpp>
+
+// exo3
+#include "cubed_sphere.hpp"
 
 void CubedSphere::TransformOX(int *ox2, int *ox3, int *tox2, int *tox3,
                               LogicalLocation const &loc) {

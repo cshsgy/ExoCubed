@@ -1,7 +1,12 @@
+// C/C++
+#include <algorithm>
+
 // athena
 #include <athena/athena.hpp>
 
 namespace CubedSphereUtils {
+
+#define DBL_EPSILON 1.0e-10
 
 void VecTransABPFromRLL(Real X, Real Y, int blockID, Real U, Real V, Real *V2,
                         Real *V3) {

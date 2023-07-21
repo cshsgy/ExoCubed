@@ -36,7 +36,7 @@ index 70f2d2f3..55b34df7 100644
            int fid = nf->gid_;
            int nlevel = nf->loc_.level;
 +#ifdef CUBED_SPHERE
-+          int tbid = CubedSphere::FindBufferID(0, tmp_tox2, tmp_tox3, 0, 0);
++          int tbid = FindBufferID(0, tmp_tox2, tmp_tox3, 0, 0);
 +#else
            int tbid = FindBufferID(0, -n, 0, 0, 0);
 +#endif
@@ -48,13 +48,13 @@ index 70f2d2f3..55b34df7 100644
            polar = true; // neighbor is across top or bottom pole
          }
 +#ifdef CUBED_SPHERE
-+        tbid = CubedSphere::FindBufferID(0, tmp_tox2, tmp_tox3, 0, 0);
++        tbid = FindBufferID(0, tmp_tox2, tmp_tox3, 0, 0);
 +#else
          tbid = FindBufferID(0, polar ? n : -n, 0, 0, 0);
 +#endif
        } else { // neighbor at coarser level
 +#ifdef CUBED_SPHERE
-+        tbid = CubedSphere::FindBufferID(0, tmp_tox2, tmp_tox3, myfx1, myfx3);
++        tbid = FindBufferID(0, tmp_tox2, tmp_tox3, myfx1, myfx3);
 +#else
          tbid = FindBufferID(0, -n, 0, myfx1, myfx3);
 +#endif
@@ -83,7 +83,7 @@ index 70f2d2f3..55b34df7 100644
              int nlevel = nf->loc_.level;
 -            int tbid = FindBufferID(0, 0,  -n, 0, 0);
 +#ifdef CUBED_SPHERE
-+          int tbid = CubedSphere::FindBufferID(0, tmp_tox2, tmp_tox3, 0, 0);
++          int tbid = FindBufferID(0, tmp_tox2, tmp_tox3, 0, 0);
 +#else
 +          int tbid = FindBufferID(0, 0, -n, 0, 0);
 +#endif
@@ -97,14 +97,14 @@ index 70f2d2f3..55b34df7 100644
          if (nlevel == loc.level) { // neighbor at same level
 -          tbid = FindBufferID(0, 0, -n, 0, 0);
 +#ifdef CUBED_SPHERE
-+        tbid = CubedSphere::FindBufferID(0, tmp_tox2, tmp_tox3, 0, 0);
++        tbid = FindBufferID(0, tmp_tox2, tmp_tox3, 0, 0);
 +#else
 +        tbid = FindBufferID(0, 0, -n, 0, 0);
 +#endif
          } else { // neighbor at coarser level
 -          tbid = FindBufferID(0, 0, -n, myfx1, myfx2);
 +#ifdef CUBED_SPHERE
-+        tbid = CubedSphere::FindBufferID(0, tmp_tox2, tmp_tox3, myfx1, myfx2);
++        tbid = FindBufferID(0, tmp_tox2, tmp_tox3, myfx1, myfx2);
 +#else
 +        tbid = FindBufferID(0, 0, -n, myfx1, myfx2);
 +#endif

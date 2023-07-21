@@ -34,7 +34,7 @@
 #include "inversion/inversion.hpp"
 
 // exo3
-#include "exo3/cubed_sphere_lr.hpp"
+#include "exo3/cubed_sphere.hpp"
 
 class ParameterInput;
 

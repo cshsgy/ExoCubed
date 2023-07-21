@@ -5,6 +5,9 @@
 // athena
 #include <athena/athena.hpp>
 
+// exo3
+#include "cubed_sphere.hpp"
+
 int CubedSphere::FindBlockID(LogicalLocation const& loc) {
   int lv2_lx2 = loc.lx2 >> (loc.level - 2);
   int lv2_lx3 = loc.lx3 >> (loc.level - 2);

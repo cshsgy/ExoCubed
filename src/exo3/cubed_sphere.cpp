@@ -9,11 +9,18 @@
 #include <athena/hydro/hydro.hpp>
 #include <athena/mesh/mesh.hpp>
 
+// canoe
+#include <configure.hpp>
+
+// exo3
+#include "cubed_sphere.hpp"
+#include "cubed_sphere_utility.hpp"
+
 #ifdef MPI_PARALLEL
 #include <mpi.h>
 #endif
 
-#define DBL_EPSILON 1.0e-10
+namespace cs = CubedSphereUtility;
 
 CubedSphere::CubedSphere(MeshBlock *pmb) : pmy_block_(pmb) {
   int nc1 = pmb->ncells1, nc2 = pmb->ncells2, nc3 = pmb->ncells3;
@@ -82,7 +89,7 @@ void CubedSphere::GetLatLon(Real *lat, Real *lon, int k, int j, int i) const {
   // Calculate the needed parameters
   Real dX = tan(pcoord->x2v(j));
   Real dY = tan(pcoord->x3v(k));
-  RLLFromXYP(dY, -dX, blockID - 1, *lon, *lat);
+  cs::RLLFromXYP(dY, -dX, blockID - 1, *lon, *lat);
 }
 
 // Obtain Lat and Lon (radians) from x2 and x3
@@ -91,7 +98,7 @@ void CubedSphere::GetLatLon(Real *lat, Real *lon, int k, int j, int i) const {
 void CubedSphere::GetLatLonFace2(Real *lat, Real *lon, int k, int j,
                                  int i) const {
   auto pcoord = pmy_block_->pcoord;
-  auto &loc = pmy_block->loc;
+  auto &loc = pmy_block_->loc;
 
   int lv2_lx2 = loc.lx2 >> (loc.level - 2);
   int lv2_lx3 = loc.lx3 >> (loc.level - 2);
@@ -100,7 +107,7 @@ void CubedSphere::GetLatLonFace2(Real *lat, Real *lon, int k, int j,
   // Calculate the needed parameters
   Real dX = tan(pcoord->x2f(j));
   Real dY = tan(pcoord->x3v(k));
-  RLLFromXYP(dY, -dX, blockID - 1, *lon, *lat);
+  cs::RLLFromXYP(dY, -dX, blockID - 1, *lon, *lat);
 }
 
 // Obtain Lat and Lon (radians) from x2 and x3
@@ -118,7 +125,7 @@ void CubedSphere::GetLatLonFace3(Real *lat, Real *lon, int k, int j,
   // Calculate the needed parameters
   Real dX = tan(pcoord->x2v(j));
   Real dY = tan(pcoord->x3f(k));
-  RLLFromXYP(dY, -dX, blockID - 1, *lon, *lat);
+  cs::RLLFromXYP(dY, -dX, blockID - 1, *lon, *lat);
 }
 
 // Obtain U and V (Lat-Lon) from V2 and V3 (Gnomonic Equiangle)
@@ -134,7 +141,7 @@ void CubedSphere::GetUV(Real *U, Real *V, Real V2, Real V3, int k, int j,
 
   Real X = tan(pcoord->x2v(j));
   Real Y = tan(pcoord->x3v(k));
-  VecTransRLLFromABP(X, Y, blockID, V2, V3, U, V);
+  cs::VecTransRLLFromABP(X, Y, blockID, V2, V3, U, V);
 }
 
 // Convert U and V (Lat-Lon) to V2 and V3 (Gnomonic Equiangle)
@@ -142,7 +149,7 @@ void CubedSphere::GetUV(Real *U, Real *V, Real V2, Real V3, int k, int j,
 void CubedSphere::GetVyVz(Real *V2, Real *V3, Real U, Real V, int k, int j,
                           int i) const {
   auto pcoord = pmy_block_->pcoord;
-  auto &loc = pmy_block->loc;
+  auto &loc = pmy_block_->loc;
 
   int lv2_lx2 = loc.lx2 >> (loc.level - 2);
   int lv2_lx3 = loc.lx3 >> (loc.level - 2);
@@ -151,7 +158,7 @@ void CubedSphere::GetVyVz(Real *V2, Real *V3, Real U, Real V, int k, int j,
   // Calculate the needed parameters
   Real X = tan(pcoord->x2v(j));
   Real Y = tan(pcoord->x3v(k));
-  VecTransABPFromRLL(X, Y, blockID, U, V, V2, V3);
+  cs::VecTransABPFromRLL(X, Y, blockID, U, V, V2, V3);
 }
 
 void CubedSphere::SaveLR3DValues(AthenaArray<Real> &L_in,
@@ -336,17 +343,17 @@ void CubedSphere::sendNeighborBlocks(int ox2, int ox3, int tg_rank,
               x3s = tan(x3s);
               Real U, V, vx, vy;
               if (Left) {
-                VecTransRLLFromABP(x2s, x3s, blockID,
-                                   L3DValues[DirNum](IVY, k, j, i),
-                                   L3DValues[DirNum](IVZ, k, j, i), &U, &V);
-                VecTransABPFromRLL(x2d, x3d, tgbid[blockID - 1][target_dir], U,
-                                   V, &vx, &vy);
+                cs::VecTransRLLFromABP(x2s, x3s, blockID,
+                                       L3DValues[DirNum](IVY, k, j, i),
+                                       L3DValues[DirNum](IVZ, k, j, i), &U, &V);
+                cs::VecTransABPFromRLL(x2d, x3d, tgbid[blockID - 1][target_dir],
+                                       U, V, &vx, &vy);
               } else {
-                VecTransRLLFromABP(x2s, x3s, blockID,
-                                   R3DValues[DirNum](IVY, k, j, i),
-                                   R3DValues[DirNum](IVZ, k, j, i), &U, &V);
-                VecTransABPFromRLL(x2d, x3d, tgbid[blockID - 1][target_dir], U,
-                                   V, &vx, &vy);
+                cs::VecTransRLLFromABP(x2s, x3s, blockID,
+                                       R3DValues[DirNum](IVY, k, j, i),
+                                       R3DValues[DirNum](IVZ, k, j, i), &U, &V);
+                cs::VecTransABPFromRLL(x2d, x3d, tgbid[blockID - 1][target_dir],
+                                       U, V, &vx, &vy);
               }
               if (n == IVY)
                 data[offset++] = vx;
@@ -403,17 +410,17 @@ void CubedSphere::sendNeighborBlocks(int ox2, int ox3, int tg_rank,
               x3s = tan(x3s);
               Real U, V, vx, vy;
               if (Left) {
-                VecTransRLLFromABP(x2s, x3s, blockID,
-                                   L3DValues[DirNum](IVY, k, j, i),
-                                   L3DValues[DirNum](IVZ, k, j, i), &U, &V);
-                VecTransABPFromRLL(x2d, x3d, tgbid[blockID - 1][target_dir], U,
-                                   V, &vx, &vy);
+                cs::VecTransRLLFromABP(x2s, x3s, blockID,
+                                       L3DValues[DirNum](IVY, k, j, i),
+                                       L3DValues[DirNum](IVZ, k, j, i), &U, &V);
+                cs::VecTransABPFromRLL(x2d, x3d, tgbid[blockID - 1][target_dir],
+                                       U, V, &vx, &vy);
               } else {
-                VecTransRLLFromABP(x2s, x3s, blockID,
-                                   R3DValues[DirNum](IVY, k, j, i),
-                                   R3DValues[DirNum](IVZ, k, j, i), &U, &V);
-                VecTransABPFromRLL(x2d, x3d, tgbid[blockID - 1][target_dir], U,
-                                   V, &vx, &vy);
+                cs::VecTransRLLFromABP(x2s, x3s, blockID,
+                                       R3DValues[DirNum](IVY, k, j, i),
+                                       R3DValues[DirNum](IVZ, k, j, i), &U, &V);
+                cs::VecTransABPFromRLL(x2d, x3d, tgbid[blockID - 1][target_dir],
+                                       U, V, &vx, &vy);
               }
               if (n == IVY)
                 data[offset++] = vx;

@@ -26,7 +26,7 @@
 #include "snap/thermodynamics/thermodynamics.hpp"
 
 // exo3
-#include "exo3/cubed_sphere_lr.hpp"
+#include "exo3/cubed_sphere.hpp"
 
 // canoe
 #include "impl.hpp"
