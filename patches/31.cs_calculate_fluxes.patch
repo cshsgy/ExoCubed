@@ -1,5 +1,5 @@
 diff --git a/src/hydro/calculate_fluxes.cpp b/src/hydro/calculate_fluxes.cpp
-index eeaf381b..2f5aae42 100644
+index eeaf381b..2bc39fb3 100644
 --- a/src/hydro/calculate_fluxes.cpp
 +++ b/src/hydro/calculate_fluxes.cpp
 @@ -24,6 +24,11 @@
@@ -45,29 +45,27 @@ index eeaf381b..2f5aae42 100644
    if (pmb->pmy_mesh->f2) {
      AthenaArray<Real> &x2flux = flux[X2DIR];
      // set the loop limits
-@@ -206,6 +221,12 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
+@@ -206,6 +221,11 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
          }
  
          pmb->pcoord->CenterWidth2(k, j, il, iu, dxw_);
 +
 +#ifdef CUBED_SPHERE // Rieman solver run later
 +        pexo3->SaveLR3DValues(wl_, wr_, X2DIR, k, j, il, iu); // il to iu is what the RiemannSolver below uses...
-+        wl_.SwapAthenaArray(wlb_);
 +#else // NOT_CUBED_SPHERE
 +
  #if !MAGNETIC_FIELDS_ENABLED  // Hydro:
          RiemannSolver(k, j, il, iu, IVY, wl_, wr_, x2flux, dxw_);
  #else  // MHD:
-@@ -281,6 +302,8 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
-     } // end if (order == 4)
-   }
- 
+@@ -222,6 +242,7 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
+             }
+           }
+         }
 +#endif // CUBED_SPHERE
-+
-   //--------------------------------------------------------------------------------------
-   // k-direction
  
-@@ -292,6 +315,11 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
+         // swap the arrays for the next step
+         wl_.SwapAthenaArray(wlb_);
+@@ -292,6 +313,11 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
        il = is-1, iu = ie+1, jl = js-1, ju = je+1;
      }
  
@@ -79,24 +77,30 @@ index eeaf381b..2f5aae42 100644
      for (int j=jl; j<=ju; ++j) { // this loop ordering is intentional
        // reconstruct the first row
        if (order == 1) {
-@@ -320,6 +348,12 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
+@@ -320,6 +346,11 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
          }
  
          pmb->pcoord->CenterWidth3(k, j, il, iu, dxw_);
 +
 +#ifdef CUBED_SPHERE // Rieman solver run later
 +        pexo3->SaveLR3DValues(wl_, wr_, X3DIR, k, j, il, iu); // il to iu is what the RiemannSolver below uses...
-+        wl_.SwapAthenaArray(wlb_);
 +#else // NOT_CUBED_SPHERE
 +
  #if !MAGNETIC_FIELDS_ENABLED  // Hydro:
          RiemannSolver(k, j, il, iu, IVZ, wl_, wr_, x3flux, dxw_);
  #else  // MHD:
-@@ -393,6 +427,51 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
+@@ -335,6 +366,7 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
+             }
+           }
+         }
++#endif // CUBED_SPHERE
+ 
+         // swap the arrays for the next step
+         wl_.SwapAthenaArray(wlb_);
+@@ -392,6 +424,49 @@ void Hydro::CalculateFluxes(AthenaArray<Real> &w, FaceField &b,
+       }
      } // end if (order == 4)
    }
- 
-+#endif // CUBE_SPHERE
 +       
 +// Cubed Sphere: recover the stored values, run riemann solvers
 +#ifdef CUBED_SPHERE
@@ -139,8 +143,7 @@ index eeaf381b..2f5aae42 100644
 +      }
 +    }
 +  }
-+#endif // CUBED_SPHERE
-+
++#endif  // CUBED_SPHERE
+ 
    if (!STS_ENABLED)
      AddDiffusionFluxes();
- 
