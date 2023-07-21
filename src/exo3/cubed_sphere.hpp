@@ -18,6 +18,8 @@ class CubedSphere {
   ~CubedSphere() {}
 
   static int FindBlockID(LogicalLocation const &loc);
+  static void TransformOX(int *ox2, int *ox3, int *tox2, int *tox3,
+                          LogicalLoction const &loc);
 
   Real GenerateMeshX2(Real x) const;
   Real GenerateMeshX3(Real x) const;
@@ -29,16 +31,16 @@ class CubedSphere {
   void GetUV(Real *U, Real *V, Real V2, Real V3, int k, int j, int i) const;
   void GetVyVz(Real *V2, Real *V3, Real U, Real V, int k, int j, int i) const;
 
-  void TransformOx(int *ox2, int *ox3, int *tox2, int *tox3) const;
+  void TransformOX(int *ox2, int *ox3, int *tox2, int *tox3) const {
+    return TransformOX(ox2, ox3, tox2, tox3, pmy_block_->loc);
+  }
 
   void SaveLR3DValues(AthenaArray<Real> &L_in, AthenaArray<Real> &R_in,
                       int direction, int k, int j, int il, int iu);
-
   void LoadLR3DValues(AthenaArray<Real> &L_in, AthenaArray<Real> &R_in,
                       int direction, int k, int j, int il, int iu);
 
   void SynchronizeFluxesSend();
-
   void SynchronizeFluxesRecv();
 
  protected:
