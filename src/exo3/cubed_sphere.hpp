@@ -14,7 +14,13 @@ class MeshBlock;
 
 class CubedSphere {
  public:
-  CubedSphereLR(MeshBlock *pmb);
+  CubedSphere(MeshBlock *pmb);
+  ~CubedSphere() {}
+
+  static int FindBlockID(LogicalLocation const &loc);
+
+  Real GenerateMeshX2(Real x) const;
+  Real GenerateMeshX3(Real x) const;
 
   void GetLatLon(Real *lat, Real *lon, int k, int j, int i) const;
   void GetLatLonFace2(Real *lat, Real *lon, int k, int j, int i) const;
@@ -42,8 +48,8 @@ class CubedSphere {
   AthenaArray<Real> L3DValues[3], R3DValues[3];
 
 #ifdef MPI_PARALLEL
-  MPI_Request send_request[4];
-  MPI_Request recv_request[4];
+  MPI_Request send_request_[4];
+  MPI_Request recv_request_[4];
 #endif
 
   std::vector<Real> LRDataBuffer[4];

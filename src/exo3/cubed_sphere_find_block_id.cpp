@@ -5,9 +5,7 @@
 // athena
 #include <athena/athena.hpp>
 
-namespace CubedSphere {
-
-int FindBlockID(LogicalLocation const& loc) {
+int CubedSphere::FindBlockID(LogicalLocation const& loc) {
   int lv2_lx2 = loc.lx2 >> (loc.level - 2);
   int lv2_lx3 = loc.lx3 >> (loc.level - 2);
 
@@ -72,5 +70,3 @@ int FindBlockID(LogicalLocation const& loc) {
 
   return block_id;
 }
-
-}  // namespace CubedSphere

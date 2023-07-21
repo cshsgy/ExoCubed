@@ -9,16 +9,13 @@
 #include <athena/hydro/hydro.hpp>
 #include <athena/mesh/mesh.hpp>
 
-// exo3
-#include "cubed_sphere_funcs.hpp"
-
 #ifdef MPI_PARALLEL
 #include <mpi.h>
 #endif
 
 #define DBL_EPSILON 1.0e-10
 
-CubedSphere(MeshBlock *pmb) : pmy_block_(pmb) {
+CubedSphere::CubedSphere(MeshBlock *pmb) : pmy_block_(pmb) {
   int nc1 = pmb->ncells1, nc2 = pmb->ncells2, nc3 = pmb->ncells3;
 
   L3DValues[0].NewAthenaArray(NWAVE, nc3, nc2, nc1);
@@ -30,10 +27,52 @@ CubedSphere(MeshBlock *pmb) : pmy_block_(pmb) {
   R3DValues[2].NewAthenaArray(NWAVE, nc3, nc2, nc1);
 }
 
+Real CubedSphere::GenerateMeshX2(Real x) const {
+  auto &loc = pmy_block_->loc;
+
+  Real x_l, x_u;
+  int lx2_lv2 = loc.lx2 >> (loc.level - 2);
+
+  switch (lx2_lv2) {
+    case 0:
+      x_l = -0.5;
+      x_u = 0.0;
+      break;
+    case 1:
+      x_l = 0.0;
+      x_u = 0.5;
+  }
+
+  return (0.5 * (x - x_l) / (x_u - x_l) - 0.25) * PI;  // Add Pi back later!!
+}
+
+Real CubedSphere::GenerateMeshX3(Real x) const {
+  auto &loc = pmy_block_->loc;
+
+  Real x_l, x_u;
+  int lx3_lv2 = loc.lx3 >> (loc.level - 2);
+
+  switch (lx3_lv2) {
+    case 0:
+      x_l = -0.5;
+      x_u = -1.0 / 6.0;
+      break;
+    case 1:
+      x_l = -1.0 / 6.0;
+      x_u = 1.0 / 6.0;
+      break;
+    case 2:
+      x_l = 1.0 / 6.0;
+      x_u = 0.5;
+  }
+
+  return (0.5 * (x - x_l) / (x_u - x_l) - 0.25) * PI;  // Add Pi back later!!
+}
+
 // Obtain Lat and Lon (radians) from x2 and x3
 // k is not used for now
 // Find the block number
-void CubedSphere::GetLatLon(Real *lat, Real *lon, int k, int j, int i) {
+void CubedSphere::GetLatLon(Real *lat, Real *lon, int k, int j, int i) const {
   auto pcoord = pmy_block_->pcoord;
   auto &loc = pmy_block_->loc;
 
@@ -49,7 +88,8 @@ void CubedSphere::GetLatLon(Real *lat, Real *lon, int k, int j, int i) {
 // Obtain Lat and Lon (radians) from x2 and x3
 // k is not used for now
 // Find the block number
-void CubedSphere::GetLatLonFace2(Real *lat, Real *lon, int k, int j, int i) {
+void CubedSphere::GetLatLonFace2(Real *lat, Real *lon, int k, int j,
+                                 int i) const {
   auto pcoord = pmy_block_->pcoord;
   auto &loc = pmy_block->loc;
 
@@ -66,7 +106,8 @@ void CubedSphere::GetLatLonFace2(Real *lat, Real *lon, int k, int j, int i) {
 // Obtain Lat and Lon (radians) from x2 and x3
 // k is not used for now
 // Find the block number
-void CubedSphere::GetLatLonFace3(Real *lat, Real *lon, int k, int j, int i) {
+void CubedSphere::GetLatLonFace3(Real *lat, Real *lon, int k, int j,
+                                 int i) const {
   auto pcoord = pmy_block_->pcoord;
   auto &loc = pcoord->pmy_block->loc;
 
@@ -83,7 +124,7 @@ void CubedSphere::GetLatLonFace3(Real *lat, Real *lon, int k, int j, int i) {
 // Obtain U and V (Lat-Lon) from V2 and V3 (Gnomonic Equiangle)
 // U is V_lam, V is V_phi.
 void CubedSphere::GetUV(Real *U, Real *V, Real V2, Real V3, int k, int j,
-                        int i) {
+                        int i) const {
   auto pcoord = pmy_block_->pcoord;
   auto &loc = pmy_block_->loc;
 
@@ -99,7 +140,7 @@ void CubedSphere::GetUV(Real *U, Real *V, Real V2, Real V3, int k, int j,
 // Convert U and V (Lat-Lon) to V2 and V3 (Gnomonic Equiangle)
 // U is V_lam, V is V_phi.
 void CubedSphere::GetVyVz(Real *V2, Real *V3, Real U, Real V, int k, int j,
-                          int i) {
+                          int i) const {
   auto pcoord = pmy_block_->pcoord;
   auto &loc = pmy_block->loc;
 
@@ -402,7 +443,7 @@ void CubedSphere::sendNeighborBlocks(int ox2, int ox3, int tg_rank,
 
 #ifdef MPI_PARALLEL
   MPI_Isend(data, dsize, MPI_DOUBLE, tg_rank, DirTag, MPI_COMM_WORLD,
-            &send_request[ownTag]);
+            &send_request_[ownTag]);
 #endif
 }
 
@@ -504,7 +545,7 @@ void CubedSphere::recvNeighborBlocks(int ox2, int ox3, int tg_rank,
   // quickly MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &test,
   //             MPI_STATUS_IGNORE);
   // =======
-  // MPI_Test(&recv_request[ownTag], &test, MPI_STATUS_IGNORE);
+  // MPI_Test(&recv_request_[ownTag], &test, MPI_STATUS_IGNORE);
 
   int offset = 0;
   for (int n = 0; n < NWAVE; n++)

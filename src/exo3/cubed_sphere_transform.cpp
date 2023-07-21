@@ -1,7 +1,7 @@
 // athena
 #include <athena/athena.hpp>
 
-namespace CubedSphere {
+namespace CubedSphereUtils {
 
 void VecTransABPFromRLL(Real X, Real Y, int blockID, Real U, Real V, Real *V2,
                         Real *V3) {
@@ -192,4 +192,4 @@ void XYPFromRLL(Real lon, Real lat, Real &dX, Real &dY, int &nP) {
   dY = sy / sz;
 }
 
-}  // namespace CubedSphere
+}  // namespace CubedSphereUtils

@@ -10,9 +10,9 @@
 #include <athena/coordinates/coordinates.hpp>
 
 // exo3
-#include "cubed_sphere_funcs.hpp"
+#include "cubed_sphere_utility.hpp"
 
-namespace CubedSphere {
+namespace CubedSphereUtility {
 
 void PackDataR3(const AthenaArray<Real> &src, Real *buf, int sn, int en, int si,
                 int ei, int sj, int ej, int sk, int ek, int &offset) {
@@ -563,4 +563,4 @@ void PackData(const AthenaArray<Real> &src, Real *buf, int sn, int en, int si,
   return;
 }
 
-}  // namespace CubedSphere
+}  // namespace CubedSphereUtility
