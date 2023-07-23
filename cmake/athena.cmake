@@ -3,9 +3,14 @@ include(FetchContent)
 set(FETCHCONTENT_QUIET FALSE)
 
 set(patch_command
-    git apply ${CMAKE_CURRENT_SOURCE_DIR}/patches/19.decomposition.patch
-    ${CMAKE_CURRENT_SOURCE_DIR}/patches/21.implicit_dt.patch
-    ${CMAKE_CURRENT_SOURCE_DIR}/patches/23.exo3_coord.patch)
+    git apply ${CMAKE_CURRENT_SOURCE_DIR}/patches/21.implicit_dt.patch
+    ${CMAKE_CURRENT_SOURCE_DIR}/patches/25.cs_meshblock.patch
+    ${CMAKE_CURRENT_SOURCE_DIR}/patches/26.cs_adiabatic_hydro.patch
+    ${CMAKE_CURRENT_SOURCE_DIR}/patches/27.cs_coordinates.patch
+    ${CMAKE_CURRENT_SOURCE_DIR}/patches/28.cs_bvals_cc.patch
+    ${CMAKE_CURRENT_SOURCE_DIR}/patches/29.cs_bvals_var.patch
+    ${CMAKE_CURRENT_SOURCE_DIR}/patches/30.cs_bvals_base.patch
+    ${CMAKE_CURRENT_SOURCE_DIR}/patches/31.cs_calculate_fluxes.patch)
 
 FetchContent_Declare(
   athenapp

@@ -25,6 +25,9 @@
 #include "snap/implicit/implicit_solver.hpp"
 #include "snap/thermodynamics/thermodynamics.hpp"
 
+// exo3
+#include "exo3/cubed_sphere.hpp"
+
 // canoe
 #include "impl.hpp"
 #include "index_map.hpp"
@@ -52,6 +55,9 @@ MeshBlock::Impl::Impl(MeshBlock *pmb, ParameterInput *pin) : pmy_block_(pmb) {
 
   // inversion queue
   fitq = Inversion::NewInversionQueue(pmb, pin);
+
+  // cubed sphere
+  pexo3 = std::make_shared<CubedSphere>(pmb);
 
   // reference pressure
 #ifdef HYDROSTATIC
