@@ -1,5 +1,5 @@
 <job>
-problem_id = blast_48/cubed  # problem ID: basename of output filenames
+problem_id = blast_48_cubed  # problem ID: basename of output filenames
 
 <output1>
 file_type  = hst         # History data dump
@@ -42,6 +42,9 @@ x3min      = 0.           # minimum value of X3
 x3max      = 1.E3         # maximum value of X3
 ix3_bc     = periodic   # inner-X3 boundary flag
 ox3_bc     = periodic   # outer-X3 boundary flag
+
+ReferencePressure = 1.E5
+PressureScaleHeight = 10.E3
 
 <meshblock>
 nx1        = 2
