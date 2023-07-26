@@ -93,3 +93,5 @@ The build process turns off DISORT by default, to turn on building DISORT, use
 ```
 cmake .. -DDISORT=ON
 ```
+
+# use git send
