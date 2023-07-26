@@ -22,6 +22,7 @@ target_link_libraries(${namel}.${buildl}
     ${ATHENAPP_LIBRARY_${buildu}}
     ${CANOE_LIBRARY_${buildu}}
     ${NETCDF_LIBRARIES}
+    ${PNETCDF_LIBRARY}
     ${CPPDISORT_LIBRARY_${buildu}}
     )
 
