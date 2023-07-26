@@ -3,7 +3,7 @@ string(TOUPPER ${CMAKE_BUILD_TYPE} buildu)
 
 # 1. Compile dam_break.cpp
 
-foreach(namel dam_break)
+foreach(namel dam_break test_blast)
   add_executable(${namel}.${buildl} ${namel}.cpp
     ${CMAKE_BINARY_DIR}/main_${TASK}.cpp)
 
