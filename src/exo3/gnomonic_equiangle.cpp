@@ -811,10 +811,13 @@ void GnomonicEquiangle::AddCoordTermsDivergence(const Real dt,
                                                 const AthenaArray<Real> &prim,
                                                 const AthenaArray<Real> &bcc,
                                                 AthenaArray<Real> &u) {
-  for (int k = pmy_block->ks; k <= pmy_block->ke; ++k) {
-    for (int j = pmy_block->js; j <= pmy_block->je; ++j) {
-#pragma omp simd
-      for (int i = pmy_block->is; i <= pmy_block->ie; ++i) {
+  auto pmb = pmy_block;
+  int is = pmb->is, js = pmb->js, ks = pmb->ks;
+  int ie = pmb->ie, je = pmb->je, ke = pmb->ke;
+
+  for (int k = ks; k <= ke; ++k) {
+    for (int j = js; j <= je; ++j) {
+      for (int i = is; i <= ie; ++i) {
         // General variables
         Real v1 = prim(IVX, k, j, i);
         Real v2 = prim(IVY, k, j, i);
@@ -850,5 +853,4 @@ void GnomonicEquiangle::AddCoordTermsDivergence(const Real dt,
       }
     }
   }
-  return;
 }
