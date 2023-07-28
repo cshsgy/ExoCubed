@@ -15,37 +15,6 @@
 // exo3
 #include "gnomonic_equiangle.hpp"
 
-void add_metric_term(Real *du, Real const *w, Real x, Real y, Real radius) {
-  Real C = sqrt(1.0 + x * x);
-  Real D = sqrt(1.0 + y * y);
-  Real delta = 1.0 / (1.0 + x * x + y * y);
-
-  Real v1 = w[IVX];
-  Real v2 = w[IVY];
-  Real v3 = w[IVZ];
-  Real pr, rho;
-  if (strcmp(EQUATION_OF_STATE, "shallow_yz") == 0) {
-    pr = 0.5 * w[IDN] * w[IDN];
-    rho = w[IDN];
-  } else {
-    pr = w[IPR];
-    rho = w[IDN];
-    // Update flux 1 (excluded from shallow water case)
-    Real src1 = 2.0 * pr / radius +
-                rho * (v2 * v2 + v3 * v3 - 2 * v2 * v3 * x * y / (C * D));
-    du[IM1] += src1;
-  }
-  // Update flux 2
-  Real src2 = pr * y * y / radius * x / D -
-              rho * v2 / radius * (v1 - y * v3 * delta * delta / (C * D * D));
-  du[IM2] += src2;
-
-  // Update flux 3
-  Real src3 = pr * x * x / radius * y / C -
-              rho * v3 / radius * (v1 - x * v2 * delta * delta / (C * C * D));
-  du[IM3] += src3;
-}
-
 //----------------------------------------------------------------------------------------
 //! Cartesian coordinates constructor
 
@@ -846,43 +815,43 @@ void GnomonicEquiangle::AddCoordTermsDivergence(const Real dt,
   int is = pmb->is, js = pmb->js, ks = pmb->ks;
   int ie = pmb->ie, je = pmb->je, ke = pmb->ke;
 
-  for (int k = ks; k <= ke; ++k)
-    for (int j = js; j <= je; ++j)
+  for (int k = ks; k <= ke; ++k) {
+    for (int j = js; j <= je; ++j) {
       for (int i = is; i <= ie; ++i) {
-        Real radius = x1v(i);
-        Real w[NHYDRO], du[NHYDRO];
-
-        for (int n = 0; n < NHYDRO; ++n) {
-          w[n] = prim(n, k, j, i);
-          du[n] = 0.;
+        // General variables
+        Real v1 = prim(IVX, k, j, i);
+        Real v2 = prim(IVY, k, j, i);
+        Real v3 = prim(IVZ, k, j, i);
+        Real r = x1v(i);
+        Real x = tan(x2v(j));
+        Real y = tan(x3v(k));
+        Real C = sqrt(1.0 + x * x);
+        Real D = sqrt(1.0 + y * y);
+        Real delta = 1.0 / (1.0 + x * x + y * y);
+        Real pr;
+        Real rho;
+        if (strcmp(EQUATION_OF_STATE, "shallow_yz") == 0) {
+          pr = 0.5 * prim(IDN, k, j, i) * prim(IDN, k, j, i);
+          rho = prim(IDN, k, j, i);
+        } else {
+          pr = prim(IPR, k, j, i);
+          rho = prim(IDN, k, j, i);
+          // Update flux 1 (excluded from shallow water case)
+          Real src1 = 2.0 * pr / r +
+                      rho * (v2 * v2 + v3 * v3 - 2 * v2 * v3 * x * y / (C * D));
+          u(IM1, k, j, i) += dt * src1;
         }
+        // Update flux 2
+        std::cout << rho << std::endl;
+        Real src2 = pr * y * y / r * x / D -
+                    rho * v2 / r * (v1 - y * v3 * delta * delta / (C * D * D));
+        u(IM2, k, j, i) += dt * src2;
 
-        Real alpha1 = x2f(j), alpha2 = x2f(j + 1);
-        Real beta1 = x3f(k), beta2 = x3f(k + 1);
-
-        Real alpha =
-            0.5 * (alpha1 + alpha2) + 1. / (2. * sqrt(3.)) * (alpha2 - alpha1);
-        Real beta =
-            0.5 * (beta1 + beta2) + 1. / (2. * sqrt(3.)) * (beta2 - beta1);
-        add_metric_term(du, w, tan(alpha), tan(beta), radius);
-
-        alpha =
-            0.5 * (alpha1 + alpha2) + 1. / (2. * sqrt(3.)) * (alpha2 - alpha1);
-        beta = 0.5 * (beta1 + beta2) - 1. / (2. * sqrt(3.)) * (beta2 - beta1);
-        add_metric_term(du, w, tan(alpha), tan(beta), radius);
-
-        alpha =
-            0.5 * (alpha1 + alpha2) - 1. / (2. * sqrt(3.)) * (alpha2 - alpha1);
-        beta = 0.5 * (beta1 + beta2) + 1. / (2. * sqrt(3.)) * (beta2 - beta1);
-        add_metric_term(du, w, tan(alpha), tan(beta), radius);
-
-        alpha =
-            0.5 * (alpha1 + alpha2) - 1. / (2. * sqrt(3.)) * (alpha2 - alpha1);
-        beta = 0.5 * (beta1 + beta2) - 1. / (2. * sqrt(3.)) * (beta2 - beta1);
-        add_metric_term(du, w, tan(alpha), tan(beta), radius);
-
-        u(IM1, k, j, i) += dt * du[IM1] / 4.;
-        u(IM2, k, j, i) += dt * du[IM2] / 4.;
-        u(IM3, k, j, i) += dt * du[IM3] / 4.;
+        // Update flux 3
+        Real src3 = pr * x * x / r * y / C -
+                    rho * v3 / r * (v1 - x * v2 * delta * delta / (C * C * D));
+        u(IM3, k, j, i) += dt * src3;
       }
+    }
+  }
 }
