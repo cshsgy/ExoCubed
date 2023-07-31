@@ -146,11 +146,6 @@ void Hydro::RiemannSolver(int const k, int const j, int const il, int const iu,
       default:
         break;
     }
-
-    /*std::cout << flx(IVX, k, j, il) << std::endl;
-    std::cout << flx(IVY, k, j, il) << std::endl;
-    std::cout << flx(IVZ, k, j, il) << std::endl;
-    throw std::runtime_error("aa");*/
   }
 
 #endif
