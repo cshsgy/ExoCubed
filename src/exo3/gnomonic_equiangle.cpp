@@ -308,43 +308,6 @@ void GnomonicEquiangle::VolCenterFace3Area(const int k, const int j,
   return;
 }
 
-//----------------------------------------------------------------------------------------
-// GetVolCenterFaceXArea functions: return area of face with normal in X-dir at
-// (i,j,k) in volume center
-
-/*Real GnomonicEquiangle::GetVolCenterFace1Area(const int k, const int j,
-                                              const int i) {
-  Real E1 =
-      Spherical_Tri(x2f(j), x2f(j), x2f(j + 1), x3f(k), x3f(k + 1), x3f(k));
-  Real E2 = Spherical_Tri(x2f(j), x2f(j + 1), x2f(j + 1), x3f(k + 1), x3f(k),
-                          x3f(k + 1));
-  Real E = E1 + E2;
-
-  return x1v(i) * x1v(i) * E;
-}
-
-Real GnomonicEquiangle::GetVolCenterFace2Area(const int k, const int j,
-                                              const int i) {
-  Real x = tan(x2v(j));
-  Real y1 = tan(x3f(k));
-  Real y2 = tan(x3f(k + 1));
-  Real delta1 = sqrt(1.0 + x * x + y1 * y1);
-  Real delta2 = sqrt(1.0 + x * x + y2 * y2);
-  Real dx3_lin = x1v(i) * acos(1 / (delta1 * delta2) * (1 + x * x + y1 * y2));
-  return dx1f(i) * dx3_lin;
-}
-
-Real GnomonicEquiangle::GetVolCenterFace3Area(const int k, const int j,
-                                              const int i) {
-  Real x1 = tan(x2f(j));
-  Real x2 = tan(x2f(j + 1));
-  Real y = tan(x3v(k));
-  Real delta1 = sqrt(1.0 + x1 * x1 + y * y);
-  Real delta2 = sqrt(1.0 + x2 * x2 + y * y);
-  Real dx2_lin = x1v(i) * acos(1 / (delta1 * delta2) * (1 + x1 * x2 + y * y));
-  return dx1f(i) * dx2_lin;
-}*/
-
 // Cell Volume function: compute volume of cell as vector
 
 void GnomonicEquiangle::CellVolume(const int k, const int j, const int il,
@@ -866,6 +829,7 @@ void GnomonicEquiangle::AddCoordTermsDivergence(const Real dt,
                                                 const AthenaArray<Real> &prim,
                                                 const AthenaArray<Real> &bcc,
                                                 AthenaArray<Real> &u) {
+  auto pco = pmy_block->pcoord;
   for (int k = pmy_block->ks; k <= pmy_block->ke; ++k) {
     for (int j = pmy_block->js; j <= pmy_block->je; ++j) {
 #pragma omp simd
@@ -901,14 +865,41 @@ void GnomonicEquiangle::AddCoordTermsDivergence(const Real dt,
         Real v_2 = v2 + v3 * cth;
         Real v_3 = v3 + v2 * cth;
 
+        Real xm = tan(x2f(j));
+        Real deltam = sqrt(1.0 + xm * xm + y * y);
+        Real Cm = sqrt(1.0 + xm * xm);
+        Real sthm = deltam / (Cm * D);
+        Real x2aream = pco->GetFace2Area(k, j, i);
+
+        Real xp = tan(x2f(j + 1));
+        Real Cp = sqrt(1.0 + xp * xp);
+        Real deltap = sqrt(1.0 + xp * xp + y * y);
+        Real sthp = deltap / (Cp * D);
+        Real x2areap = pco->GetFace2Area(k, j + 1, i);
+
+        Real vol = pco->GetCellVolume(k, j, i);
+        Real x_ov_rD = (x2aream * sthm - x2areap * sthp) / vol;
+
         // Update flux 2
-        Real src2 =
-            -x / (r * D) * (pr + rho * v3 * v3 * sth2) - rho * v1 * v_2 / r;
+        Real src2 = -x_ov_rD * (pr + rho * v3 * v3 * sth2) - rho * v1 * v_2 / r;
         u(IM2, k, j, i) += dt * src2;
 
+        Real ym = tan(x3f(k));
+        deltam = sqrt(1.0 + x * x + ym * ym);
+        Real Dm = sqrt(1.0 + ym * ym);
+        sthm = deltam / (C * Dm);
+        Real x3aream = pco->GetFace3Area(k, j, i);
+
+        Real yp = tan(x3f(k + 1));
+        Real Dp = sqrt(1.0 + yp * yp);
+        deltap = sqrt(1.0 + x * x + yp * yp);
+        sthp = deltap / (C * Dp);
+        Real x3areap = pco->GetFace3Area(k + 1, j, i);
+
+        Real y_ov_rC = (x3aream * sthm - x3areap * sthp) / vol;
+
         // Update flux 3
-        Real src3 =
-            -y / (r * C) * (pr + rho * v2 * v2 * sth2) - rho * v1 * v_3 / r;
+        Real src3 = -y_ov_rC * (pr + rho * v2 * v2 * sth2) - rho * v1 * v_3 / r;
         u(IM3, k, j, i) += dt * src3;
       }
     }
