@@ -132,116 +132,56 @@ GnomonicEquiangle::GnomonicEquiangle(MeshBlock *pmb, ParameterInput *pin,
   g_.NewAthenaArray(NMETRIC, nc1 + 1);
   gi_.NewAthenaArray(NMETRIC, nc1 + 1);
 
-  // initialize geometrical factors, flux form
-  /*avg_r.NewAthenaArray(nc1);
-  /avg_c.NewAthenaArray(nc2);
-  /avg_d.NewAthenaArray(nc3);
+  x_over_rD.NewAthenaArray(ku, ju, iu);
+  y_over_rC.NewAthenaArray(ku, ju, iu);
 
-  for (int i = il; i <= iu; ++i) {
-    avg_r(i) =
-        2.0 / 3.0 *
-        (x1f(i + 1) * x1f(i + 1) * x1f(i + 1) - x1f(i) * x1f(i) * x1f(i)) /
-        (x1f(i + 1) * x1f(i + 1) - x1f(i) * x1f(i));
-  }
-  for (int j = jl; j <= ju; ++j) {
-    Real xl = x2f(j);
-    Real xu = x2f(j + 1);
-    Real dx = xu - xl;
-    // integration of sqrt(1+x^2)
-    avg_c(j) = log((sqrt(xu * xu + 1.0) + xu) / (sqrt(xl * xl + 1.0) + xl)) /
-                   (2 * dx) +
-               (xu * sqrt(xu * xu + 1.0) - xl * sqrt(xl * xl + 1.0)) / (2 * dx);
-  }
+  // Initialize metric term flux form factors
   for (int k = kl; k <= ku; ++k) {
-    Real xl = x3f(k);
-    Real xu = x3f(k + 1);
-    Real dx = xu - xl;
-    // integration of sqrt(1+x^2)
-    avg_d(k) = log((sqrt(xu * xu + 1.0) + xu) / (sqrt(xl * xl + 1.0) + xl)) /
-                   (2 * dx) +
-               (xu * sqrt(xu * xu + 1.0) - xl * sqrt(xl * xl + 1.0)) / (2 * dx);
-  }
+    for (int j = jl; j <= ju; ++j) {
+#pragma omp simd
+      for (int i = il; i <= iu; ++i) {
+        // General variables
+        Real r = x1v(i);
+        Real x = tan(x2v(j));
+        Real y = tan(x3v(k));
+        Real C = sqrt(1.0 + x * x);
+        Real D = sqrt(1.0 + y * y);
+        Real delta = sqrt(1.0 + x * x + y * y);
+        Real cth = -x * y / (C * D);
+        Real sth2 = 1. - cth * cth;
 
-  // Initialize geometrical factors for primitive forms
-  coord_area2_i_.NewAthenaArray(nc3, nc2);
-  coord_area3_i_.NewAthenaArray(nc3, nc2);
-  coord_src2_j_.NewAthenaArray(nc3, nc2);
-  coord_src3_j_.NewAthenaArray(nc3, nc2);
+        Real xm = tan(x2f(j));
+        Real deltam = sqrt(1.0 + xm * xm + y * y);
+        Real Cm = sqrt(1.0 + xm * xm);
+        Real sthm = deltam / (Cm * D);
+        Real x2aream = GetFace2Area(k, j, i);
 
-  for (int j = jl; j <= ju; ++j) {
-    for (int k = kl; k <= ku; ++k) {
-      // Calculate average geometric factors, can be pre-calculated to save time
-      Real s1 = 0;
-      Real s2 = 0;
-      Real s3 = 0;
-      Real s4 = 0;
-      Real g_f = 0;
-      int n = 10;
+        Real xp = tan(x2f(j + 1));
+        Real Cp = sqrt(1.0 + xp * xp);
+        Real deltap = sqrt(1.0 + xp * xp + y * y);
+        Real sthp = deltap / (Cp * D);
+        Real x2areap = GetFace2Area(k, j + 1, i);
 
-      Real x_l = (x2f(j));
-      Real x_u = (x2f(j + 1));
-      Real y_l = (x3f(k));
-      Real y_u = (x3f(k + 1));
-      for (int i1 = 0; i1 < n; i1++)
-        for (int i2 = 0; i2 < n; i2++) {
-          Real x1 = tan(x_l + (x_u - x_l) * i1 / (1.0 * (n - 1)));
-          Real y1 = tan(y_l + (y_u - y_l) * i2 / (1.0 * (n - 1)));
-          Real factor;
-          if ((i1 == 0 || i1 == n - 1) && (i2 == 0 || i2 == n - 1))
-            factor = 1.0;
-          else if ((i1 == 0 || i1 == n - 1) || (i2 == 0 || i2 == n - 1))
-            factor = 2.0;
-          else
-            factor = 4.0;
-          s1 += factor * sqrt(1.0 + x1 * x1 + y1 * y1) * x1 * y1 * y1 /
-                pow(1.0 + x1 * x1, 3.0 / 2.0) / pow(1.0 + y1 * y1, 2.0);
-          s2 += factor * sqrt(1.0 + x1 * x1 + y1 * y1) * x1 * x1 * y1 /
-                pow(1.0 + y1 * y1, 3.0 / 2.0) / pow(1.0 + x1 * x1, 2.0);
-          s3 += factor * (1.0 + x1 * x1 + y1 * y1) * y1 / sqrt(1.0 + x1 * x1) /
-                (1.0 + y1 * y1);
-          s4 += factor * (1.0 + x1 * x1 + y1 * y1) * x1 / sqrt(1.0 + y1 * y1) /
-                (1.0 + x1 * x1);
-          g_f += factor * sqrt(1.0 + x1 * x1 + y1 * y1) /
-                 pow(1.0 + x1 * x1, 3.0 / 2.0) / pow(1.0 + y1 * y1, 3.0 / 2.0);
-        }
+        Real vol = GetCellVolume(k, j, i);
+        x_over_rD(k, j, i) = (x2aream * sthm - x2areap * sthp) / vol;
 
-      coord_area2_i_(k, j) = s1 / g_f;
-      coord_area3_i_(k, j) = s2 / g_f;
-      coord_src2_j_(k, j) = s3 / g_f;
-      coord_src3_j_(k, j) = s4 / g_f;
+        Real ym = tan(x3f(k));
+        deltam = sqrt(1.0 + x * x + ym * ym);
+        Real Dm = sqrt(1.0 + ym * ym);
+        sthm = deltam / (C * Dm);
+        Real x3aream = GetFace3Area(k, j, i);
+
+        Real yp = tan(x3f(k + 1));
+        Real Dp = sqrt(1.0 + yp * yp);
+        deltap = sqrt(1.0 + x * x + yp * yp);
+        sthp = deltap / (C * Dp);
+        Real x3areap = GetFace3Area(k + 1, j, i);
+
+        y_over_rC(k, j, i) = (x3aream * sthm - x3areap * sthp) / vol;
+      }
     }
-  }*/
+  }
 }
-
-/*Real GnomonicEquiangle::Spherical_Tri(Real x1, Real x2, Real x3, Real y1,
-                                      Real y2, Real y3) {
-  Real tx1 = tan(x1);
-  Real tx2 = tan(x2);
-  Real tx3 = tan(x3);
-  Real ty1 = tan(y1);
-  Real ty2 = tan(y2);
-  Real ty3 = tan(y3);
-  Real delta1 = sqrt(1.0 + tx1 * tx1 + ty1 * ty1);
-  Real delta2 = sqrt(1.0 + tx2 * tx2 + ty2 * ty2);
-  Real delta3 = sqrt(1.0 + tx3 * tx3 + ty3 * ty3);
-
-  tx1 = tx1 / delta1;
-  tx2 = tx2 / delta2;
-  tx3 = tx3 / delta3;
-  ty1 = ty1 / delta1;
-  ty2 = ty2 / delta2;
-  ty3 = ty3 / delta3;
-
-  // triple product
-  Real num = fabs(tx1 * ty2 / delta3 - tx2 * ty1 / delta3 + tx2 * ty3 / delta1 -
-                  tx3 * ty2 / delta1 + tx3 * ty1 / delta2 - tx1 * ty3 / delta2);
-  Real den = 1.0 + tx1 * tx2 + tx2 * tx3 + tx3 * tx1 + ty1 * ty2 + ty2 * ty3 +
-             ty3 * ty1 + 1.0 / (delta1 * delta2) + 1.0 / (delta2 * delta3) +
-             1.0 / (delta3 * delta1);
-  Real E2 = atan(num / den);
-
-  return E2 * 2.0;
-}*/
 
 void GnomonicEquiangle::Face1Area(const int k, const int j, const int il,
                                   const int iu, AthenaArray<Real> &area) {
@@ -1013,41 +953,14 @@ void GnomonicEquiangle::AddCoordTermsDivergence(const Real dt,
         Real v_2 = v2 + v3 * cth;
         Real v_3 = v3 + v2 * cth;
 
-        Real xm = tan(x2f(j));
-        Real deltam = sqrt(1.0 + xm * xm + y * y);
-        Real Cm = sqrt(1.0 + xm * xm);
-        Real sthm = deltam / (Cm * D);
-        Real x2aream = pco->GetFace2Area(k, j, i);
-
-        Real xp = tan(x2f(j + 1));
-        Real Cp = sqrt(1.0 + xp * xp);
-        Real deltap = sqrt(1.0 + xp * xp + y * y);
-        Real sthp = deltap / (Cp * D);
-        Real x2areap = pco->GetFace2Area(k, j + 1, i);
-
-        Real vol = pco->GetCellVolume(k, j, i);
-        Real x_ov_rD = (x2aream * sthm - x2areap * sthp) / vol;
-
         // Update flux 2
-        Real src2 = -x_ov_rD * (pr + rho * v3 * v3 * sth2) - rho * v1 * v_2 / r;
+        Real src2 = -x_over_rD(k, j, i) * (pr + rho * v3 * v3 * sth2) -
+                    rho * v1 * v_2 / r;
         u(IM2, k, j, i) += dt * src2;
 
-        Real ym = tan(x3f(k));
-        deltam = sqrt(1.0 + x * x + ym * ym);
-        Real Dm = sqrt(1.0 + ym * ym);
-        sthm = deltam / (C * Dm);
-        Real x3aream = pco->GetFace3Area(k, j, i);
-
-        Real yp = tan(x3f(k + 1));
-        Real Dp = sqrt(1.0 + yp * yp);
-        deltap = sqrt(1.0 + x * x + yp * yp);
-        sthp = deltap / (C * Dp);
-        Real x3areap = pco->GetFace3Area(k + 1, j, i);
-
-        Real y_ov_rC = (x3aream * sthm - x3areap * sthp) / vol;
-
         // Update flux 3
-        Real src3 = -y_ov_rC * (pr + rho * v2 * v2 * sth2) - rho * v1 * v_3 / r;
+        Real src3 = -y_over_rC(k, j, i) * (pr + rho * v2 * v2 * sth2) -
+                    rho * v1 * v_3 / r;
         u(IM3, k, j, i) += dt * src3;
       }
     }

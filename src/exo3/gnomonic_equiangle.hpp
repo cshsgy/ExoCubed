@@ -69,6 +69,8 @@ class GnomonicEquiangle : public Coordinates {
                                const AthenaArray<Real> &prim,
                                const AthenaArray<Real> &bcc,
                                AthenaArray<Real> &u) final;
+
+  AthenaArray<Real> x_over_rD, y_over_rC;
 };
 
 #endif  // SRC_EXO3_GNOMONIC_EQUIANGLE_HPP_

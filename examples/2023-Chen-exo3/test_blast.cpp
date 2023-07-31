@@ -36,10 +36,10 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
         Real lat, lon;
         pexo3->GetLatLon(&lat, &lon, k, j, i);
         Real rad = (PI / 2.0 - lat) * R;
-        // if ((rad < R0) && (lat>PI/4.0))
-        //   phydro->w(IDN,k,j,i) = 500.0 + 10.0 * cos(PI/2.0*rad/R0);
-        // else
-        phydro->w(IDN, k, j, i) = 1.0;  // / (R*R);
+        if ((rad < R0) && (lat > PI / 4.0))
+          phydro->w(IDN, k, j, i) = 500.0 + 10.0 * cos(PI / 2.0 * rad / R0);
+        else
+          phydro->w(IDN, k, j, i) = 1.0;
         Real Vy, Vz;
         pexo3->GetVyVz(&Vy, &Vz, U, V, k, j, i);
         phydro->w(IVY, k, j, i) = Vy;
