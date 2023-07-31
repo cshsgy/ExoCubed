@@ -131,56 +131,6 @@ GnomonicEquiangle::GnomonicEquiangle(MeshBlock *pmb, ParameterInput *pin,
   // Initialize coordinate-transfer related variables
   g_.NewAthenaArray(NMETRIC, nc1 + 1);
   gi_.NewAthenaArray(NMETRIC, nc1 + 1);
-
-  x_over_rD.NewAthenaArray(ku, ju, iu);
-  y_over_rC.NewAthenaArray(ku, ju, iu);
-
-  // Initialize metric term flux form factors
-  for (int k = kl; k <= ku; ++k) {
-    for (int j = jl; j <= ju; ++j) {
-#pragma omp simd
-      for (int i = il; i <= iu; ++i) {
-        // General variables
-        Real r = x1v(i);
-        Real x = tan(x2v(j));
-        Real y = tan(x3v(k));
-        Real C = sqrt(1.0 + x * x);
-        Real D = sqrt(1.0 + y * y);
-        Real delta = sqrt(1.0 + x * x + y * y);
-        Real cth = -x * y / (C * D);
-        Real sth2 = 1. - cth * cth;
-
-        Real xm = tan(x2f(j));
-        Real deltam = sqrt(1.0 + xm * xm + y * y);
-        Real Cm = sqrt(1.0 + xm * xm);
-        Real sthm = deltam / (Cm * D);
-        Real x2aream = GetFace2Area(k, j, i);
-
-        Real xp = tan(x2f(j + 1));
-        Real Cp = sqrt(1.0 + xp * xp);
-        Real deltap = sqrt(1.0 + xp * xp + y * y);
-        Real sthp = deltap / (Cp * D);
-        Real x2areap = GetFace2Area(k, j + 1, i);
-
-        Real vol = GetCellVolume(k, j, i);
-        x_over_rD(k, j, i) = (x2aream * sthm - x2areap * sthp) / vol;
-
-        Real ym = tan(x3f(k));
-        deltam = sqrt(1.0 + x * x + ym * ym);
-        Real Dm = sqrt(1.0 + ym * ym);
-        sthm = deltam / (C * Dm);
-        Real x3aream = GetFace3Area(k, j, i);
-
-        Real yp = tan(x3f(k + 1));
-        Real Dp = sqrt(1.0 + yp * yp);
-        deltap = sqrt(1.0 + x * x + yp * yp);
-        sthp = deltap / (C * Dp);
-        Real x3areap = GetFace3Area(k + 1, j, i);
-
-        y_over_rC(k, j, i) = (x3aream * sthm - x3areap * sthp) / vol;
-      }
-    }
-  }
 }
 
 void GnomonicEquiangle::Face1Area(const int k, const int j, const int il,
@@ -916,8 +866,6 @@ void GnomonicEquiangle::AddCoordTermsDivergence(const Real dt,
                                                 const AthenaArray<Real> &prim,
                                                 const AthenaArray<Real> &bcc,
                                                 AthenaArray<Real> &u) {
-  auto pco = pmy_block->pcoord;
-
   for (int k = pmy_block->ks; k <= pmy_block->ke; ++k) {
     for (int j = pmy_block->js; j <= pmy_block->je; ++j) {
 #pragma omp simd
@@ -954,13 +902,13 @@ void GnomonicEquiangle::AddCoordTermsDivergence(const Real dt,
         Real v_3 = v3 + v2 * cth;
 
         // Update flux 2
-        Real src2 = -x_over_rD(k, j, i) * (pr + rho * v3 * v3 * sth2) -
-                    rho * v1 * v_2 / r;
+        Real src2 =
+            -x / (r * D) * (pr + rho * v3 * v3 * sth2) - rho * v1 * v_2 / r;
         u(IM2, k, j, i) += dt * src2;
 
         // Update flux 3
-        Real src3 = -y_over_rC(k, j, i) * (pr + rho * v2 * v2 * sth2) -
-                    rho * v1 * v_3 / r;
+        Real src3 =
+            -y / (r * C) * (pr + rho * v2 * v2 * sth2) - rho * v1 * v_3 / r;
         u(IM3, k, j, i) += dt * src3;
       }
     }
