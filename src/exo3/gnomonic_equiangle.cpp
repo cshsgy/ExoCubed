@@ -308,6 +308,43 @@ void GnomonicEquiangle::VolCenterFace3Area(const int k, const int j,
   return;
 }
 
+//----------------------------------------------------------------------------------------
+// GetVolCenterFaceXArea functions: return area of face with normal in X-dir at
+// (i,j,k) in volume center
+
+/*Real GnomonicEquiangle::GetVolCenterFace1Area(const int k, const int j,
+                                              const int i) {
+  Real E1 =
+      Spherical_Tri(x2f(j), x2f(j), x2f(j + 1), x3f(k), x3f(k + 1), x3f(k));
+  Real E2 = Spherical_Tri(x2f(j), x2f(j + 1), x2f(j + 1), x3f(k + 1), x3f(k),
+                          x3f(k + 1));
+  Real E = E1 + E2;
+
+  return x1v(i) * x1v(i) * E;
+}
+
+Real GnomonicEquiangle::GetVolCenterFace2Area(const int k, const int j,
+                                              const int i) {
+  Real x = tan(x2v(j));
+  Real y1 = tan(x3f(k));
+  Real y2 = tan(x3f(k + 1));
+  Real delta1 = sqrt(1.0 + x * x + y1 * y1);
+  Real delta2 = sqrt(1.0 + x * x + y2 * y2);
+  Real dx3_lin = x1v(i) * acos(1 / (delta1 * delta2) * (1 + x * x + y1 * y2));
+  return dx1f(i) * dx3_lin;
+}
+
+Real GnomonicEquiangle::GetVolCenterFace3Area(const int k, const int j,
+                                              const int i) {
+  Real x1 = tan(x2f(j));
+  Real x2 = tan(x2f(j + 1));
+  Real y = tan(x3v(k));
+  Real delta1 = sqrt(1.0 + x1 * x1 + y * y);
+  Real delta2 = sqrt(1.0 + x2 * x2 + y * y);
+  Real dx2_lin = x1v(i) * acos(1 / (delta1 * delta2) * (1 + x1 * x2 + y * y));
+  return dx1f(i) * dx2_lin;
+}*/
+
 // Cell Volume function: compute volume of cell as vector
 
 void GnomonicEquiangle::CellVolume(const int k, const int j, const int il,
