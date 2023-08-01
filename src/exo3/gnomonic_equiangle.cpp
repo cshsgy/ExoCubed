@@ -609,32 +609,28 @@ void GnomonicEquiangle::PrimToLocal2(const int k, const int j, const int il,
 
     // // Calculate transformation matrix
     Real T11 = 1.0;
-    Real T12 = 0.0;
-    Real T13 = 0.0;
-    Real T21 = 0.0;
     Real T22 = 1.0 / sqrt(gi22);
-    Real T23 = 0.0;
-    Real T31 = 0.0;
     Real T32 = g23 / sqrt(g33);
     Real T33 = sqrt(g33);
 
     // // Transform projected velocities
-    Real ux_l = T11 * uu1_l + T12 * uu2_l + T13 * uu3_l;
-    Real uy_l = T21 * uu1_l + T22 * uu2_l + T23 * uu3_l;
-    Real uz_l = T31 * uu1_l + T32 * uu2_l + T33 * uu3_l;
-    Real ux_r = T11 * uu1_r + T12 * uu2_r + T13 * uu3_r;
-    Real uy_r = T21 * uu1_r + T22 * uu2_r + T23 * uu3_r;
-    Real uz_r = T31 * uu1_r + T32 * uu2_r + T33 * uu3_r;
+    Real ux_l = T11 * uu1_l;
+    Real uy_l = T22 * uu2_l;
+    Real uz_l = T32 * uu2_l + T33 * uu3_l;
+
+    Real ux_r = T11 * uu1_r;
+    Real uy_r = T22 * uu2_r;
+    Real uz_r = T32 * uu2_r + T33 * uu3_r;
 
     // Set local projected 4-velocities
     prim_left(IVX, i) = ux_l;
     prim_left(IVY, i) = uy_l;
     prim_left(IVZ, i) = uz_l;
+
     prim_right(IVX, i) = ux_r;
     prim_right(IVY, i) = uy_r;
     prim_right(IVZ, i) = uz_r;
   }
-  return;
 }
 
 void GnomonicEquiangle::PrimToLocal3(const int k, const int j, const int il,
@@ -665,38 +661,35 @@ void GnomonicEquiangle::PrimToLocal3(const int k, const int j, const int il,
     Real uu1_l = prim_left(IVX, i);
     Real uu2_l = prim_left(IVY, i);
     Real uu3_l = prim_left(IVZ, i);
+
     Real uu1_r = prim_right(IVX, i);
     Real uu2_r = prim_right(IVY, i);
     Real uu3_r = prim_right(IVZ, i);
 
     // // Calculate transformation matrix
     Real T11 = 1.0;
-    Real T12 = 0.0;
-    Real T13 = 0.0;
-    Real T21 = 0.0;
     Real T22 = sqrt(g22);
     Real T23 = g23 / sqrt(g22);
-    Real T31 = 0.0;
-    Real T32 = 0.0;
-    Real T33 = 1 / sqrt(gi33);
+    Real T33 = 1.0 / sqrt(gi33);
 
     // // Transform projected velocities
-    Real ux_l = T11 * uu1_l + T12 * uu2_l + T13 * uu3_l;
-    Real uy_l = T21 * uu1_l + T22 * uu2_l + T23 * uu3_l;
-    Real uz_l = T31 * uu1_l + T32 * uu2_l + T33 * uu3_l;
-    Real ux_r = T11 * uu1_r + T12 * uu2_r + T13 * uu3_r;
-    Real uy_r = T21 * uu1_r + T22 * uu2_r + T23 * uu3_r;
-    Real uz_r = T31 * uu1_r + T32 * uu2_r + T33 * uu3_r;
+    Real ux_l = T11 * uu1_l;
+    Real uy_l = T22 * uu2_l + T23 * uu3_l;
+    Real uz_l = T33 * uu3_l;
+
+    Real ux_r = T11 * uu1_r;
+    Real uy_r = T22 * uu2_r + T23 * uu3_r;
+    Real uz_r = T33 * uu3_r;
 
     // Set local projected 4-velocities
     prim_left(IVX, i) = ux_l;
     prim_left(IVY, i) = uy_l;
     prim_left(IVZ, i) = uz_l;
+
     prim_right(IVX, i) = ux_r;
     prim_right(IVY, i) = uy_r;
     prim_right(IVZ, i) = uz_r;
   }
-  return;
 }
 
 //----------------------------------------------------------------------------------------
@@ -738,32 +731,21 @@ void GnomonicEquiangle::FluxToGlobal2(
     Real &g23 = g_(I23, i);
 
     // Extract local conserved quantities and fluxes
-    const Real txx = flux(IM1, k, j, i);
-    const Real txy = flux(IM2, k, j, i);
-    const Real txz = flux(IM3, k, j, i);
+    Real txx = flux(IM1, k, j, i);
+    Real txy = flux(IM2, k, j, i);
+    Real txz = flux(IM3, k, j, i);
 
     // Calculate transformation matrix
     Real T11 = 1.0;
-    Real T12 = 0.0;
-    Real T13 = 0.0;
-    Real T21 = 0.0;
     Real T22 = sqrt(gi22);
-    Real T23 = 0.0;
-    Real T31 = 0.0;
     Real T32 = -sqrt(gi22) * g23 / g33;
     Real T33 = 1.0 / sqrt(g33);
 
-    // Extract global fluxes
-    Real &t1_1 = flux(IM1, k, j, i);
-    Real &t1_2 = flux(IM2, k, j, i);
-    Real &t1_3 = flux(IM3, k, j, i);
-
     // Set fluxes
-    t1_1 = T11 * txx + T12 * txy + T13 * txz;
-    t1_2 = T21 * txx + T22 * txy + T23 * txz;
-    t1_3 = T31 * txx + T32 * txy + T33 * txz;
+    flux(IM1, k, j, i) = T11 * txx;
+    flux(IM2, k, j, i) = T22 * txy;
+    flux(IM3, k, j, i) = T32 * txy + T33 * txz;
   }
-  return;
 }
 
 void GnomonicEquiangle::FluxToGlobal3(
@@ -790,32 +772,21 @@ void GnomonicEquiangle::FluxToGlobal3(
     Real &g23 = g_(I23, i);
 
     // Extract local conserved quantities and fluxes
-    const Real txx = flux(IM1, k, j, i);
-    const Real txy = flux(IM2, k, j, i);
-    const Real txz = flux(IM3, k, j, i);
+    Real txx = flux(IM1, k, j, i);
+    Real txy = flux(IM2, k, j, i);
+    Real txz = flux(IM3, k, j, i);
 
     // Calculate transformation matrix
     Real T11 = 1.0;
-    Real T12 = 0.0;
-    Real T13 = 0.0;
-    Real T21 = 0.0;
     Real T22 = 1.0 / sqrt(g22);
     Real T23 = -g23 / g22 * sqrt(gi33);
-    Real T31 = 0.0;
-    Real T32 = 0.0;
     Real T33 = sqrt(gi33);
 
-    // Extract global fluxes
-    Real &t1_1 = flux(IM1, k, j, i);
-    Real &t1_2 = flux(IM2, k, j, i);
-    Real &t1_3 = flux(IM3, k, j, i);
-
     // Set fluxes
-    t1_1 = T11 * txx + T12 * txy + T13 * txz;
-    t1_2 = T21 * txx + T22 * txy + T23 * txz;
-    t1_3 = T31 * txx + T32 * txy + T33 * txz;
+    flux(IM1, k, j, i) = T11 * txx;
+    flux(IM2, k, j, i) = T22 * txy + T23 * txz;
+    flux(IM3, k, j, i) = T33 * txz;
   }
-  return;
 }
 
 void GnomonicEquiangle::AddCoordTermsDivergence(const Real dt,
