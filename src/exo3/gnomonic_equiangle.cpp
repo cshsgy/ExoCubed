@@ -302,7 +302,37 @@ void GnomonicEquiangle::VolCenterFace3Area(const int k, const int j,
 // GetVolCenterFaceXArea functions: return area of face with normal in X-dir at
 // (i,j,k) in volume center
 
-/*Real GnomonicEquiangle::GetVolCenterFace1Area(const int k, const int j,
+/*Real GnomonicEquiangle::Spherical_Tri(Real x1, Real x2, Real x3, Real y1,
+                                      Real y2, Real y3) {
+  Real tx1 = tan(x1);
+  Real tx2 = tan(x2);
+  Real tx3 = tan(x3);
+  Real ty1 = tan(y1);
+  Real ty2 = tan(y2);
+  Real ty3 = tan(y3);
+  Real delta1 = sqrt(1.0 + tx1 * tx1 + ty1 * ty1);
+  Real delta2 = sqrt(1.0 + tx2 * tx2 + ty2 * ty2);
+  Real delta3 = sqrt(1.0 + tx3 * tx3 + ty3 * ty3);
+
+  tx1 = tx1 / delta1;
+  tx2 = tx2 / delta2;
+  tx3 = tx3 / delta3;
+  ty1 = ty1 / delta1;
+  ty2 = ty2 / delta2;
+  ty3 = ty3 / delta3;
+
+  // triple product
+  Real num = fabs(tx1 * ty2 / delta3 - tx2 * ty1 / delta3 + tx2 * ty3 / delta1 -
+                  tx3 * ty2 / delta1 + tx3 * ty1 / delta2 - tx1 * ty3 / delta2);
+  Real den = 1.0 + tx1 * tx2 + tx2 * tx3 + tx3 * tx1 + ty1 * ty2 + ty2 * ty3 +
+             ty3 * ty1 + 1.0 / (delta1 * delta2) + 1.0 / (delta2 * delta3) +
+             1.0 / (delta3 * delta1);
+  Real E2 = atan(num / den);
+
+  return E2 * 2.0;
+}
+
+Real GnomonicEquiangle::GetVolCenterFace1Area(const int k, const int j,
                                               const int i) {
   Real E1 =
       Spherical_Tri(x2f(j), x2f(j), x2f(j + 1), x3f(k), x3f(k + 1), x3f(k));

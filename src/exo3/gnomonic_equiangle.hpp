@@ -71,6 +71,8 @@ class GnomonicEquiangle : public Coordinates {
                                AthenaArray<Real> &u) final;
 
  protected:
+  Real sphericalTri(Real x1, Real x2, Real x3, Real y1, Real y2, Real y3);
+
   AthenaArray<Real> cosine_cell_kj_, sine_cell_kj_;
   AthenaArray<Real> cosine_face2_kj_, sine_face2_kj_;
   AthenaArray<Real> cosine_face3_kj_, sine_face3_kj_;
