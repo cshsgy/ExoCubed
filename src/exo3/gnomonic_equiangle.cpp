@@ -174,20 +174,22 @@ GnomonicEquiangle::GnomonicEquiangle(MeshBlock *pmb, ParameterInput *pin,
 
   for (int k = kl - ng; k <= ku + ng; ++k)
     for (int j = jl - ng; j <= ju + ng; ++j) {
-      CellVolume(k, j, is, ie, coord_vol_i_);
-      Face2Area(k, j, is, ie, coord_area2_i_);
-      Face2Area(k, j + 1, is, ie, coord_area2_i1_);
-      Face3Area(k, j, is, ie, coord_area3_i_);
-      Face3Area(k + 1, j, is, ie, coord_area3_i1_);
+      CellVolume(k, j, il - ng, iu + ng, coord_vol_i_);
+      Face2Area(k, j, il - ng, iu + ng, coord_area2_i_);
+      Face2Area(k, j + 1, il - ng, iu + ng, coord_area2_i1_);
+      Face3Area(k, j, il - ng, iu + ng, coord_area3_i_);
+      Face3Area(k + 1, j, il - ng, iu + ng, coord_area3_i1_);
 
       for (int i = il - ng; i <= iu + ng; ++i) {
-        x_ov_rD_(k, j, i) = (coord_area2_i_(i) * sine_face2_kj_(k, j) -
-                             coord_area2_i1_(i) * sine_face2_kj_(k, j)) /
-                            coord_vol_i_(i);
+        x_ov_rD_kji_(k, j, i) =
+            (coord_area2_i_(i) * sine_face2_kj_(k, j) -
+             coord_area2_i1_(i) * sine_face2_kj_(k, j + 1)) /
+            coord_vol_i_(i);
 
-        y_ov_rC_(k, j, i) = (coord_area3_i_(i) * sine_face3_kj_(k, j) -
-                             coord_area3_i1_(i) * sine_face3_kj_(k, j)) /
-                            coord_vol_i_(i);
+        y_ov_rC_kji_(k, j, i) =
+            (coord_area3_i_(i) * sine_face3_kj_(k, j) -
+             coord_area3_i1_(i) * sine_face3_kj_(k + 1, j)) /
+            coord_vol_i_(i);
       }
     }
 }
@@ -521,8 +523,8 @@ void GnomonicEquiangle::CellMetric(const int k, const int j, const int il,
 void GnomonicEquiangle::Face1Metric(const int k, const int j, const int il,
                                     const int iu, AthenaArray<Real> &g,
                                     AthenaArray<Real> &g_inv) {
-  Real cos_theta = cosine_face1_kj_(k, j);
-  Real sin_theta = sine_face1_kj_(k, j);
+  Real cos_theta = cosine_cell_kj_(k, j);
+  Real sin_theta = sine_cell_kj_(k, j);
   // Go through 1D block of cells
 
 #pragma omp simd
@@ -920,12 +922,12 @@ void GnomonicEquiangle::AddCoordTermsDivergence(const Real dt,
         }
 
         // Update flux 2
-        Real src2 = -x_ov_rD_(k, j, i) * (pr + rho * v3 * v3 * sine2) -
+        Real src2 = -x_ov_rD_kji_(k, j, i) * (pr + rho * v3 * v3 * sine2) -
                     rho * v1 * v_2 / radius;
         u(IM2, k, j, i) += dt * src2;
 
         // Update flux 3
-        Real src3 = -y_ov_rC_(k, j, i) * (pr + rho * v2 * v2 * sine2) -
+        Real src3 = -y_ov_rC_kji_(k, j, i) * (pr + rho * v2 * v2 * sine2) -
                     rho * v1 * v_3 / radius;
         u(IM3, k, j, i) += dt * src3;
       }
