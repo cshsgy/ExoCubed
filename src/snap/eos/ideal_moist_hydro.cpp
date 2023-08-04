@@ -12,14 +12,21 @@
 #include <athena/hydro/hydro.hpp>
 #include <athena/mesh/mesh.hpp>
 #include <athena/parameter_input.hpp>
+#include <athena/stride_iterator.hpp>
 
 // canoe
 #include <configure.hpp>
 #include <impl.hpp>
 
+// exo3
+#include <exo3/cubed_sphere_utility.hpp>
+#include <exo3/gnomonic_equiangle.hpp>
+
 // snap
 #include "../thermodynamics/thermodynamics.hpp"
 #include "eos_helper.hpp"
+
+namespace cs = CubedSphereUtility;
 
 // EquationOfState constructor
 
@@ -82,8 +89,13 @@ void EquationOfState::ConservedToPrimitive(
         w_vy = u_m2 * di;
         w_vz = u_m3 * di;
 
+#ifdef CUBED_SPHERE
+        cs::CovariantToContravariant(prim.at(k, j, i),
+            static_cast<GnomonicEquiangle *>(pco)->GetCosineCell(k, j));
+#endif
+
         // internal energy
-        Real KE = 0.5 * di * (u_m1 * u_m1 + u_m2 * u_m2 + u_m3 * u_m3);
+        Real KE = 0.5 * (u_m1 * w_vx + u_m2 * w_vy + u_m3 * w_vz);
         Real fsig = 1., feps = 1.;
         // vapors
         for (int n = 1; n <= NVAPOR; ++n) {
@@ -142,8 +154,13 @@ void EquationOfState::PrimitiveToConserved(const AthenaArray<Real>& prim,
         u_m2 = w_vy * w_d;
         u_m3 = w_vz * w_d;
 
+#ifdef CUBED_SPHERE
+        cs::ContravariantToCovariant(cons.at(k, j, i),
+            static_cast<GnomonicEquiangle *>(pco)->GetCosineCell(k, j));
+#endif
+
         // total energy
-        Real KE = 0.5 * w_d * (w_vx * w_vx + w_vy * w_vy + w_vz * w_vz);
+        Real KE = 0.5 * (u_m1 * w_vx + u_m2 * w_vy + u_m3 * w_vz);
         Real fsig = 1., feps = 1.;
         // vapors
         for (int n = 1; n <= NVAPOR; ++n) {
