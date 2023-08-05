@@ -17,20 +17,20 @@
 #include <exo3/cubed_sphere.hpp>
 #include <exo3/cubed_sphere_utility.hpp>
 
+// Parameters
+Real h0 = 8000.;
+Real g = 9.80616;
+Real omega = 7.848E-6;
+Real a = 6.37122E6;
+Real K = 7.848E-6;
+Real R = 4.0;
+Real om_earth = 7.292E-5;
+
 void MeshBlock::ProblemGenerator(ParameterInput *pin) {
   Application::Logger app("main");
   app->Log("ProblemGenerator: Cubed Sphere");
 
   auto pexo3 = pimpl->pexo3;
-
-  // Parameters
-  Real h0 = 8000.;
-  Real g = 9.80616;
-  Real omega = 7.848E-6;
-  Real a = 6.37122E6;
-  Real K = 7.848E-6;
-  Real R = 4.0;
-  Real om_earth = 7.292E-5;
 
   for (int k = ks; k <= ke; ++k)
     for (int j = js; j <= je; ++j)
@@ -46,13 +46,19 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
                      ((R + 1) * pow(cos(lat), 2 * R + 2) +
                       (2 * R * R - R - 2) * pow(cos(lat), 2 * R) -
                       2 * R * R * pow(cos(lat), 2 * R - 2));
-        Real B -
+        Real B =
             2 * (om_earth + omega) * K / (R + 1) / (R + 2) * pow(cos(lat), R) *
-                ((R * R + 2 * R + 2) - (R + 1) * (R + 1) * cos(lat) * cos(lat));
+            ((R * R + 2 * R + 2) - (R + 1) * (R + 1) * cos(lat) * cos(lat));
         Real C = 0.25 * K * K * pow(cos(lat), 2 * R) *
                  ((R + 1) * cos(lat) * cos(lat) - (R + 2));
 
-        phydro->w(IDN, k, j, i) = 500.0;
+        phydro->w(IDN, k, j, i) = g * h0 + a * a * A +
+                                  a * a * B * cos(lon * R) +
+                                  a * a * C * cos(2 * lon * R);
+        Real U = a * omega * cos(lat) +
+                 a * K * pow(cos(lat), R - 1) * cos(lon * R) *
+                     (R * sin(lat) * sin(lat) - cos(lat) * cos(lat));
+        Real V = -a * K * R * pow(cos(lat), R - 1) * sin(lon * R) * sin(lat);
         Real Vy, Vz;
         pexo3->GetVyVz(&Vy, &Vz, U, V, k, j, i);
         phydro->w(IVY, k, j, i) = Vy;
@@ -99,4 +105,21 @@ void MeshBlock::InitUserMeshBlockData(ParameterInput *pin) {
   SetUserOutputVariableName(2, "U");
   SetUserOutputVariableName(3, "V");
   SetUserOutputVariableName(4, "sqrtg");
+}
+
+void MeshBlock::UserWorkInLoop() {  // Put in coriolis forces
+  auto pexo3 = pimpl->pexo3;
+  for (int k = ks; k <= ke; ++k) {
+    for (int j = js; j <= je; ++j) {
+      for (int i = is; i <= ie; ++i) {
+        Real cF2, cF3;
+        Real dt = new_block_dt_;
+        pexo3->CalculateCoriolisForce2(j, k, phydro->w(IVY, k, j, i),
+                                       phydro->w(IVZ, k, j, i), om_earth,
+                                       phydro->w(IDN, k, j, i), &cF2, &cF3);
+        phydro->u(IVY, k, j, i) += dt * cF2;
+        phydro->u(IVZ, k, j, i) += dt * cF3;
+      }
+    }
+  }
 }

@@ -157,9 +157,8 @@ void CubedSphere::GetVyVz(Real *V2, Real *V3, Real U, Real V, int k, int j,
   cs::VecTransABPFromRLL(X, Y, blockID, U, V, V2, V3);
 }
 
-void CubedSphere::CalculateCoriolisForce2(int blockID, Real i2, Real i3,
-                                          Real v2, Real v3, Real Omega,
-                                          Real den, Real *cF2,
+void CubedSphere::CalculateCoriolisForce2(int i2, int i3, Real v2, Real v3,
+                                          Real Omega, Real den, Real *cF2,
                                           Real *cF3) const {
   auto pcoord = pmy_block_->pcoord;
   auto &loc = pmy_block_->loc;
@@ -191,9 +190,9 @@ void CubedSphere::CalculateCoriolisForce2(int blockID, Real i2, Real i3,
   }
 }
 
-void CubedSphere::CalculateCoriolisForce3(int blockID, int i2, int i3, Real v1,
-                                          Real v2, Real v3, Real Omega,
-                                          Real den, Real *cF1, Real *cF2,
+void CubedSphere::CalculateCoriolisForce3(int i2, int i3, Real v1, Real v2,
+                                          Real v3, Real Omega, Real den,
+                                          Real *cF1, Real *cF2,
                                           Real *cF3) const {
   auto pcoord = pmy_block_->pcoord;
   auto &loc = pmy_block_->loc;
