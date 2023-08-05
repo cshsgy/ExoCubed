@@ -1,9 +1,18 @@
 string(TOLOWER ${CMAKE_BUILD_TYPE} buildl)
 string(TOUPPER ${CMAKE_BUILD_TYPE} buildu)
 
-# 1. Compile dam_break.cpp
+set(test_cases)
 
-foreach(namel dam_break test_blast)
+if(${HYDROSTATIC})
+  if(${EQUATION_OF_STATE} STREQUAL "shallow_yz")
+    list(APPEND test_cases dam_break)
+    list(APPEND test_cases test_blast)
+  endif()
+else()
+  list(APPEND test_cases test_adiabat)
+endif()
+
+foreach(namel ${test_cases})
   add_executable(${namel}.${buildl} ${namel}.cpp
     ${CMAKE_BINARY_DIR}/main_${TASK}.cpp)
 
