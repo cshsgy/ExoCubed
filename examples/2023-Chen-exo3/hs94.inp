@@ -51,10 +51,13 @@ x3max      = 1E3 # maximum value of X3
 ix3_bc     = periodic    # inner-X3 boundary flag
 ox3_bc     = periodic    # outer-X3 boundary flag
 
+ReferencePressure = 1.E5
+PressureScaleHeight = 10.E3
+
 <meshblock>
 nx1        = 20
-nx2        = 10
-nx3        = 10
+nx2        = 20
+nx3        = 20
 
 <hydro>
 gamma          = 1.4         # gamma = C_p/C_v

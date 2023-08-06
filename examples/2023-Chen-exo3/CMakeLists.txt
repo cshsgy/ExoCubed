@@ -11,6 +11,7 @@ if(${HYDROSTATIC})
   endif()
 else()
   list(APPEND test_cases test_adiabat)
+  list(APPEND test_cases hs94)
 endif()
 
 foreach(namel ${test_cases})

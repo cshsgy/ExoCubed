@@ -13,30 +13,28 @@
 // C++ headers
 #include <cmath>
 #include <iostream>
+#include <random>
 #include <sstream>
 #include <stdexcept>
 
-// Athena++ headers
-#include <athena.hpp>
-#include <athena_arrays.hpp>
-#include <coordinates/coordinates.hpp>
-#include <cubed_sphere.hpp>
-#include <eos/eos.hpp>
-#include <field/field.hpp>
-#include <globals.hpp>
-#include <hydro/hydro.hpp>
-#include <mesh/mesh.hpp>
-#include <parameter_input.hpp>
-// #include "../math/interpolation.h"
-#include <utils/utils.hpp>  // replaceChar
-// #include "../thermodynamics/thermodynamics.hpp"
-// #include "../thermodynamics/thermodynamic_funcs.hpp"
-// #include "../radiation/radiation.hpp"
-// #include "../radiation/hydrogen_cia.hpp"
-// #include "../radiation/freedman_mean.hpp"
-// #include "../radiation/freedman_simple.hpp"
-// #include "../radiation/correlatedk_absorber.hpp"
-// #include "../physics/physics.hpp"
+// athena
+#include <athena/eos/eos.hpp>
+#include <athena/field/field.hpp>
+#include <athena/hydro/hydro.hpp>
+#include <athena/mesh/mesh.hpp>
+#include <athena/parameter_input.hpp>
+
+// application
+#include <application/application.hpp>
+#include <application/exceptions.hpp>
+
+// canoe
+#include <configure.hpp>
+#include <impl.hpp>
+
+// exo3
+#include <exo3/cubed_sphere.hpp>
+#include <exo3/cubed_sphere_utility.hpp>
 
 #define _sqr(x) ((x) * (x))
 #define _qur(x) ((x) * (x) * (x) * (x))
@@ -45,6 +43,9 @@ using namespace std;
 
 static Real p0, Omega, Rd, cp, sigmab, Kf, Ts, dT, dtheta, Ka, Ks, Rp, scaled_z,
     z_iso, sponge_tau, sponge_width, grav;
+
+std::default_random_engine generator;
+std::normal_distribution<double> distribution(0.0, 1.0);
 
 // \brief Held-Suarez atmosphere benchmark test. Refernce: Held & Suarez,
 // (1994). Forcing parameters are given in the paper.
@@ -56,20 +57,21 @@ void Forcing(MeshBlock *pmb, Real const time, Real const dt,
              AthenaArray<Real> const &w, const AthenaArray<Real> &prim_scalar,
              AthenaArray<Real> const &bcc, AthenaArray<Real> &u,
              AthenaArray<Real> &cons_scalar) {
+  auto pexo3 = pmb->pimpl->pexo3;
   for (int k = pmb->ks; k <= pmb->ke; ++k) {
     for (int j = pmb->js; j <= pmb->je; ++j) {
       for (int i = pmb->is; i <= pmb->ie; ++i) {
         Real omega1, omega2;
         // Load Latitude
         Real lat, lon;
-        GetLatLon(&lat, &lon, pmb->pcoord, k, j, i);
+        pexo3->GetLatLon(&lat, &lon, k, j, i);
         Real theta = lat;
 
         omega1 = cos(theta) * Omega;
         omega2 = sin(theta) * Omega;
 
         Real U, V;
-        GetUV(&U, &V, pmb->pcoord, w(IVY, k, j, i), w(IVZ, k, j, i), k, j, i);
+        pexo3->GetUV(&U, &V, w(IVY, k, j, i), w(IVZ, k, j, i), k, j, i);
 
         Real m1 = w(IDN, k, j, i) * w(IVX, k, j, i);
         Real m2 = w(IDN, k, j, i) * U;
@@ -77,10 +79,10 @@ void Forcing(MeshBlock *pmb, Real const time, Real const dt,
 
         u(IM1, k, j, i) -= -2. * dt * (omega1 * m3);
         Real acc2, acc3;
-        Real tmp_acc2, tmp_acc3;
-        tmp_acc2 = -2. * dt * (omega1 * m3);
-        tmp_acc3 = -2. * dt * (omega1 * m1 - omega2 * m2);
-        GetVyVz(&acc2, &acc3, pmb->pcoord, tmp_acc2, tmp_acc3, k, j, i);
+        acc2 = -2. * dt * (omega1 * m3);
+        acc3 = -2. * dt * (omega1 * m1 - omega2 * m2);
+        pexo3->GetVyVz(&acc2, &acc3, acc2, acc3, k, j, i);
+        pexo3->ContravariantVectorToCovariant(j, k, acc2, acc3, &acc2, &acc3);
         u(IM2, k, j, i) += acc2;
         u(IM3, k, j, i) += acc3;
       }
@@ -97,7 +99,7 @@ void Forcing(MeshBlock *pmb, Real const time, Real const dt,
       for (int i = pmb->is; i <= pmb->ie; ++i) {
         // Load latitude
         Real lat, lon;
-        GetLatLon(&lat, &lon, pmb->pcoord, k, j, i);
+        pexo3->GetLatLon(&lat, &lon, k, j, i);
         // Momentum damping coefficient, Kv
         Real scaled_z = w(IPR, k, j, i) / p0;
         Real sigma = w(IPR, k, j, i) / p0;  // pmb->phydro->pbot(k,j);
@@ -121,6 +123,8 @@ void Forcing(MeshBlock *pmb, Real const time, Real const dt,
         Real m2 = w(IDN, k, j, i) * w(IVY, k, j, i);
         Real m3 = w(IDN, k, j, i) * w(IVZ, k, j, i);
 
+        pexo3->ContravariantVectorToCovariant(j, k, m2, m3, &m2, &m3);
+
         u(IM1, k, j, i) += -dt * Kv * m1;
         u(IM2, k, j, i) += -dt * Kv * m2;
         u(IM3, k, j, i) += -dt * Kv * m3;
@@ -130,6 +134,7 @@ void Forcing(MeshBlock *pmb, Real const time, Real const dt,
 }
 
 Real AngularMomentum(MeshBlock *pmb, int iout) {
+  auto pexo3 = pmb->pimpl->pexo3;
   Real AMz = 0;
   int is = pmb->is, ie = pmb->ie, js = pmb->js, je = pmb->je, ks = pmb->ks,
       ke = pmb->ke;
@@ -141,9 +146,9 @@ Real AngularMomentum(MeshBlock *pmb, int iout) {
         Real x1u = pmb->pcoord->x1f(i + 1);
         Real U, V;
         Real lat, lon;
-        GetLatLon(&lat, &lon, pmb->pcoord, k, j, i);
-        GetUV(&U, &V, pmb->pcoord, pmb->phydro->w(IVY, k, j, i),
-              pmb->phydro->w(IVZ, k, j, i), k, j, i);
+        pexo3->GetLatLon(&lat, &lon, k, j, i);
+        pexo3->GetUV(&U, &V, pmb->phydro->w(IVY, k, j, i),
+                     pmb->phydro->w(IVZ, k, j, i), k, j, i);
 
         Real xt = tan(pmb->pcoord->x2v(j));
         Real yt = tan(pmb->pcoord->x3v(k));
@@ -211,6 +216,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin) {
 //! \fn void MeshBlock::ProblemGenerator(ParameterInput *pin)
 //  \brief Held-Suarez problem generator
 void MeshBlock::ProblemGenerator(ParameterInput *pin) {
+  auto pexo3 = pimpl->pexo3;
   Real grav = -pin->GetReal("hydro", "grav_acc1");
   // Real grav = -phydro->psrc->GetG1();
   Real gamma = pin->GetReal("hydro", "gamma");
@@ -232,13 +238,14 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
       for (int i = is; i <= ie; ++i) {
         if ((pcoord->x1v(i) - Rp) < z_iso) {
           Real lat, lon;
-          GetLatLon(&lat, &lon, pcoord, k, j, i);
+          pexo3->GetLatLon(&lat, &lon, k, j, i);
           Real x1 = pcoord->x1v(i) - Rp;
           Real temp = Ts - grav * x1 / cp;
           phydro->w(IPR, k, j, i) = p0 * pow(temp / Ts, cp / Rd);
           phydro->w(IDN, k, j, i) =
               phydro->w(IPR, k, j, i) /
-              (Rd * (temp + 20. * (ran2(&iseed) - 0.5) * (1. + cos(k3 * lon))));
+              (Rd * (temp + 20. * (distribution(generator) - 0.5) *
+                                (1. + cos(k3 * lon))));
           phydro->w(IVX, k, j, i) = 0.;
           phydro->w(IVY, k, j, i) = 0.;
           phydro->w(IVZ, k, j, i) = 0.;

@@ -168,7 +168,7 @@ void CubedSphere::CalculateCoriolisForce2(int i2, int i3, Real v2, Real v3,
   int blockID = lv2_lx2 + lv2_lx3 * 2 + 1;
 
   Real x = tan(pcoord->x2v(i2));
-  Real y = tan(pccord->x3v(i3));
+  Real y = tan(pcoord->x3v(i3));
   Real C = sqrt(x * x + 1);
   Real D = sqrt(y * y + 1);
   Real delta = sqrt(x * x + y * y + 1);
@@ -202,7 +202,7 @@ void CubedSphere::CalculateCoriolisForce3(int i2, int i3, Real v1, Real v2,
   int blockID = lv2_lx2 + lv2_lx3 * 2 + 1;
 
   Real x = tan(pcoord->x2v(i2));
-  Real y = tan(pccord->x3v(i3));
+  Real y = tan(pcoord->x3v(i3));
   Real C = sqrt(x * x + 1);
   Real D = sqrt(y * y + 1);
   Real delta = sqrt(x * x + y * y + 1);
@@ -224,6 +224,40 @@ void CubedSphere::CalculateCoriolisForce3(int i2, int i3, Real v1, Real v2,
       *cF3 = A * (D * v1 - x * v2);
       break;
   }
+}
+
+void CubedSphere::CovariantVectorToContravariant(int i2, int i3, Real v2,
+                                                 Real v3, Real *v2c,
+                                                 Real *v3c) const {
+  auto pcoord = pmy_block_->pcoord;
+
+  Real x = tan(pcoord->x2v(i2));
+  Real y = tan(pcoord->x3v(i3));
+  Real C = sqrt(x * x + 1);
+  Real D = sqrt(y * y + 1);
+  Real delta = sqrt(x * x + y * y + 1);
+  Real cth = -x * y / (C * D);
+  Real sth = delta / (C * D);
+
+  *v2c = v2 / sth / sth - v3 * cth / sth / sth;
+  *v3c = v3 / sth / sth - v2 * cth / sth / sth;
+}
+
+void CubedSphere::ContravariantVectorToCovariant(int i2, int i3, Real v2,
+                                                 Real v3, Real *v2c,
+                                                 Real *v3c) const {
+  auto pcoord = pmy_block_->pcoord;
+
+  Real x = tan(pcoord->x2v(i2));
+  Real y = tan(pcoord->x3v(i3));
+  Real C = sqrt(x * x + 1);
+  Real D = sqrt(y * y + 1);
+  Real delta = sqrt(x * x + y * y + 1);
+  Real cth = -x * y / (C * D);
+  Real sth = delta / (C * D);
+
+  *v2c = v2 + v3 * cth;
+  *v3c = v3 + v2 * cth;
 }
 
 void CubedSphere::SaveLR3DValues(AthenaArray<Real> &L_in,
