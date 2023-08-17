@@ -65,7 +65,9 @@ int CubedSphere::FindBlockID(LogicalLocation const& loc) {
       break;
     default:
       std::stringstream msg;
-      msg << "Error: something wrong, check the geometry setup of the cubed "
+      std::cout << lv2_lx2 << " " << lv2_lx3 << " " << loc.lx2 << " " << loc.lx3
+                << " " << loc.level << std::endl;
+      msg << "xxError: something wrong, check the geometry setup of the cubed "
              "sphere. \n";
       msg << "----------------------------------" << std::endl;
       ATHENA_ERROR(msg);

@@ -206,7 +206,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin) {
   sigmab = pin->GetReal("problem", "sigmab");
   z_iso = pin->GetReal("problem", "z_iso");
   // forcing function
-  EnrollUserExplicitSourceFunction(Forcing);
+  // EnrollUserExplicitSourceFunction(Forcing);
 
   AllocateUserHistoryOutput(1);
   EnrollUserHistoryOutput(0, AngularMomentum, "z-angular-mom");
@@ -244,7 +244,7 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
           phydro->w(IPR, k, j, i) = p0 * pow(temp / Ts, cp / Rd);
           phydro->w(IDN, k, j, i) =
               phydro->w(IPR, k, j, i) /
-              (Rd * (temp + 20. * (distribution(generator) - 0.5) *
+              (Rd * (temp + 20. * (-0.5) *  // distribution(generator)
                                 (1. + cos(k3 * lon))));
           phydro->w(IVX, k, j, i) = 0.;
           phydro->w(IVY, k, j, i) = 0.;
