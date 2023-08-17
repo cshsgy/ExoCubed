@@ -206,7 +206,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin) {
   sigmab = pin->GetReal("problem", "sigmab");
   z_iso = pin->GetReal("problem", "z_iso");
   // forcing function
-  // EnrollUserExplicitSourceFunction(Forcing);
+  EnrollUserExplicitSourceFunction(Forcing);
 
   AllocateUserHistoryOutput(1);
   EnrollUserHistoryOutput(0, AngularMomentum, "z-angular-mom");
