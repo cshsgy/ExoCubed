@@ -61,30 +61,13 @@ void Forcing(MeshBlock *pmb, Real const time, Real const dt,
   for (int k = pmb->ks; k <= pmb->ke; ++k) {
     for (int j = pmb->js; j <= pmb->je; ++j) {
       for (int i = pmb->is; i <= pmb->ie; ++i) {
-        Real omega1, omega2;
-        // Load Latitude
-        Real lat, lon;
-        pexo3->GetLatLon(&lat, &lon, k, j, i);
-        Real theta = lat;
-
-        omega1 = cos(theta) * Omega;
-        omega2 = sin(theta) * Omega;
-
-        Real U, V;
-        pexo3->GetUV(&U, &V, w(IVY, k, j, i), w(IVZ, k, j, i), k, j, i);
-
-        Real m1 = w(IDN, k, j, i) * w(IVX, k, j, i);
-        Real m2 = w(IDN, k, j, i) * U;
-        Real m3 = w(IDN, k, j, i) * V;
-
-        u(IM1, k, j, i) -= -2. * dt * (omega1 * m3);
-        Real acc2, acc3;
-        acc2 = -2. * dt * (omega1 * m3);
-        acc3 = -2. * dt * (omega1 * m1 - omega2 * m2);
-        pexo3->GetVyVz(&acc2, &acc3, acc2, acc3, k, j, i);
-        pexo3->ContravariantVectorToCovariant(j, k, acc2, acc3, &acc2, &acc3);
-        u(IM2, k, j, i) += acc2;
-        u(IM3, k, j, i) += acc3;
+        Real cF1, cF2, cF3;
+        pexo3->CalculateCoriolisForce3(j, k, w(IVX, k, j, i), w(IVY, k, j, i),
+                                       w(IVZ, k, j, i), Omega, w(IDN, k, j, i),
+                                       &cF1, &cF2, &cF3);
+        u(IM1, k, j, i) += dt * cF1;
+        u(IVY, k, j, i) += dt * cF2;
+        u(IVZ, k, j, i) += dt * cF3;
       }
     }
   }
@@ -230,8 +213,7 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
   // Set up perturbation as the initial condition to break the symmetry of the
   // original initial condition.
   long int iseed = -1;
-  Real k3 =
-      10. * M_PI / (pmy_mesh->mesh_size.x3max - pmy_mesh->mesh_size.x3min);
+  Real k3 = 5.;
 
   for (int k = ks; k <= ke; ++k) {
     for (int j = js; j <= je; ++j) {
@@ -271,13 +253,18 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
 }
 
 void MeshBlock::InitUserMeshBlockData(ParameterInput *pin) {
-  AllocateUserOutputVariables(2);
+  AllocateUserOutputVariables(6);
   SetUserOutputVariableName(0, "temp");
   SetUserOutputVariableName(1, "theta");
+  SetUserOutputVariableName(2, "lat");
+  SetUserOutputVariableName(3, "lon");
+  SetUserOutputVariableName(4, "vlat");
+  SetUserOutputVariableName(5, "vlon");
 }
 
 // \brif Output distributions of temperature and potential temperature.
 void MeshBlock::UserWorkInLoop() {
+  auto pexo3 = pimpl->pexo3;
   for (int k = ks; k <= ke; ++k) {
     for (int j = js; j <= je; ++j) {
       for (int i = is; i <= ie; ++i) {
@@ -287,6 +274,15 @@ void MeshBlock::UserWorkInLoop() {
         user_out_var(0, k, j, i) = temp;
         user_out_var(1, k, j, i) =
             temp * pow(p0 / phydro->w(IPR, k, j, i), Rd / cp);
+        Real lat, lon;
+        Real U, V;
+        pexo3->GetLatLon(&lat, &lon, k, j, i);
+        pexo3->GetUV(&U, &V, phydro->w(IVY, k, j, i), phydro->w(IVZ, k, j, i),
+                     k, j, i);
+        user_out_var(2, k, j, i) = lat;
+        user_out_var(3, k, j, i) = lon;
+        user_out_var(4, k, j, i) = U;
+        user_out_var(5, k, j, i) = V;
       }
     }
   }

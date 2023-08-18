@@ -9,12 +9,12 @@ problem_id = hs94        # problem ID: basename of output filenames
 <output2>
 file_type  = netcdf     # netcdf data dump
 variable   = prim        # variables to be output
-dt         = 3.456E5     # time increment between outputs
+dt         = 3.456E2     # time increment between outputs
 
 <output3>
 file_type  = netcdf     # netcdf data dump
 variable   = uov         # variables to be output
-dt         = 3.456E5     # time increment between outputs
+dt         = 3.456E2     # time increment between outputs
 
 <output1>
 file_type   = hst         # History data dump
@@ -26,14 +26,14 @@ file_type  = rst
 dt         = 1.0368E8
 
 <time>
-cfl_number = 0.9          # The Courant, Friedrichs, & Lewy (CFL) Number
+cfl_number = 0.8          # The Courant, Friedrichs, & Lewy (CFL) Number
 integrator = rk3          # integration method
 xorder     = 5            # horizontal reconstruction order
 nlim       = -1          # cycle limit
 tlim       = 1.0368E8    # time limit
 
 <mesh>
-nx1        = 20          # Number of zones in X1-direction (radial)
+nx1        = 40          # Number of zones in X1-direction (radial)
 x1min      = 6.371E6     # minimum value of X1, 6371 km
 x1max      = 6.396E6     # maximum value of X1, 6396 km
 ix1_bc     = reflecting  # inner-X1 boundary flag
@@ -55,9 +55,9 @@ ReferencePressure = 1.E5
 PressureScaleHeight = 10.E3
 
 <meshblock>
-nx1        = 20
-nx2        = 20
-nx3        = 20
+nx1        = 40
+nx2        = 40
+nx3        = 40
 
 <hydro>
 gamma          = 1.4         # gamma = C_p/C_v
