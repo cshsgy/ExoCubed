@@ -6,31 +6,31 @@ configure = --prob=hs94 --patch=drum --coord=spherical_polar --flux=lmars --ngho
 <job>
 problem_id = hs94        # problem ID: basename of output filenames
 
-<output2>
-file_type  = netcdf     # netcdf data dump
-variable   = prim        # variables to be output
-dt         = 3.456E2     # time increment between outputs
-
-<output3>
-file_type  = netcdf     # netcdf data dump
-variable   = uov         # variables to be output
-dt         = 3.456E2     # time increment between outputs
+<output0>
+file_type  = rst
+dt         = 1.0368E8
 
 <output1>
 file_type   = hst         # History data dump
 dt          = 3.456E5      # time increment between outputs
 data_format = %15.12e
 
-<output4>
-file_type  = rst
-dt         = 1.0368E8
+<output2>
+file_type  = netcdf     # netcdf data dump
+variable   = prim        # variables to be output
+dt         = 3.456E5     # time increment between outputs
+
+<output3>
+file_type  = netcdf     # netcdf data dump
+variable   = uov         # variables to be output
+dt         = 3.456E5     # time increment between outputs
 
 <time>
-cfl_number = 0.1          # The Courant, Friedrichs, & Lewy (CFL) Number
+cfl_number = 0.9          # The Courant, Friedrichs, & Lewy (CFL) Number
 integrator = rk3          # integration method
 xorder     = 5            # horizontal reconstruction order
 nlim       = -1          # cycle limit
-tlim       = 1.0368E8    # time limit
+tlim       = 1.0368E6    # time limit
 
 <mesh>
 nx1        = 40          # Number of zones in X1-direction (radial)

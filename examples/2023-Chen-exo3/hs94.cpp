@@ -66,8 +66,8 @@ void Forcing(MeshBlock *pmb, Real const time, Real const dt,
                                        w(IVZ, k, j, i), Omega, w(IDN, k, j, i),
                                        &cF1, &cF2, &cF3);
         u(IM1, k, j, i) += dt * cF1;
-        u(IVY, k, j, i) += dt * cF2;
-        u(IVZ, k, j, i) += dt * cF3;
+        u(IM2, k, j, i) += dt * cF2;
+        u(IM3, k, j, i) += dt * cF3;
       }
     }
   }
@@ -210,46 +210,33 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
   Rp = pin->GetReal("problem", "Rp");
   z_iso = pin->GetReal("problem", "z_iso");
 
-  // Set up perturbation as the initial condition to break the symmetry of the
-  // original initial condition.
-  long int iseed = -1;
-  Real k3 = 5.;
+  // construct an adiabatic atmosphere
+  auto pthermo = Thermodynamics::GetInstance();
+  Variable air(Variable::Type::MoleFrac);
 
-  for (int k = ks; k <= ke; ++k) {
+  for (int k = ks; k <= ke; ++k)
     for (int j = js; j <= je; ++j) {
-      for (int i = is; i <= ie; ++i) {
-        if ((pcoord->x1v(i) - Rp) < z_iso) {
-          Real lat, lon;
-          pexo3->GetLatLon(&lat, &lon, k, j, i);
-          Real x1 = pcoord->x1v(i) - Rp;
-          Real temp = Ts - grav * x1 / cp;
-          phydro->w(IPR, k, j, i) = p0 * pow(temp / Ts, cp / Rd);
-          phydro->w(IDN, k, j, i) =
-              phydro->w(IPR, k, j, i) /
-              (Rd * (temp + 20. * (-0.5) *  // distribution(generator)
-                                (1. + cos(k3 * lon))));
-          phydro->w(IVX, k, j, i) = 0.;
-          phydro->w(IVY, k, j, i) = 0.;
-          phydro->w(IVZ, k, j, i) = 0.;
-        } else {
-          Real x1 = pcoord->x1v(i) - Rp;
-          Real temp = Ts - grav * x1 / cp;
-          Real iso_temp = Ts - grav * z_iso / cp;
-          phydro->w(IPR, k, j, i) = p0 * pow(temp / Ts, cp / Rd);
-          phydro->w(IDN, k, j, i) = phydro->w(IPR, k, j, i) / (Rd * iso_temp);
-          phydro->w(IVX, k, j, i) = 0.;
-          phydro->w(IVY, k, j, i) = 0.;
-          phydro->w(IVZ, k, j, i) = 0.;
-        }
+      air.w[IPR] = p0;
+      air.w[IDN] = Ts;
+
+      int i = is;
+      for (; i <= ie; ++i) {
+        if (pcoord->x1v(i) - Rp > z_iso) break;
+
+        pimpl->DistributeToConserved(air, k, j, i);
+        pthermo->Extrapolate(&air, pcoord->dx1f(i),
+                             Thermodynamics::Method::DryAdiabat, grav);
+        // add noise
+        air.w[IVX] = 0.01 * distribution(generator);
+      }
+
+      // construct isothermal atmosphere
+      for (; i <= ie; ++i) {
+        pimpl->DistributeToConserved(air, k, j, i);
+        pthermo->Extrapolate(&air, pcoord->dx1f(i),
+                             Thermodynamics::Method::Isothermal, grav);
       }
     }
-  }
-
-  // transfer to conservative variables
-  // bcc is cell-centered magnetic fields, it is only a place holder here
-  UserWorkInLoop();
-  peos->PrimitiveToConserved(phydro->w, pfield->bcc, phydro->u, pcoord, is, ie,
-                             js, je, ks, ke);
 }
 
 void MeshBlock::InitUserMeshBlockData(ParameterInput *pin) {
@@ -263,10 +250,10 @@ void MeshBlock::InitUserMeshBlockData(ParameterInput *pin) {
 }
 
 // \brif Output distributions of temperature and potential temperature.
-void MeshBlock::UserWorkInLoop() {
+void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin) {
   auto pexo3 = pimpl->pexo3;
-  for (int k = ks; k <= ke; ++k) {
-    for (int j = js; j <= je; ++j) {
+  for (int k = ks; k <= ke; ++k)
+    for (int j = js; j <= je; ++j)
       for (int i = is; i <= ie; ++i) {
         Real prim[NHYDRO];
         for (int n = 0; n < NHYDRO; ++n) prim[n] = phydro->w(n, j, i);
@@ -284,6 +271,4 @@ void MeshBlock::UserWorkInLoop() {
         user_out_var(4, k, j, i) = U;
         user_out_var(5, k, j, i) = V;
       }
-    }
-  }
 }
