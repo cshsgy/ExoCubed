@@ -28,6 +28,7 @@ index 6d2460f1..5dac314b 100644
 +    int tox2, tox3;
 +    pmb->pimpl->pexo3->TransformOX(&ox2, &ox3, &tox2, &tox3);
 +    LogicalLocation tloc;
++    tloc.level = loc.level;
 +    tloc.lx1 = loc.lx1;
 +    tloc.lx2 = loc.lx2 + ox2;
 +    tloc.lx3 = loc.lx3 + ox3;
@@ -53,6 +54,7 @@ index 6d2460f1..5dac314b 100644
 +    int tox2, tox3;
 +    pmb->pimpl->pexo3->TransformOX(&ox2, &ox3, &tox2, &tox3, loc);
 +    LogicalLocation tloc;
++    tloc.level = loc.level;
 +    tloc.lx1 = loc.lx1;
 +    tloc.lx2 = loc.lx2 + ox2;
 +    tloc.lx3 = loc.lx3 + ox3;
