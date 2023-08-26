@@ -1,5 +1,29 @@
+diff --git a/src/task_list/task_list.hpp b/src/task_list/task_list.hpp
+index fab49508..fc6d136c 100644
+--- a/src/task_list/task_list.hpp
++++ b/src/task_list/task_list.hpp
+@@ -146,6 +146,7 @@ class TimeIntegratorTaskList : public TaskList {
+ 
+   // functions
+   TaskStatus ClearAllBoundary(MeshBlock *pmb, int stage);
++  TaskStatus RestartReceiving(MeshBlock *pmb, int stage);
+ 
+   TaskStatus CalculateHydroFlux(MeshBlock *pmb, int stage);
+   TaskStatus CalculateEMF(MeshBlock *pmb, int stage);
+@@ -401,5 +402,11 @@ const TaskID RECV_RADSH(74);
+ 
+ const TaskID SRCTERM_IMRAD(75);
+ 
++const TaskID SEND_HYD2(101);
++const TaskID RECV_HYD2(102);
++const TaskID SETB_HYD2(103);
++const TaskID CLEAR_ALLBND2(104);
++const TaskID RESTART_RECV(105);
++
+ }  // namespace HydroIntegratorTaskNames
+ #endif  // TASK_LIST_TASK_LIST_HPP_
 diff --git a/src/task_list/time_integrator.cpp b/src/task_list/time_integrator.cpp
-index 097afa53..b997e1fe 100644
+index 097afa53..39febba4 100644
 --- a/src/task_list/time_integrator.cpp
 +++ b/src/task_list/time_integrator.cpp
 @@ -36,6 +36,9 @@
@@ -18,10 +42,10 @@ index 097afa53..b997e1fe 100644
        AddTask(SETB_HYD,(RECV_HYD|SRC_TERM));
 +
 +#ifdef CUBED_SPHERE
-+      //AddTask(CLEAR_ALLBND2, SETB_HYD);
-+      AddTask(SEND_HYD2, SETB_HYD);
-+      AddTask(CLEAR_ALLBND2, SEND_HYD2);
-+      AddTask(RECV_HYD2, CLEAR_ALLBND2);
++      AddTask(CLEAR_ALLBND2, SETB_HYD);
++      AddTask(RESTART_RECV, CLEAR_ALLBND2);
++      AddTask(SEND_HYD2, CLEAR_ALLBND2);
++      AddTask(RECV_HYD2, RESTART_RECV);
 +      AddTask(SETB_HYD2, RECV_HYD2);
 +#endif  // CUBED_SPHERE
      }
@@ -45,7 +69,7 @@ index 097afa53..b997e1fe 100644
            }
          }
        }
-@@ -1224,7 +1243,7 @@ void TimeIntegratorTaskList::AddTask(const TaskID& id, const TaskID& dep) {
+@@ -1224,11 +1243,16 @@ void TimeIntegratorTaskList::AddTask(const TaskID& id, const TaskID& dep) {
    //!   SRC_TERM and SourceTerms(), USERWORK, PHY_BVAL, PROLONG, CONS2PRIM,
    //!   ... Although, AMR_FLAG = "flag blocks for AMR" should be FLAG_AMR in VERB_OBJECT
    using namespace HydroIntegratorTaskNames; // NOLINT (build/namespace)
@@ -54,7 +78,16 @@ index 097afa53..b997e1fe 100644
      task_list_[ntasks].TaskFunc=
          static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
          (&TimeIntegratorTaskList::ClearAllBoundary);
-@@ -1274,7 +1293,7 @@ void TimeIntegratorTaskList::AddTask(const TaskID& id, const TaskID& dep) {
+     task_list_[ntasks].lb_time = false;
++  } else if (id == RESTART_RECV) {
++    task_list_[ntasks].TaskFunc=
++        static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
++        (&TimeIntegratorTaskList::RestartReceiving);
++    task_list_[ntasks].lb_time = false;
+   } else if (id == CALC_HYDFLX) {
+     task_list_[ntasks].TaskFunc=
+         static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
+@@ -1274,7 +1298,7 @@ void TimeIntegratorTaskList::AddTask(const TaskID& id, const TaskID& dep) {
          static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
          (&TimeIntegratorTaskList::AddSourceTerms);
      task_list_[ntasks].lb_time = true;
@@ -63,7 +96,7 @@ index 097afa53..b997e1fe 100644
      task_list_[ntasks].TaskFunc=
          static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
          (&TimeIntegratorTaskList::SendHydro);
-@@ -1284,7 +1303,7 @@ void TimeIntegratorTaskList::AddTask(const TaskID& id, const TaskID& dep) {
+@@ -1284,17 +1308,16 @@ void TimeIntegratorTaskList::AddTask(const TaskID& id, const TaskID& dep) {
          static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
          (&TimeIntegratorTaskList::SendField);
      task_list_[ntasks].lb_time = true;
@@ -72,7 +105,9 @@ index 097afa53..b997e1fe 100644
      task_list_[ntasks].TaskFunc=
          static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
          (&TimeIntegratorTaskList::ReceiveHydro);
-@@ -1294,7 +1313,7 @@ void TimeIntegratorTaskList::AddTask(const TaskID& id, const TaskID& dep) {
+-    task_list_[ntasks].lb_time = false;
+   } else if (id == RECV_FLD) {
+     task_list_[ntasks].TaskFunc=
          static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
          (&TimeIntegratorTaskList::ReceiveField);
      task_list_[ntasks].lb_time = false;
@@ -81,54 +116,58 @@ index 097afa53..b997e1fe 100644
      task_list_[ntasks].TaskFunc=
          static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
          (&TimeIntegratorTaskList::SetBoundariesHydro);
-@@ -1963,6 +1982,8 @@ TaskStatus TimeIntegratorTaskList::DiffuseField(MeshBlock *pmb, int stage) {
+@@ -1683,6 +1706,19 @@ TaskStatus TimeIntegratorTaskList::ClearAllBoundary(MeshBlock *pmb, int stage) {
+   return TaskStatus::success;
+ }
+ 
++//----------------------------------------------------------------------------------------
++//! Functions to receive Hydro variables between MeshBlocks for the second time
++
++TaskStatus TimeIntegratorTaskList::RestartReceiving(MeshBlock *pmb, int stage) {
++  if (stage <= nstages) {
++    if (stage_wghts[stage-1].main_stage) {
++      pmb->pbval->StartReceivingSubset(BoundaryCommSubset::all, pmb->pbval->bvars_main_int);
++    }
++  }
++
++  return TaskStatus::success;
++}
++
+ //----------------------------------------------------------------------------------------
+ // Functions to calculates Hydro fluxes
+ 
+@@ -1963,6 +1999,8 @@ TaskStatus TimeIntegratorTaskList::DiffuseField(MeshBlock *pmb, int stage) {
  //! Functions to communicate Hydro variables between MeshBlocks
  
  TaskStatus TimeIntegratorTaskList::SendHydro(MeshBlock *pmb, int stage) {
 +  if (Globals::my_rank == 0)
-+    std::cout << "I'm send hydro" << std::endl;
++    std::cout << "I send hydro" << std::endl;
    if (stage <= nstages) {
      // Swap Hydro quantity in BoundaryVariable interface back to conserved var formulation
      // (also needed in SetBoundariesHydro(), since the tasks are independent)
-@@ -1990,6 +2011,8 @@ TaskStatus TimeIntegratorTaskList::SendField(MeshBlock *pmb, int stage) {
- //! Functions to receive Hydro variables between MeshBlocks
+@@ -2003,6 +2041,7 @@ TaskStatus TimeIntegratorTaskList::ReceiveHydro(MeshBlock *pmb, int stage) {
+   }
+ }
  
- TaskStatus TimeIntegratorTaskList::ReceiveHydro(MeshBlock *pmb, int stage) {
-+  if (Globals::my_rank == 0)
-+    std::cout << "I'm receive hydro" << std::endl;
-   bool ret;
-   if (stage <= nstages) {
-     ret = pmb->phydro->hbvar.ReceiveBoundaryBuffers();
-@@ -2024,6 +2047,8 @@ TaskStatus TimeIntegratorTaskList::ReceiveField(MeshBlock *pmb, int stage) {
++
+ //----------------------------------------------------------------------------------------
+ //! Functions to receive Field variables between MeshBlocks
+ 
+@@ -2024,6 +2063,8 @@ TaskStatus TimeIntegratorTaskList::ReceiveField(MeshBlock *pmb, int stage) {
  //! Functions to set Hydro boundaries
  
  TaskStatus TimeIntegratorTaskList::SetBoundariesHydro(MeshBlock *pmb, int stage) {
 +  if (Globals::my_rank == 0)
-+    std::cout << "I'm set boundary" << std::endl;
++    std::cout << "I set boundary" << std::endl;
    if (stage <= nstages) {
      pmb->phydro->hbvar.SwapHydroQuantity(pmb->phydro->u, HydroBoundaryQuantity::cons);
      pmb->phydro->hbvar.SetBoundaries();
-@@ -2193,6 +2218,8 @@ TaskStatus TimeIntegratorTaskList::Prolongation(MeshBlock *pmb, int stage) {
+@@ -2193,6 +2234,8 @@ TaskStatus TimeIntegratorTaskList::Prolongation(MeshBlock *pmb, int stage) {
  
  
  TaskStatus TimeIntegratorTaskList::Primitives(MeshBlock *pmb, int stage) {
 +  if (Globals::my_rank == 0)
-+    std::cout << "I'm in Primitives" << std::endl;
++    std::cout << "I'm doing Primitives" << std::endl;
    Hydro *ph = pmb->phydro;
    Field *pf = pmb->pfield;
    PassiveScalars *ps = pmb->pscalars;
-diff --git a/src/task_list/task_list.hpp b/src/task_list/task_list.hpp
-index fab49508..d39f85a6 100644
---- a/src/task_list/task_list.hpp
-+++ b/src/task_list/task_list.hpp
-@@ -401,5 +401,10 @@ const TaskID RECV_RADSH(74);
- 
- const TaskID SRCTERM_IMRAD(75);
- 
-+const TaskID SEND_HYD2(76);
-+const TaskID RECV_HYD2(77);
-+const TaskID SETB_HYD2(78);
-+const TaskID CLEAR_ALLBND2(79);
-+
- }  // namespace HydroIntegratorTaskNames
- #endif  // TASK_LIST_TASK_LIST_HPP_
