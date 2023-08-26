@@ -1,29 +1,5 @@
-diff --git a/src/task_list/task_list.hpp b/src/task_list/task_list.hpp
-index fab49508..fc6d136c 100644
---- a/src/task_list/task_list.hpp
-+++ b/src/task_list/task_list.hpp
-@@ -146,6 +146,7 @@ class TimeIntegratorTaskList : public TaskList {
- 
-   // functions
-   TaskStatus ClearAllBoundary(MeshBlock *pmb, int stage);
-+  TaskStatus RestartReceiving(MeshBlock *pmb, int stage);
- 
-   TaskStatus CalculateHydroFlux(MeshBlock *pmb, int stage);
-   TaskStatus CalculateEMF(MeshBlock *pmb, int stage);
-@@ -401,5 +402,11 @@ const TaskID RECV_RADSH(74);
- 
- const TaskID SRCTERM_IMRAD(75);
- 
-+const TaskID SEND_HYD2(101);
-+const TaskID RECV_HYD2(102);
-+const TaskID SETB_HYD2(103);
-+const TaskID CLEAR_ALLBND2(104);
-+const TaskID RESTART_RECV(105);
-+
- }  // namespace HydroIntegratorTaskNames
- #endif  // TASK_LIST_TASK_LIST_HPP_
 diff --git a/src/task_list/time_integrator.cpp b/src/task_list/time_integrator.cpp
-index 097afa53..39febba4 100644
+index 097afa53..a48e1fcb 100644
 --- a/src/task_list/time_integrator.cpp
 +++ b/src/task_list/time_integrator.cpp
 @@ -36,6 +36,9 @@
@@ -136,16 +112,7 @@ index 097afa53..39febba4 100644
  //----------------------------------------------------------------------------------------
  // Functions to calculates Hydro fluxes
  
-@@ -1963,6 +1999,8 @@ TaskStatus TimeIntegratorTaskList::DiffuseField(MeshBlock *pmb, int stage) {
- //! Functions to communicate Hydro variables between MeshBlocks
- 
- TaskStatus TimeIntegratorTaskList::SendHydro(MeshBlock *pmb, int stage) {
-+  if (Globals::my_rank == 0)
-+    std::cout << "I send hydro" << std::endl;
-   if (stage <= nstages) {
-     // Swap Hydro quantity in BoundaryVariable interface back to conserved var formulation
-     // (also needed in SetBoundariesHydro(), since the tasks are independent)
-@@ -2003,6 +2041,7 @@ TaskStatus TimeIntegratorTaskList::ReceiveHydro(MeshBlock *pmb, int stage) {
+@@ -2003,6 +2039,7 @@ TaskStatus TimeIntegratorTaskList::ReceiveHydro(MeshBlock *pmb, int stage) {
    }
  }
  
@@ -153,21 +120,3 @@ index 097afa53..39febba4 100644
  //----------------------------------------------------------------------------------------
  //! Functions to receive Field variables between MeshBlocks
  
-@@ -2024,6 +2063,8 @@ TaskStatus TimeIntegratorTaskList::ReceiveField(MeshBlock *pmb, int stage) {
- //! Functions to set Hydro boundaries
- 
- TaskStatus TimeIntegratorTaskList::SetBoundariesHydro(MeshBlock *pmb, int stage) {
-+  if (Globals::my_rank == 0)
-+    std::cout << "I set boundary" << std::endl;
-   if (stage <= nstages) {
-     pmb->phydro->hbvar.SwapHydroQuantity(pmb->phydro->u, HydroBoundaryQuantity::cons);
-     pmb->phydro->hbvar.SetBoundaries();
-@@ -2193,6 +2234,8 @@ TaskStatus TimeIntegratorTaskList::Prolongation(MeshBlock *pmb, int stage) {
- 
- 
- TaskStatus TimeIntegratorTaskList::Primitives(MeshBlock *pmb, int stage) {
-+  if (Globals::my_rank == 0)
-+    std::cout << "I'm doing Primitives" << std::endl;
-   Hydro *ph = pmb->phydro;
-   Field *pf = pmb->pfield;
-   PassiveScalars *ps = pmb->pscalars;
