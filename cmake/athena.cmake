@@ -10,7 +10,8 @@ set(patch_command
     ${CMAKE_CURRENT_SOURCE_DIR}/patches/28.cs_bvals_cc.patch
     ${CMAKE_CURRENT_SOURCE_DIR}/patches/29.cs_bvals_var.patch
     ${CMAKE_CURRENT_SOURCE_DIR}/patches/30.cs_bvals_base.patch
-    ${CMAKE_CURRENT_SOURCE_DIR}/patches/31.cs_calculate_fluxes.patch)
+    ${CMAKE_CURRENT_SOURCE_DIR}/patches/31.cs_calculate_fluxes.patch
+    ${CMAKE_CURRENT_SOURCE_DIR}/patches/32.cs_task_list.patch)
 
 FetchContent_Declare(
   athenapp
