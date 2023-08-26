@@ -1,0 +1,86 @@
+diff --git a/src/task_list/time_integrator.cpp b/src/task_list/time_integrator.cpp
+index 097afa53..c11ecb9a 100644
+--- a/src/task_list/time_integrator.cpp
++++ b/src/task_list/time_integrator.cpp
+@@ -36,6 +36,9 @@
+ #include "../scalars/scalars.hpp"
+ #include "task_list.hpp"
+ 
++// canoe injection
++#include <configure.hpp>
++
+ //----------------------------------------------------------------------------------------
+ //! TimeIntegratorTaskList constructor
+ 
+@@ -998,6 +1001,12 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
+       AddTask(SEND_HYD,src_aterm);
+       AddTask(RECV_HYD,NONE);
+       AddTask(SETB_HYD,(RECV_HYD|SRC_TERM));
++
++#ifdef CUBED_SPHERE
++      AddTask(SEND_HYD2, SETB_HYD);
++      AddTask(RECV_HYD2, SEND_HYD2);
++      AddTask(SETB_HYD2, RECV_HYD2);
++#endif  // CUBED_SPHERE
+     }
+ 
+     if (SHEAR_PERIODIC) {
+@@ -1156,9 +1165,17 @@ TimeIntegratorTaskList::TimeIntegratorTaskList(ParameterInput *pin, Mesh *pm) {
+           }
+         } else {
+           if (NSCALARS > 0) {
++#ifdef CUBED_SPHERE
++            AddTask(CONS2PRIM,(SETB_HYD2|SETB_SCLR));
++#else
+             AddTask(CONS2PRIM,(SETB_HYD|SETB_SCLR));
++#endif  // CUBED_SPHERE
+           } else {
++#ifdef CUBED_SPHERE
++            AddTask(CONS2PRIM,SETB_HYD2);
++#else
+             AddTask(CONS2PRIM,SETB_HYD);
++#endif  // CUBED_SPHERE
+           }
+         }
+       }
+@@ -1274,7 +1291,7 @@ void TimeIntegratorTaskList::AddTask(const TaskID& id, const TaskID& dep) {
+         static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
+         (&TimeIntegratorTaskList::AddSourceTerms);
+     task_list_[ntasks].lb_time = true;
+-  } else if (id == SEND_HYD) {
++  } else if (id == SEND_HYD or id == SEND_HYD2) {
+     task_list_[ntasks].TaskFunc=
+         static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
+         (&TimeIntegratorTaskList::SendHydro);
+@@ -1284,7 +1301,7 @@ void TimeIntegratorTaskList::AddTask(const TaskID& id, const TaskID& dep) {
+         static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
+         (&TimeIntegratorTaskList::SendField);
+     task_list_[ntasks].lb_time = true;
+-  } else if (id == RECV_HYD) {
++  } else if (id == RECV_HYD or id == RECV_HYD2) {
+     task_list_[ntasks].TaskFunc=
+         static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
+         (&TimeIntegratorTaskList::ReceiveHydro);
+@@ -1294,7 +1311,7 @@ void TimeIntegratorTaskList::AddTask(const TaskID& id, const TaskID& dep) {
+         static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
+         (&TimeIntegratorTaskList::ReceiveField);
+     task_list_[ntasks].lb_time = false;
+-  } else if (id == SETB_HYD) {
++  } else if (id == SETB_HYD or id == SETB_HYD2) {
+     task_list_[ntasks].TaskFunc=
+         static_cast<TaskStatus (TaskList::*)(MeshBlock*,int)>
+         (&TimeIntegratorTaskList::SetBoundariesHydro);
+diff --git a/src/task_list/task_list.hpp b/src/task_list/task_list.hpp
+index fab49508..aaba5f21 100644
+--- a/src/task_list/task_list.hpp
++++ b/src/task_list/task_list.hpp
+@@ -401,5 +401,9 @@ const TaskID RECV_RADSH(74);
+ 
+ const TaskID SRCTERM_IMRAD(75);
+ 
++const TaskID SEND_HYD2(76);
++const TaskID RECV_HYD2(77);
++const TaskID SETB_HYD2(78);
++
+ }  // namespace HydroIntegratorTaskNames
+ #endif  // TASK_LIST_TASK_LIST_HPP_
