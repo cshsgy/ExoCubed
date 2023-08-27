@@ -7,9 +7,11 @@ if(${HYDROSTATIC})
   if(${EQUATION_OF_STATE} STREQUAL "shallow_yz")
     list(APPEND test_cases dam_break)
     list(APPEND test_cases test_blast)
+    list(APPEND test_cases W92)
   endif()
 else()
   list(APPEND test_cases test_adiabat)
+  list(APPEND test_cases hs94)
 endif()
 
 foreach(namel ${test_cases})
@@ -35,6 +37,7 @@ foreach(namel ${test_cases})
       ${CMAKE_BINARY_DIR}
       ${CANOE_INCLUDE_DIR}
       ${MPI_CXX_INCLUDE_PATH}
+      ${EIGEN3_INCLUDE_DIR}
       ${NETCDF_INCLUDES}
       ${PNETCDF_INCLUDE_DIR}
       )
