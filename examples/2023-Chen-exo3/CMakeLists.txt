@@ -37,6 +37,7 @@ foreach(namel ${test_cases})
       ${CMAKE_BINARY_DIR}
       ${CANOE_INCLUDE_DIR}
       ${MPI_CXX_INCLUDE_PATH}
+      ${EIGEN3_INCLUDE_DIR}
       ${NETCDF_INCLUDES}
       ${PNETCDF_INCLUDE_DIR}
       )

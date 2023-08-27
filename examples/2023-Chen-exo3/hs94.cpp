@@ -29,6 +29,7 @@
 #include <application/exceptions.hpp>
 
 // canoe
+#include <air_parcel.hpp>
 #include <configure.hpp>
 #include <impl.hpp>
 
@@ -212,7 +213,7 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
 
   // construct an adiabatic atmosphere
   auto pthermo = Thermodynamics::GetInstance();
-  Variable air(Variable::Type::MoleFrac);
+  AirParcel air(AirParcel::Type::MoleFrac);
 
   for (int k = ks; k <= ke; ++k)
     for (int j = js; j <= je; ++j) {
