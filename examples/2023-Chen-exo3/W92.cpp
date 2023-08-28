@@ -145,6 +145,5 @@ void MeshBlock::InitUserMeshBlockData(ParameterInput *pin) {
 }
 
 void Mesh::InitUserMeshData(ParameterInput *pin) {
-  // Real gamma = pin->GetReal("hydro", "gamma");
   EnrollUserExplicitSourceFunction(Forcing);
 }
