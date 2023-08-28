@@ -26,21 +26,23 @@ Real K = 7.848E-6;
 Real R = 4.0;
 Real om_earth = 7.292E-5;
 
-void MeshBlock::UserWorkInLoop() {  // Put in coriolis forces
-  auto pexo3 = pimpl->pexo3;
-  for (int k = ks; k <= ke; ++k) {
-    for (int j = js; j <= je; ++j) {
-      for (int i = is; i <= ie; ++i) {
+void Forcing(MeshBlock *pmb, Real const time, Real const dt,
+             AthenaArray<Real> const &w, const AthenaArray<Real> &prim_scalar,
+             AthenaArray<Real> const &bcc, AthenaArray<Real> &u,
+             AthenaArray<Real> &cons_scalar) {
+  auto pexo3 = pmb->pimpl->pexo3;
+  int is = pmb->is;
+  Real omega = 2. * PI / (24. * 3600.);
+  for (int k = pmb->ks; k <= pmb->ke; ++k)
+    for (int j = pmb->js; j <= pmb->je; ++j) {
+      for (int i = pmb->is; i <= pmb->ie; ++i) {
         Real cF2, cF3;
-        Real dt = new_block_dt_;
-        pexo3->CalculateCoriolisForce2(j, k, phydro->w(IVY, k, j, i),
-                                       phydro->w(IVZ, k, j, i), om_earth,
-                                       phydro->w(IDN, k, j, i), &cF2, &cF3);
-        phydro->u(IVY, k, j, i) += dt * cF2;
-        phydro->u(IVZ, k, j, i) += dt * cF3;
+        pexo3->CalculateCoriolisForce2(j, k, w(IVY, k, j, i), w(IVZ, k, j, i),
+                                       om_earth, w(IDN, k, j, i), &cF2, &cF3);
+        u(IVY, k, j, i) += dt * cF2;
+        u(IVZ, k, j, i) += dt * cF3;
       }
     }
-  }
 }
 
 void Coriolis(MeshBlock *pmb, Real const time, Real const dt,
@@ -59,30 +61,6 @@ void Coriolis(MeshBlock *pmb, Real const time, Real const dt,
       }
     }
   }
-}
-void Forcing(MeshBlock *pmb, Real const time, Real const dt,
-             AthenaArray<Real> const &w, const AthenaArray<Real> &prim_scalar,
-             AthenaArray<Real> const &bcc, AthenaArray<Real> &u,
-             AthenaArray<Real> &cons_scalar) {
-  auto pexo3 = pmb->pimpl->pexo3;
-  int is = pmb->is;
-  Real omega = 2. * PI / (24. * 3600.);
-  for (int k = pmb->ks; k <= pmb->ke; ++k)
-    for (int j = pmb->js; j <= pmb->je; ++j) {
-      Real lat, lon;
-      pexo3->GetLatLon(&lat, &lon, k, j, is);
-      // coriolis force
-      Real f = 2. * omega * sin(lat);
-      Real U, V;
-      pexo3->GetUV(&U, &V, w(IVY, k, j, is), w(IVZ, k, j, is), k, j, is);
-      Real ll_acc_U = -f * V;
-      Real ll_acc_V = f * U;
-      Real acc2, acc3;
-      pexo3->GetVyVz(&acc2, &acc3, ll_acc_U, ll_acc_V, k, j, is);
-      pexo3->ContravariantVectorToCovariant(j, k, acc2, acc3, &acc2, &acc3);
-      u(IM2, k, j, is) += dt * w(IDN, k, j, is) * acc2;
-      u(IM3, k, j, is) += dt * w(IDN, k, j, is) * acc3;
-    }
 }
 
 void MeshBlock::ProblemGenerator(ParameterInput *pin) {

@@ -163,6 +163,10 @@ void CubedSphere::CalculateCoriolisForce2(int i2, int i3, Real v2, Real v3,
   auto pcoord = pmy_block_->pcoord;
   auto &loc = pmy_block_->loc;
 
+  Real lat, lon;
+  GetLatLon(&lat, &lon, i3, i2, 0);
+  Real local_om = Omega * cos(lat);
+
   int lv2_lx2 = loc.lx2 >> (loc.level - 2);
   int lv2_lx3 = loc.lx3 >> (loc.level - 2);
   int blockID = lv2_lx2 + lv2_lx3 * 2 + 1;
@@ -172,7 +176,7 @@ void CubedSphere::CalculateCoriolisForce2(int i2, int i3, Real v2, Real v3,
   Real C = sqrt(x * x + 1);
   Real D = sqrt(y * y + 1);
   Real delta = sqrt(x * x + y * y + 1);
-  Real A = 2 * Omega * C * D / delta / delta * den;
+  Real A = 2 * local_om * C * D / delta / delta * den;
 
   switch (blockID) {
     case 1:
@@ -197,6 +201,10 @@ void CubedSphere::CalculateCoriolisForce3(int i2, int i3, Real v1, Real v2,
   auto pcoord = pmy_block_->pcoord;
   auto &loc = pmy_block_->loc;
 
+  Real lat, lon;
+  GetLatLon(&lat, &lon, i3, i2, 0);
+  Real local_om = Omega * cos(lat);
+
   int lv2_lx2 = loc.lx2 >> (loc.level - 2);
   int lv2_lx3 = loc.lx3 >> (loc.level - 2);
   int blockID = lv2_lx2 + lv2_lx3 * 2 + 1;
@@ -206,7 +214,7 @@ void CubedSphere::CalculateCoriolisForce3(int i2, int i3, Real v1, Real v2,
   Real C = sqrt(x * x + 1);
   Real D = sqrt(y * y + 1);
   Real delta = sqrt(x * x + y * y + 1);
-  Real A = 2 * Omega * C * D / delta / delta * den;
+  Real A = 2 * local_om * C * D / delta / delta * den;
 
   switch (blockID) {
     case 1:
