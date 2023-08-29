@@ -45,24 +45,6 @@ void Forcing(MeshBlock *pmb, Real const time, Real const dt,
     }
 }
 
-void Coriolis(MeshBlock *pmb, Real const time, Real const dt,
-              AthenaArray<Real> const &w, const AthenaArray<Real> &prim_scalar,
-              AthenaArray<Real> const &bcc, AthenaArray<Real> &u,
-              AthenaArray<Real> &cons_scalar) {
-  auto pexo3 = pmb->pimpl->pexo3;
-  for (int k = pmb->ks; k <= pmb->ke; ++k) {
-    for (int j = pmb->js; j <= pmb->je; ++j) {
-      for (int i = pmb->is; i <= pmb->ie; ++i) {
-        Real cF2, cF3;
-        pexo3->CalculateCoriolisForce2(j, k, w(IVY, k, j, i), w(IVZ, k, j, i),
-                                       om_earth, w(IDN, k, j, i), &cF2, &cF3);
-        u(IVY, k, j, i) += dt * cF2;
-        u(IVZ, k, j, i) += dt * cF3;
-      }
-    }
-  }
-}
-
 void MeshBlock::ProblemGenerator(ParameterInput *pin) {
   Application::Logger app("main");
   app->Log("ProblemGenerator: Cubed Sphere");
