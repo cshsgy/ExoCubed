@@ -12,7 +12,6 @@ set_if_empty(NUMBER_GHOST_CELLS 3)
 # canoe configure
 set(PLANET "Earth")
 set(CUBED_SPHERE ON)
-set(EOS "adiabatic")
 set(RSOLVER hllc_transform)
 set(TASKLIST ImplicitHydroTasks)
 set(NETCDF ON)
