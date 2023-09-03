@@ -45,6 +45,8 @@ using namespace std;
 static Real p0, Omega, Rd, cp, sigmab, Kf, Ts, dT, dtheta, Ka, Ks, Rp, scaled_z,
     z_iso, sponge_tau, sponge_width, grav;
 
+Real piso = 1E4;
+
 std::default_random_engine generator;
 std::normal_distribution<double> distribution(0.0, 1.0);
 
@@ -142,6 +144,21 @@ void Forcing(MeshBlock *pmb, Real const time, Real const dt,
         u(IEN, k, j, i) +=
             -dt * (cp - Rd) * w(IDN, k, j, i) * Kt * (temp - Teq);
       }
+
+  // Sponge Layer
+  for (int k = pmb->ks; k <= pmb->ke; ++k) {
+    for (int j = pmb->js; j <= pmb->je; ++j) {
+      for (int i = pmb->is; i <= pmb->ie; ++i) {
+        Real pres = w(IPR, k, j, i);
+        if (pres < piso) {  // sponge layer at top
+          Real tau = sponge_tau * pow(pres / piso, 2);
+          u(IVX, k, j, i) = u(IVX, k, j, i) / (1 + dt / tau);
+          u(IVY, k, j, i) = u(IVY, k, j, i) / (1 + dt / tau);
+          u(IVZ, k, j, i) = u(IVZ, k, j, i) / (1 + dt / tau);
+        }
+      }
+    }
+  }
 }
 
 Real AngularMomentum(MeshBlock *pmb, int iout) {
