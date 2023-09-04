@@ -10,6 +10,7 @@
 
 // canoe
 #include <configure.hpp>
+#include <impl.hpp>
 
 #ifdef ENABLE_GLOG
 #include <glog/logging.h>
@@ -41,6 +42,8 @@ void Hydro::RiemannSolver(const int k, const int j, const int il, const int iu,
 
   AthenaArray<Real> empty{};
 #if defined(AFFINE) || defined(CUBED_SPHERE)  // need of projection
+  //if (ivx == IVX) {
+  //  pcoord->PrimToLocal1(k, j, il, iu, empty, wl, wr, empty);
   if (ivx == IVY) {
     pcoord->PrimToLocal2(k, j, il, iu, empty, wl, wr, empty);
   } else if (ivx == IVZ) {
@@ -84,20 +87,29 @@ void Hydro::RiemannSolver(const int k, const int j, const int il, const int iu,
 #endif
 
     //--- Step 2.  Compute middle state estimates with PVRS (Toro 10.5.2)
+    auto pexo3 = pmy_block->pimpl->pexo3;
 
-    Real al, ar, el, er;
+    Real al, ar, el, er, vy, vz, KE_l, KE_r;
     Real cl = pmy_block->peos->SoundSpeed(wli);
     Real cr = pmy_block->peos->SoundSpeed(wri);
-    if (GENERAL_EOS) {
-      el = pmy_block->peos->EgasFromRhoP(wli[IDN], wli[IPR]) +
-           0.5 * wli[IDN] * (SQR(wli[IVX]) + SQR(wli[IVY]) + SQR(wli[IVZ]));
-      er = pmy_block->peos->EgasFromRhoP(wri[IDN], wri[IPR]) +
-           0.5 * wri[IDN] * (SQR(wri[IVX]) + SQR(wri[IVY]) + SQR(wri[IVZ]));
+
+    if (ivx == IVX) {
+      pexo3->ContravariantVectorToCovariant(j, k, wli[IVY], wli[IVZ], &vy, &vz);
+      KE_l = 0.5 * wli[IDN] * (SQR(wli[IVX]) + wli[IVY]*vy + wli[IVZ]*vz);
+
+      pexo3->ContravariantVectorToCovariant(j, k, wri[IVY], wri[IVZ], &vy, &vz);
+      KE_r = 0.5 * wri[IDN] * (SQR(wri[IVX]) + wri[IVY]*vy + wri[IVZ]*vz);
     } else {
-      el = wli[IPR] * igm1 +
-           0.5 * wli[IDN] * (SQR(wli[IVX]) + SQR(wli[IVY]) + SQR(wli[IVZ]));
-      er = wri[IPR] * igm1 +
-           0.5 * wri[IDN] * (SQR(wri[IVX]) + SQR(wri[IVY]) + SQR(wri[IVZ]));
+      KE_l = 0.5 * wli[IDN] * (SQR(wli[IVX]) + SQR(wli[IVY]) + SQR(wli[IVZ]));
+      KE_r = 0.5 * wri[IDN] * (SQR(wri[IVX]) + SQR(wri[IVY]) + SQR(wri[IVZ]));
+    }
+
+    if (GENERAL_EOS) {
+      el = pmy_block->peos->EgasFromRhoP(wli[IDN], wli[IPR]) + KE_l;
+      er = pmy_block->peos->EgasFromRhoP(wri[IDN], wri[IPR]) + KE_r;
+    } else {
+      el = wli[IPR] * igm1 + KE_l;
+      er = wri[IPR] * igm1 + KE_r;
     }
     Real rhoa = .5 * (wli[IDN] + wri[IDN]);  // average density
     Real ca = .5 * (cl + cr);                // average sound speed
@@ -206,6 +218,8 @@ void Hydro::RiemannSolver(const int k, const int j, const int il, const int iu,
   }
 
 #if defined(AFFINE) || defined(CUBED_SPHERE)  // need of deprojection
+  //if (ivx == IVX) {
+  //  pcoord->FluxToGlobal1(k, j, il, iu, empty, empty, flx, empty, empty);
   if (ivx == IVY) {
     pcoord->FluxToGlobal2(k, j, il, iu, empty, empty, flx, empty, empty);
   } else if (ivx == IVZ) {
@@ -216,14 +230,15 @@ void Hydro::RiemannSolver(const int k, const int j, const int il, const int iu,
 #if defined(CUBED_SPHERE)  // projection from contravariant fluxes to covariant
   Real x, y;
 
-  if (ivx == IVY) {
+  if (ivx == IVX) {
+    x = tan(pcoord->x2v(j));
+    y = tan(pcoord->x3v(k));
+  } else if (ivx == IVY) {
     x = tan(pcoord->x2f(j));
     y = tan(pcoord->x3v(k));
-    ivy = IVZ;
   } else if (ivx == IVZ) {  // IVZ
     x = tan(pcoord->x2v(j));
     y = tan(pcoord->x3f(k));
-    ivy = IVY;
   }
 
   Real C = sqrt(1. + x * x);
@@ -232,12 +247,12 @@ void Hydro::RiemannSolver(const int k, const int j, const int il, const int iu,
 
   for (int i = il; i <= iu; ++i) {
     // Extract local conserved quantities and fluxes
-    Real ty = flx(ivx, k, j, i);
-    Real tz = flx(ivy, k, j, i);
+    Real ty = flx(IVY, k, j, i);
+    Real tz = flx(IVZ, k, j, i);
 
     // Transform fluxes
-    flx(ivx, k, j, i) = ty + tz * cth;
-    flx(ivy, k, j, i) = tz + ty * cth;
+    flx(IVY, k, j, i) = ty + tz * cth;
+    flx(IVZ, k, j, i) = tz + ty * cth;
   }
 #endif  // CUBED_SPHERE
 

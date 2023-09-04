@@ -273,7 +273,8 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
         pthermo->Extrapolate(&air, pcoord->dx1f(i),
                              Thermodynamics::Method::DryAdiabat, grav);
         // add noise
-        air.w[IVY] = 1. * distribution(generator);
+        air.w[IVY] = 10. * distribution(generator);
+        air.w[IVZ] = 10. * distribution(generator);
       }
 
       // construct isothermal atmosphere
