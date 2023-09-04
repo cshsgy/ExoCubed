@@ -127,8 +127,7 @@ void Forcing(MeshBlock *pmb, Real const time, Real const dt,
             Ts - dT * _sqr(sin(lat)) - dtheta * log(scaled_z) * _sqr(cos(lat));
         Teq_p *= pow(scaled_z, kappa);
         Real Teq = (Teq_p > 200.) ? Teq_p : 200.;
-        Real temp =
-            pmb->phydro->w(IPR, k, j, i) / pmb->phydro->w(IDN, k, j, i) / Rd;
+        Real temp = w(IPR, k, j, i) / w(IDN, k, j, i) / Rd;
         // Temperature damping coefficient, Kt
         sigma_p = (sigma_p < 0.0) ? 0.0 : sigma_p * _qur(cos(lat));
         Real Kt = Ka + (Ks - Ka) * sigma_p;
@@ -274,7 +273,7 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
         pthermo->Extrapolate(&air, pcoord->dx1f(i),
                              Thermodynamics::Method::DryAdiabat, grav);
         // add noise
-        air.w[IVX] = 0.01 * distribution(generator);
+        air.w[IVY] = 1. * distribution(generator);
       }
 
       // construct isothermal atmosphere

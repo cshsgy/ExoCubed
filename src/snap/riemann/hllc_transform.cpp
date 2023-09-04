@@ -11,6 +11,10 @@
 // canoe
 #include <configure.hpp>
 
+#ifdef ENABLE_GLOG
+#include <glog/logging.h>
+#endif
+
 //----------------------------------------------------------------------------------------
 //! \fn void Hydro::RiemannSolver
 //! \brief The HLLC Riemann solver for adiabatic hydrodynamics (use HLLE for
@@ -59,6 +63,25 @@ void Hydro::RiemannSolver(const int k, const int j, const int il, const int iu,
     wri[IVY] = wr(ivy, i);
     wri[IVZ] = wr(ivz, i);
     wri[IPR] = wr(IPR, i);
+
+#ifdef ENABLE_GLOG
+    LOG_IF(ERROR, wli[IDN] < 0.)
+        << "rank = " << Globals::my_rank << ", (k,j,i) = "
+        << "(" << k << "," << j << "," << i << ")"
+        << ", wli[IDN] = " << wli[IDN] << std::endl;
+    LOG_IF(ERROR, wri[IDN] < 0.)
+        << "rank = " << Globals::my_rank << ", (k,j,i) = "
+        << "(" << k << "," << j << "," << i << ")"
+        << ", wri[IDN] = " << wri[IDN] << std::endl;
+    LOG_IF(ERROR, wli[IPR] < 0.)
+        << "rank = " << Globals::my_rank << ", (k,j,i) = "
+        << "(" << k << "," << j << "," << i << ")"
+        << ", wli[IPR] = " << wli[IPR] << std::endl;
+    LOG_IF(ERROR, wri[IPR] < 0.)
+        << "rank = " << Globals::my_rank << ", (k,j,i) = "
+        << "(" << k << "," << j << "," << i << ")"
+        << ", wri[IPR] = " << wri[IPR] << std::endl;
+#endif
 
     //--- Step 2.  Compute middle state estimates with PVRS (Toro 10.5.2)
 
