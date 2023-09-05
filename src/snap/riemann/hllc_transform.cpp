@@ -42,8 +42,8 @@ void Hydro::RiemannSolver(const int k, const int j, const int il, const int iu,
 
   AthenaArray<Real> empty{};
 #if defined(AFFINE) || defined(CUBED_SPHERE)  // need of projection
-  //if (ivx == IVX) {
-  //  pcoord->PrimToLocal1(k, j, il, iu, empty, wl, wr, empty);
+  // if (ivx == IVX) {
+  //   pcoord->PrimToLocal1(k, j, il, iu, empty, wl, wr, empty);
   if (ivx == IVY) {
     pcoord->PrimToLocal2(k, j, il, iu, empty, wl, wr, empty);
   } else if (ivx == IVZ) {
@@ -87,22 +87,27 @@ void Hydro::RiemannSolver(const int k, const int j, const int il, const int iu,
 #endif
 
     //--- Step 2.  Compute middle state estimates with PVRS (Toro 10.5.2)
-    auto pexo3 = pmy_block->pimpl->pexo3;
 
     Real al, ar, el, er, vy, vz, KE_l, KE_r;
     Real cl = pmy_block->peos->SoundSpeed(wli);
     Real cr = pmy_block->peos->SoundSpeed(wri);
 
+#ifdef CUBED_SPHERE
+    auto pexo3 = pmy_block->pimpl->pexo3;
     if (ivx == IVX) {
       pexo3->ContravariantVectorToCovariant(j, k, wli[IVY], wli[IVZ], &vy, &vz);
-      KE_l = 0.5 * wli[IDN] * (SQR(wli[IVX]) + wli[IVY]*vy + wli[IVZ]*vz);
+      KE_l = 0.5 * wli[IDN] * (SQR(wli[IVX]) + wli[IVY] * vy + wli[IVZ] * vz);
 
       pexo3->ContravariantVectorToCovariant(j, k, wri[IVY], wri[IVZ], &vy, &vz);
-      KE_r = 0.5 * wri[IDN] * (SQR(wri[IVX]) + wri[IVY]*vy + wri[IVZ]*vz);
+      KE_r = 0.5 * wri[IDN] * (SQR(wri[IVX]) + wri[IVY] * vy + wri[IVZ] * vz);
     } else {
       KE_l = 0.5 * wli[IDN] * (SQR(wli[IVX]) + SQR(wli[IVY]) + SQR(wli[IVZ]));
       KE_r = 0.5 * wri[IDN] * (SQR(wri[IVX]) + SQR(wri[IVY]) + SQR(wri[IVZ]));
     }
+#else   // NOT CUBED_SPHERE
+    KE_l = 0.5 * wli[IDN] * (SQR(wli[IVX]) + SQR(wli[IVY]) + SQR(wli[IVZ]));
+    KE_r = 0.5 * wri[IDN] * (SQR(wri[IVX]) + SQR(wri[IVY]) + SQR(wri[IVZ]));
+#endif  // CUBED_SPHERE
 
     if (GENERAL_EOS) {
       el = pmy_block->peos->EgasFromRhoP(wli[IDN], wli[IPR]) + KE_l;
@@ -218,8 +223,8 @@ void Hydro::RiemannSolver(const int k, const int j, const int il, const int iu,
   }
 
 #if defined(AFFINE) || defined(CUBED_SPHERE)  // need of deprojection
-  //if (ivx == IVX) {
-  //  pcoord->FluxToGlobal1(k, j, il, iu, empty, empty, flx, empty, empty);
+  // if (ivx == IVX) {
+  //   pcoord->FluxToGlobal1(k, j, il, iu, empty, empty, flx, empty, empty);
   if (ivx == IVY) {
     pcoord->FluxToGlobal2(k, j, il, iu, empty, empty, flx, empty, empty);
   } else if (ivx == IVZ) {
@@ -227,7 +232,7 @@ void Hydro::RiemannSolver(const int k, const int j, const int il, const int iu,
   }
 #endif  // AFFINE or CUBED_SPHERE
 
-#if defined(CUBED_SPHERE)  // projection from contravariant fluxes to covariant
+#ifdef CUBED_SPHERE  // projection from contravariant fluxes to covariant
   Real x, y;
 
   if (ivx == IVX) {
@@ -255,5 +260,4 @@ void Hydro::RiemannSolver(const int k, const int j, const int il, const int iu,
     flx(IVZ, k, j, i) = tz + ty * cth;
   }
 #endif  // CUBED_SPHERE
-
 }
