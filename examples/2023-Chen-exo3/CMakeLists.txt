@@ -32,6 +32,7 @@ foreach(namel ${test_cases})
       ${NETCDF_LIBRARIES}
       ${PNETCDF_LIBRARY}
       ${MPI_CXX_LIBRARIES}
+      ${GLOG_LIBRARY}
       )
 
   target_include_directories(${namel}.${buildl}
