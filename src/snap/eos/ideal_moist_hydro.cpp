@@ -125,8 +125,11 @@ void EquationOfState::ConservedToPrimitive(
           fsig += prim(n, k, j, i) * (pthermo->GetCvRatioMass(n) - 1.);
           feps += prim(n, k, j, i) * (pthermo->GetInvMuRatio(n) - 1.);
         }
-        Real cos_theta = 
-          static_cast<GnomonicEquiangle *>(pco)->GetCosineCell(k, j);
+
+#ifdef CUBED_SPHERE
+        Real cos_theta =
+            static_cast<GnomonicEquiangle*>(pco)->GetCosineCell(k, j);
+#endif
 
         int decay_factor = 1;
         do {
@@ -207,8 +210,9 @@ void EquationOfState::PrimitiveToConserved(const AthenaArray<Real>& prim,
         u_m3 = w_vz * w_d;
 
 #ifdef CUBED_SPHERE
-        cs::ContravariantToCovariant(cons.at(k, j, i),
-            static_cast<GnomonicEquiangle *>(pco)->GetCosineCell(k, j));
+        cs::ContravariantToCovariant(
+            cons.at(k, j, i),
+            static_cast<GnomonicEquiangle*>(pco)->GetCosineCell(k, j));
 #endif
 
         // total energy
