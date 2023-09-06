@@ -8,6 +8,9 @@
 // canoe
 #include <configure.hpp>
 
+// canoe
+#include <exo3/gnomonic_equiangle.hpp>
+
 // snap
 #include "implicit_solver.hpp"
 
@@ -15,7 +18,7 @@
 #include <glog/logging.h>
 #endif
 
-void ImplicitSolver::SolveImplicit3D(AthenaArray<Real> &du, AthenaArray<Real> const &w,
+void ImplicitSolver::SolveImplicit3D(AthenaArray<Real> &du, AthenaArray<Real> &w,
       Real dt)
 {
   auto pmb = pmy_block_;
@@ -102,6 +105,20 @@ void ImplicitSolver::SolveImplicit3D(AthenaArray<Real> &du, AthenaArray<Real> co
 
     for (int k = ks; k <= ke; ++k)
       for (int j = js; j <= je; ++j) {
+        // project velocity
+#ifdef CUBED_SPHERE
+        auto pco = static_cast<GnomonicEquiangle*>(pmb->pcoord);
+        Real cos_theta = pco->GetCosineCell(k, j);
+        Real sin_theta = pco->GetSineCell(k, j);
+
+        for (int i = is; i <= ie; ++i) {
+          Real vy = w(IVY, k, j, i);
+          Real vz = w(IVY, k, j, i);
+          w(IVY, k, j, i) += vz * cos_theta;
+          w(IVZ, k, j, i) *= sin_theta;
+        }
+#endif  // CUBED_SPHERE
+        
         // save a copy of du for redo
         for (int n = 0; n < NHYDRO; ++n)
           for (int i = 0; i < du_.GetDim1(); ++i)
@@ -139,7 +156,7 @@ void ImplicitSolver::SolveImplicit3D(AthenaArray<Real> &du, AthenaArray<Real> co
                 << "(" << k << "," << j << "," << i << ")"
                 << ", u[IDN] = " << ph->u(IDN,k,j,i) + du_(IDN,k,j,i)
                 << ", u[IVX] = " << ph->u(IVX,k,j,i) << std::endl;
-#endif
+#endif  // ENABLE_GLOG
             if ((ph->u(IEN,k,j,i) + du_(IEN,k,j,i) < 0.) ||
                 (ph->u(IDN,k,j,i) + du_(IDN,k,j,i) < 0.)) {
               factor *= 2;
@@ -152,6 +169,16 @@ void ImplicitSolver::SolveImplicit3D(AthenaArray<Real> &du, AthenaArray<Real> co
             throw RuntimeError("solver_implicit_3d", "negative density or internal energy");
           }
         } while (redo);
+
+        // project back
+#ifdef CUBED_SPHERE
+        for (int i = is; i <= ie; ++i) {
+          Real vy = w(IVY, k, j, i);
+          Real vz = w(IVY, k, j, i);
+          w(IVY, k, j, i) -= vz / sin_theta * cos_theta;
+          w(IVZ, k, j, i) /= sin_theta;
+        }
+#endif  // CUBED_SPHERE
       }
 
     // swap out

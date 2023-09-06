@@ -42,8 +42,7 @@ class ImplicitSolver {
   ~ImplicitSolver();
   void SetDirection(CoordinateDirection dir);
   int GetImplicitFlag() const { return implicit_flag_; }
-  void SolveImplicit3D(AthenaArray<Real> &du, AthenaArray<Real> const &w,
-      Real dt);
+  void SolveImplicit3D(AthenaArray<Real> &du, AthenaArray<Real> &w, Real dt);
 
   // utility functions
   void FindNeighbors();
