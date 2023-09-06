@@ -111,7 +111,7 @@ void ImplicitSolver::SolveImplicit3D(AthenaArray<Real> &du, AthenaArray<Real> &w
         Real cos_theta = pco->GetCosineCell(k, j);
         Real sin_theta = pco->GetSineCell(k, j);
 
-        for (int i = is; i <= ie; ++i) {
+        for (int i = 0; i < w.GetDim1(); ++i) {
           Real vy = w(IVY, k, j, i);
           Real vz = w(IVY, k, j, i);
           w(IVY, k, j, i) += vz * cos_theta;
@@ -148,7 +148,7 @@ void ImplicitSolver::SolveImplicit3D(AthenaArray<Real> &du, AthenaArray<Real> &w
             LOG_IF(ERROR, ph->u(IEN,k,j,i) + du_(IEN,k,j,i) < 0.)
                 << "rank = " << Globals::my_rank << ", (k,j,i) = "
                 << "(" << k << "," << j << "," << i << ")"
-                << ", u[IEN] = " << ph->u(IEN,k,j,i) + du(IEN,k,j,i)
+                << ", u[IEN] = " << ph->u(IEN,k,j,i) + du_(IEN,k,j,i)
                 << ", u[IVX] = " << ph->u(IVX,k,j,i) << std::endl;
 
             LOG_IF(ERROR, ph->u(IDN,k,j,i) + du_(IDN,k,j,i) < 0.)
@@ -172,7 +172,7 @@ void ImplicitSolver::SolveImplicit3D(AthenaArray<Real> &du, AthenaArray<Real> &w
 
         // project back
 #ifdef CUBED_SPHERE
-        for (int i = is; i <= ie; ++i) {
+        for (int i = 0; i < w.GetDim1(); ++i) {
           Real vy = w(IVY, k, j, i);
           Real vz = w(IVY, k, j, i);
           w(IVY, k, j, i) -= vz / sin_theta * cos_theta;
