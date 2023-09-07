@@ -113,7 +113,7 @@ void ImplicitSolver::SolveImplicit3D(AthenaArray<Real> &du, AthenaArray<Real> &w
 
         for (int i = 0; i < w.GetDim1(); ++i) {
           Real vy = w(IVY, k, j, i);
-          Real vz = w(IVY, k, j, i);
+          Real vz = w(IVZ, k, j, i);
           w(IVY, k, j, i) += vz * cos_theta;
           w(IVZ, k, j, i) *= sin_theta;
         }
@@ -174,7 +174,7 @@ void ImplicitSolver::SolveImplicit3D(AthenaArray<Real> &du, AthenaArray<Real> &w
 #ifdef CUBED_SPHERE
         for (int i = 0; i < w.GetDim1(); ++i) {
           Real vy = w(IVY, k, j, i);
-          Real vz = w(IVY, k, j, i);
+          Real vz = w(IVZ, k, j, i);
           w(IVY, k, j, i) -= vz / sin_theta * cos_theta;
           w(IVZ, k, j, i) /= sin_theta;
         }
