@@ -131,7 +131,7 @@ void EquationOfState::ConservedToPrimitive(
             static_cast<GnomonicEquiangle*>(pco)->GetCosineCell(k, j);
 #endif
 
-        int decay_factor = 1, iter = 0, max_iter = 5;
+        int decay_factor = 1, iter = 0, max_iter = 10;
         do {
           iter++;
           u_m1 /= decay_factor;

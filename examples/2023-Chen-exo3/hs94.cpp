@@ -275,7 +275,7 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
 
         pimpl->DistributeToConserved(air, k, j, i);
         pthermo->Extrapolate(&air, pcoord->dx1f(i),
-                             Thermodynamics::Method::DryAdiabat, grav);
+                             Thermodynamics::Method::DryAdiabat, grav, 0.001);
         // add noise
         air.w[IVY] = 10. * distribution(generator);
         air.w[IVZ] = 10. * distribution(generator);
