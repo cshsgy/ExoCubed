@@ -21,6 +21,7 @@ target_link_libraries(${namel}.${buildl}
     ${NETCDF_LIBRARIES}
     ${PNETCDF_LIBRARY}
     ${CPPDISORT_LIBRARY_${buildu}}
+    ${GLOG_LIBRARY}
     )
 
 target_include_directories(${namel}.${buildl}
