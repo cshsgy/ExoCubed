@@ -66,8 +66,6 @@ int main(int argc, char **argv)  {
     throw RuntimeError("main", "TaskList memory allocation failed");
   }
 
-  std::cout << "I'm 3" << std::endl;
-
   // CHANGE TO RUN DIRECTORY, INITIALIZE OUTPUTS OBJECT, AND MAKE OUTPUT OF ICs
   OutputsPtr pouts;
   try {
