@@ -75,6 +75,15 @@ MeshBlock::Impl::Impl(MeshBlock *pmb, ParameterInput *pin) : pmy_block_(pmb) {
   reference_pressure_ = 1.0;
   pressure_scale_height_ = 1.0;
 #endif  // HYDROSTATIC
+  
+  // all meshblock data
+  
+  // hydro conserved variable
+  size_t mbsize = pmb->phydro->u.GetSizeInBytes();
+  // hydro primitive variable
+  mbsize += pmb->phydro->w.GetSizeInBytes();
+
+  mbdata_.resize(mbsize);
 }
 
 MeshBlock::Impl::~Impl() {}
@@ -296,49 +305,30 @@ void MeshBlock::Impl::DistributeToConserved(AirParcel const &var_in, int k,
 
 void MeshBlock::Impl::SaveAllStates() {
   auto pmb = pmy_block_;
-  char *p = mbdata_;
+  auto phydro = pmb->phydro;
+  char *p = mbdata_.data();
 
   // Hydro conserved variables:
-  std::memcpy(p, pmb->phydro->u.data(), pmb->phydro->u.GetSizeInBytes());
-  p += pmb->phydro->u.GetSizeInBytes();
+  std::memcpy(p, phydro->u.data(), phydro->u.GetSizeInBytes());
+  p += phydro->u.GetSizeInBytes();
 
   // Hydro primitive variables
-  std::memcpy(p, pmb->phydro->w.data(), pmb->phydro->w.GetSizeInBytes());
-  p += pmb->phydro->w.GetSizeInBytes();
+  std::memcpy(p, phydro->w.data(), phydro->w.GetSizeInBytes());
+  p += phydro->w.GetSizeInBytes();
 }
 
 void MeshBlock::Impl::LoadAllStates() {
   auto pmb = pmy_block_;
-  char *p = mbdata_;
+  auto phydro = pmb->phydro;
+  char *p = mbdata_.data();
 
   // Hydro conserved variables:
-  std::memcpy(pmb->phydro->u.data(), p, pmb->phydro->u.GetSizeInBytes());
-  p += pmb->phydro->u.GetSizeInBytes();
+  std::memcpy(phydro->u.data(), p, phydro->u.GetSizeInBytes());
+  p += phydro->u.GetSizeInBytes();
 
   // Hydro primitive variables
-  std::memcpy(pmb->phydro->w.data(), p, pmb->phydro->w.GetSizeInBytes());
-  p += pmb->phydro->w.GetSizeInBytes();
-}
-
-bool MeshBlock::Impl::CheckAllValid() const {
-  bool valid = true;
-  auto pmb = pmy_block_;
-  auto phydro = pmb->phydro;
-
-  int is = pmb->is, js = pmb->js, ks = pmb->ks;
-  int ie = pmb->ie, je = pmb->je, ke = pmb->ke;
-
-  for (int k = ks; k <= ke; ++k)
-    for (int j = js; j <= je; ++j)
-      for (int i = is; i <= ie; ++i) {
-        if (phydro->w(IDN,k,j,i) < 0. ||
-            phydro->w(IEN,k,j,i) < 0.) {
-          valid = false;
-          break;
-        }
-      }
-
-  return valid;
+  std::memcpy(phydro->w.data(), p, phydro->w.GetSizeInBytes());
+  p += phydro->w.GetSizeInBytes();
 }
 
 int find_pressure_level_lesser(Real pres, AthenaArray<Real> const &w, int k,

@@ -26,10 +26,9 @@ void Mesh::DecreaseTimeStep()
 bool Mesh::CheckAllValid() const
 {
   bool valid = true;
+  for (int b = 0; b < nblocal; ++b)
+    if (!my_blocks(b)->pimpl->IsStateValid())
+      valid = false;
 
-  for (int b = 0; b < nblocal; ++b) {
-    valid &= my_blocks(b)->pimpl->CheckAllValid();
-  }
-
-  return valid;
+  return true;
 }

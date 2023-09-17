@@ -110,11 +110,15 @@ class MeshBlock::Impl {
 
   void LoadAllStates();
   void SaveAllStates();
-  bool CheckAllValid() const;
+
+  bool IsStateValid() const { return state_valid_flag_; }
+  void SetStateInvalid() { state_valid_flag_ = false; }
+  void SetStateValid() { state_valid_flag_ = true; }
 
  private:
   MeshBlock *pmy_block_;
-  char *mbdata_;
+  std::vector<char> mbdata_;
+  bool state_valid_flag_;
 
   Real reference_pressure_;
   Real pressure_scale_height_;
