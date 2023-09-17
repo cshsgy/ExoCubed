@@ -108,8 +108,13 @@ class MeshBlock::Impl {
     if (NCLOUD > 0) pmicro->u.InitWithShallowSlice(s, 4, 0, NCLOUD);
   }
 
+  void LoadAllStates();
+  void SaveAllStates();
+  bool CheckAllValid() const;
+
  private:
   MeshBlock *pmy_block_;
+  char *mbdata_;
 
   Real reference_pressure_;
   Real pressure_scale_height_;

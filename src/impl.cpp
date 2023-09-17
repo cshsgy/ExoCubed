@@ -294,6 +294,53 @@ void MeshBlock::Impl::DistributeToConserved(AirParcel const &var_in, int k,
   }
 }
 
+void MeshBlock::Impl::SaveAllStates() {
+  auto pmb = pmy_block_;
+  char *p = mbdata_;
+
+  // Hydro conserved variables:
+  std::memcpy(p, pmb->phydro->u.data(), pmb->phydro->u.GetSizeInBytes());
+  p += pmb->phydro->u.GetSizeInBytes();
+
+  // Hydro primitive variables
+  std::memcpy(p, pmb->phydro->w.data(), pmb->phydro->w.GetSizeInBytes());
+  p += pmb->phydro->w.GetSizeInBytes();
+}
+
+void MeshBlock::Impl::LoadAllStates() {
+  auto pmb = pmy_block_;
+  char *p = mbdata_;
+
+  // Hydro conserved variables:
+  std::memcpy(pmb->phydro->u.data(), p, pmb->phydro->u.GetSizeInBytes());
+  p += pmb->phydro->u.GetSizeInBytes();
+
+  // Hydro primitive variables
+  std::memcpy(pmb->phydro->w.data(), p, pmb->phydro->w.GetSizeInBytes());
+  p += pmb->phydro->w.GetSizeInBytes();
+}
+
+bool MeshBlock::Impl::CheckAllValid() const {
+  bool valid = true;
+  auto pmb = pmy_block_;
+  auto phydro = pmb->phydro;
+
+  int is = pmb->is, js = pmb->js, ks = pmb->ks;
+  int ie = pmb->ie, je = pmb->je, ke = pmb->ke;
+
+  for (int k = ks; k <= ke; ++k)
+    for (int j = js; j <= je; ++j)
+      for (int i = is; i <= ie; ++i) {
+        if (phydro->w(IDN,k,j,i) < 0. ||
+            phydro->w(IEN,k,j,i) < 0.) {
+          valid = false;
+          break;
+        }
+      }
+
+  return valid;
+}
+
 int find_pressure_level_lesser(Real pres, AthenaArray<Real> const &w, int k,
                                int j, int is, int ie) {
   for (int i = is; i <= ie; ++i)

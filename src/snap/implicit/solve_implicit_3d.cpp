@@ -145,17 +145,21 @@ void ImplicitSolver::SolveImplicit3D(AthenaArray<Real> &du, AthenaArray<Real> &w
           // check for negative density and internal energy
           for (int i = is; i <= ie; i++) {
 #ifdef ENABLE_GLOG
-            LOG_IF(ERROR, ph->u(IEN,k,j,i) + du_(IEN,k,j,i) < 0.)
+            LOG_IF(WARNING, ph->u(IEN,k,j,i) + du_(IEN,k,j,i) < 0.)
                 << "rank = " << Globals::my_rank << ", (k,j,i) = "
                 << "(" << k << "," << j << "," << i << ")"
-                << ", u[IEN] = " << ph->u(IEN,k,j,i) + du_(IEN,k,j,i)
-                << ", u[IVX] = " << ph->u(IVX,k,j,i) << std::endl;
+                << ", u[IEN](before) = " << ph->u(IEN,k,j,i) + du(IEN,k,j,i)
+                << ", u[IEN](after) = " << ph->u(IEN,k,j,i) + du_(IEN,k,j,i)
+                << ", u[IVX](before) = " << ph->u(IVX,k,j,i) + du(IVX,k,j,i) << std::endl
+                << ", u[IVX](after) = " << ph->u(IVX,k,j,i) + du_(IVX,k,j,i) << std::endl;
 
-            LOG_IF(ERROR, ph->u(IDN,k,j,i) + du_(IDN,k,j,i) < 0.)
+            LOG_IF(WARNING, ph->u(IDN,k,j,i) + du_(IDN,k,j,i) < 0.)
                 << "rank = " << Globals::my_rank << ", (k,j,i) = "
                 << "(" << k << "," << j << "," << i << ")"
-                << ", u[IDN] = " << ph->u(IDN,k,j,i) + du_(IDN,k,j,i)
-                << ", u[IVX] = " << ph->u(IVX,k,j,i) << std::endl;
+                << ", u[IDN](before) = " << ph->u(IDN,k,j,i) + du(IDN,k,j,i)
+                << ", u[IDN](after) = " << ph->u(IDN,k,j,i) + du_(IDN,k,j,i)
+                << ", u[IVX](before) = " << ph->u(IVX,k,j,i) + du(IVX,k,j,i) << std::endl
+                << ", u[IVX](after) = " << ph->u(IVX,k,j,i) + du_(IVX,k,j,i) << std::endl;
 #endif  // ENABLE_GLOG
             if ((ph->u(IEN,k,j,i) + du_(IEN,k,j,i) < 0.) ||
                 (ph->u(IDN,k,j,i) + du_(IDN,k,j,i) < 0.)) {

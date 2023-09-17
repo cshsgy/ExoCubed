@@ -96,7 +96,15 @@ void EquationOfState::ConservedToPrimitive(
         Real& w_vz = prim(IVZ, k, j, i);
         Real& w_p = prim(IPR, k, j, i);
 
-#ifdef ENABLED_GLOG
+        // apply density floor, without changing momentum or energy
+        u_d = (u_d > density_floor_) ? u_d : density_floor_;
+
+        Real density = 0.;
+        for (int n = 0; n <= NVAPOR; ++n) density += cons(n, k, j, i);
+        w_d = density;
+        Real di = 1. / density;
+
+#ifdef ENABLE_GLOG
         LOG_IF(ERROR, std::isnan(w_d) || (w_d < density_floor_))
             << "rank = " << Globals::my_rank << ", (k,j,i) = "
             << "(" << k << "," << j << "," << i << ")"
@@ -105,14 +113,6 @@ void EquationOfState::ConservedToPrimitive(
         LOG_IF(INFO, std::isnan(w_d) || (w_d < density_floor_))
             << str_grid_ij(cons, IDN, k, j, i, il, iu, jl, ju);
 #endif
-
-        // apply density floor, without changing momentum or energy
-        u_d = (u_d > density_floor_) ? u_d : density_floor_;
-
-        Real density = 0.;
-        for (int n = 0; n <= NVAPOR; ++n) density += cons(n, k, j, i);
-        w_d = density;
-        Real di = 1. / density;
 
         // mass mixing ratio
         for (int n = 1; n <= NVAPOR; ++n)
@@ -152,12 +152,12 @@ void EquationOfState::ConservedToPrimitive(
           w_p = gm1 * (u_e - KE) * feps / fsig;
 
 #ifdef ENABLE_GLOG
-          LOG_IF(ERROR, w_p < 0.)
+          LOG_IF(WARNING, w_p < 0.)
               << "rank = " << Globals::my_rank << ", (k,j,i) = "
               << "(" << k << "," << j << "," << i << ")"
               << ", w_p = " << w_p << std::endl;
 #endif
-          decay_factor = 2;
+          decay_factor *= 2;
           if (iter > max_iter) {
             throw RuntimeError("ideal_moist_hydro", "negative pressure");
           }
