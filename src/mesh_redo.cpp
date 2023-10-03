@@ -2,7 +2,12 @@
 #include <athena/mesh/mesh.hpp>
 
 // canoe
+#include <configure.hpp>
 #include <impl.hpp>
+
+#ifdef MPI_PARALLEL
+#include <mpi.h>
+#endif  // MPI_PARALLEL
 
 void Mesh::SaveAllStates()
 {
@@ -30,9 +35,12 @@ bool Mesh::CheckAllValid() const
     if (!my_blocks(b)->pimpl->IsStateValid())
       valid = false;
 
-  bool all_valid;
+  bool all_valid = valid;
 
+#ifdef MPI_PARALLEL
   // MPI call to check if all blocks are valid
   MPI_Allreduce(&valid, &all_valid, 1, MPI_C_BOOL, MPI_LAND, MPI_COMM_WORLD);
+#endif  // MPI_PARALLEL
+  
   return all_valid;
 }
