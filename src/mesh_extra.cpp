@@ -30,5 +30,9 @@ bool Mesh::CheckAllValid() const
     if (!my_blocks(b)->pimpl->IsStateValid())
       valid = false;
 
-  return true;
+  bool all_valid;
+
+  // MPI call to check if all blocks are valid
+  MPI_Allreduce(&valid, &all_valid, 1, MPI_C_BOOL, MPI_LAND, MPI_COMM_WORLD);
+  return all_valid;
 }
