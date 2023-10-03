@@ -75,6 +75,15 @@ MeshBlock::Impl::Impl(MeshBlock *pmb, ParameterInput *pin) : pmy_block_(pmb) {
   reference_pressure_ = 1.0;
   pressure_scale_height_ = 1.0;
 #endif  // HYDROSTATIC
+  
+  // all meshblock data
+  
+  // hydro conserved variable
+  size_t mbsize = pmb->phydro->u.GetSizeInBytes();
+  // hydro primitive variable
+  mbsize += pmb->phydro->w.GetSizeInBytes();
+
+  mbdata_.resize(mbsize);
 }
 
 MeshBlock::Impl::~Impl() {}
@@ -292,6 +301,34 @@ void MeshBlock::Impl::DistributeToConserved(AirParcel const &var_in, int k,
   if (var_in.GetType() != AirParcel::Type::MassConc) {
     delete var;
   }
+}
+
+void MeshBlock::Impl::SaveAllStates() {
+  auto pmb = pmy_block_;
+  auto phydro = pmb->phydro;
+  char *p = mbdata_.data();
+
+  // Hydro conserved variables:
+  std::memcpy(p, phydro->u.data(), phydro->u.GetSizeInBytes());
+  p += phydro->u.GetSizeInBytes();
+
+  // Hydro primitive variables
+  std::memcpy(p, phydro->w.data(), phydro->w.GetSizeInBytes());
+  p += phydro->w.GetSizeInBytes();
+}
+
+void MeshBlock::Impl::LoadAllStates() {
+  auto pmb = pmy_block_;
+  auto phydro = pmb->phydro;
+  char *p = mbdata_.data();
+
+  // Hydro conserved variables:
+  std::memcpy(phydro->u.data(), p, phydro->u.GetSizeInBytes());
+  p += phydro->u.GetSizeInBytes();
+
+  // Hydro primitive variables
+  std::memcpy(phydro->w.data(), p, phydro->w.GetSizeInBytes());
+  p += phydro->w.GetSizeInBytes();
 }
 
 int find_pressure_level_lesser(Real pres, AthenaArray<Real> const &w, int k,

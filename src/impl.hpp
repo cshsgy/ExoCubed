@@ -108,8 +108,17 @@ class MeshBlock::Impl {
     if (NCLOUD > 0) pmicro->u.InitWithShallowSlice(s, 4, 0, NCLOUD);
   }
 
+  void LoadAllStates();
+  void SaveAllStates();
+
+  bool IsStateValid() const { return state_valid_flag_; }
+  void SetStateInvalid() { state_valid_flag_ = false; }
+  void SetStateValid() { state_valid_flag_ = true; }
+
  private:
   MeshBlock *pmy_block_;
+  std::vector<char> mbdata_;
+  bool state_valid_flag_;
 
   Real reference_pressure_;
   Real pressure_scale_height_;
