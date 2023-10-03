@@ -91,6 +91,15 @@ MeshBlock::Impl::Impl(MeshBlock *pmb, ParameterInput *pin) : pmy_block_(pmb) {
   stellar_distance_au_ = pin->GetOrAddReal("problem", "distance_au", 1.);
   app->Log("Stellar distance = " + std::to_string(stellar_distance_au_) +
            " au");
+  
+  // all meshblock data
+  
+  // hydro conserved variable
+  size_t mbsize = pmb->phydro->u.GetSizeInBytes();
+  // hydro primitive variable
+  mbsize += pmb->phydro->w.GetSizeInBytes();
+
+  mbdata_.resize(mbsize);
 }
 
 MeshBlock::Impl::~Impl() {}
