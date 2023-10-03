@@ -92,8 +92,17 @@ class MeshBlock::Impl {
 
   Real stellar_distance_au_;
 
+  void LoadAllStates();
+  void SaveAllStates();
+
+  bool IsStateValid() const { return state_valid_flag_; }
+  void SetStateInvalid() { state_valid_flag_ = false; }
+  void SetStateValid() { state_valid_flag_ = true; }
+
  private:
   MeshBlock const *pmy_block_;
+  std::vector<char> mbdata_;
+  bool state_valid_flag_;
 };
 
 #endif  // SRC_IMPL_HPP_
