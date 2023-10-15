@@ -121,9 +121,9 @@ void ImplicitSolver::SolveImplicit3D(AthenaArray<Real> &du, AthenaArray<Real> &w
           w(IVY, k, j, i) += w(IVZ, k, j, i) * cos_theta;
           w(IVZ, k, j, i) *= sin_theta;
 
-          cs::CovariantToContravariant(du_.at(k,j,i), cos_theta);
-          du_(IVY, k, j, i) += du_(IVZ, k, j, i) * cos_theta;
-          du_(IVZ, k, j, i) *= sin_theta;
+          //cs::CovariantToContravariant(du_.at(k,j,i), cos_theta);
+          //du_(IVY, k, j, i) += du_(IVZ, k, j, i) * cos_theta;
+          //du_(IVZ, k, j, i) *= sin_theta;
         }
 #endif  // CUBED_SPHERE
         
@@ -167,9 +167,9 @@ void ImplicitSolver::SolveImplicit3D(AthenaArray<Real> &du, AthenaArray<Real> &w
           w(IVZ, k, j, i) /= sin_theta;
           w(IVY, k, j, i) -= w(IVZ, k, j, i) * cos_theta;
 
-          du_(IVZ, k, j, i) /= sin_theta;
-          du_(IVY, k, j, i) -= du_(IVZ, k, j) * cos_theta;
-          cs::ContravariantToCovariant(du_.at(k, j, i), cos_theta);
+          //du_(IVZ, k, j, i) /= sin_theta;
+          //du_(IVY, k, j, i) -= du_(IVZ, k, j) * cos_theta;
+          //cs::ContravariantToCovariant(du_.at(k, j, i), cos_theta);
         }
 #endif  // CUBED_SPHERE
       }
