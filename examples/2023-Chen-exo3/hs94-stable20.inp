@@ -8,7 +8,7 @@ problem_id = hs94        # problem ID: basename of output filenames
 
 <output0>
 file_type  = rst
-dt         = 1.0368E5
+dt         = 1.0368E6
 
 <output1>
 file_type   = hst         # History data dump
@@ -34,7 +34,7 @@ cfl_number = 0.9          # The Courant, Friedrichs, & Lewy (CFL) Number
 integrator = rk3          # integration method
 xorder     = 5            # horizontal reconstruction order
 nlim       = -1          # cycle limit
-tlim       = 10.0368E6    # time limit
+tlim       = 1000.0368E5    # time limit
 #shock_capture = true
 
 <mesh>
