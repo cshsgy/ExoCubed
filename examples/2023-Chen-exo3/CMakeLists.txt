@@ -15,6 +15,7 @@ else()
   list(APPEND test_cases test_adiabat)
   list(APPEND test_cases hs94)
   list(APPEND test_cases hot_jupiter)
+  list(APPEND test_cases polar_dry)
 endif()
 
 foreach(namel ${test_cases})
