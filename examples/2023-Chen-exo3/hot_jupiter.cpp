@@ -42,7 +42,7 @@
 using namespace std;
 
 static Real p0, Omega, Rd, cp, Ts, dT_stra, Gamma_trop, Kt, Rp, beta_trop, dT_e2p,
-       sponge_tau, sponge_width, grav, z_stra, sigma_stra, T_eq, T_vert;
+       sponge_tau, sponge_width, grav, z_stra, sigma_stra, T_eq, T_vert, x1min;
 
 std::default_random_engine generator;
 std::normal_distribution<double> distribution(0.0, 1.0);
@@ -96,7 +96,10 @@ void Forcing(MeshBlock *pmb, Real const time, Real const dt,
         Real theta, phi;
         pexo3->GetLatLon(&theta, &phi, k, j, i);
         // Set-up sigma coordinate.
-        Real sigma = w(IPR,k,j,i)/p0;
+        // Real T_now = w(IPR,k,j,i)/w(IDN,k,j,i)/Rd;
+        // Real p0_now = w(IPR, k, j, 0)*exp((pmb->pcoord->x1v(0)-Rp)*(-grav)/(Rd*T_now));
+        Real p0_now = w(IPR, k, j, 0);
+        Real sigma = w(IPR,k,j,i)/p0_now;
 
         if ( z <= z_stra) {
           beta_trop = sin( M_PI*(sigma-sigma_stra)/( 2.*(1.-sigma_stra) ) );
@@ -202,6 +205,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin)
   Gamma_trop = pin->GetReal("thermodynamics", "Gamma_trop");
   Rd         = pin->GetReal("thermodynamics", "Rd");
   sponge_tau = pin->GetReal("problem", "sponge_tau");
+  x1min      = pin->GetReal("mesh", "x1min");
   cp         = gamma/(gamma-1.)*Rd;
   // damping parameters
   Kt           = pin->GetReal("problem", "Kt");

@@ -6,7 +6,7 @@ import os
 from tqdm import tqdm
 
 # Set the filepath to your single combined .nc file
-filepath = 'cart_hotjupiter-main.nc'  # Change this to your file path
+filepath = 'pres_hotjupiter.nc'  # Change this to your file path
 
 # Set the name of the output file where the results will be saved
 output_file = 'averages_and_products.nc'
@@ -19,6 +19,7 @@ data_sums = {}
 upvp_sum = None
 upwp_sum = None
 uv_variance_sum = None
+
 timestep_count = 0
 
 P0 = 1E5
@@ -38,7 +39,7 @@ Rp = 1E8
 for t in tqdm(range(start_t,num_time_steps), desc="Processing time steps"):
     with Dataset(filepath, mode='r') as nc:
         if t==start_t:
-            x1 = nc.variables['x1'][:]
+            x1 = nc.variables['press'][:]
             latitudes = nc.variables['lat'][:]
         # If this is the first time step, initialize data_sums and other accumulators
         if timestep_count == 0:
@@ -56,6 +57,7 @@ for t in tqdm(range(start_t,num_time_steps), desc="Processing time steps"):
             data = nc.variables[var][t]  # We take the first index of the time dimension
             zonal_mean = np.mean(data, axis=2)  # Zonal mean over longitude, reducing dimension
             data_sums[var] += zonal_mean  # Summing up the zonal mean data
+
             if var in ['vlat', 'vlon', 'vel1']:
                 prime = data - np.expand_dims(zonal_mean, axis=2)  # Subtracting zonal mean, keeping dimensions consistent
 
@@ -83,43 +85,6 @@ upvp_avg = upvp_sum / timestep_count  # Averaging over all files
 upwp_avg = upwp_sum / timestep_count  # Averaging over all files
 uv_variance_avg = uv_variance_sum / timestep_count  # Averaging over all files
 
-temp_avg = averages['temp']  # Temperature average over all files
-
-
-
-# Calculate the pressure at each height level for each latitude using the hydrostatic equation
-# We assume that the first level is the surface (P = P0) and that 'x1_levels' is an array of height levels in meters
-x1_levels = x1
-pressures = np.zeros((temp_avg.shape[0], temp_avg.shape[1]))  # [height, lat]
-pressures[0, :] = P0
-
-for j in range(temp_avg.shape[1]):  # Loop over all latitudes
-    for i in range(1, temp_avg.shape[0]):  # Loop over all height levels
-        dz = x1_levels[i] - x1_levels[i - 1]  # Difference in height between two levels
-        T_avg = 0.5 * (temp_avg[i, j] + temp_avg[i - 1, j])  # Average temperature between two levels
-        pressures[i, j] = pressures[i - 1, j] * np.exp(-g * dz / (R * T_avg))  # Hydrostatic equation
-
-# Interpolate the variables to the new pressure levels for each latitude
-averages_interpolated = {}
-for var, avg in averages.items():
-    averages_interpolated[var] = np.zeros((len(pressure_levels), temp_avg.shape[1]))  # [pressure, lat]
-    for j in range(temp_avg.shape[1]):
-        f = interp1d(pressures[:, j], avg[:, j], fill_value='extrapolate')
-        averages_interpolated[var][:, j] = f(pressure_levels)
-
-# Also interpolate 'upvp' and 'uv_variance'
-upvp_interpolated = np.zeros((len(pressure_levels), temp_avg.shape[1]))  # [pressure, lat]
-upwp_interpolated = np.zeros((len(pressure_levels), temp_avg.shape[1]))  # [pressure, lat]
-uv_variance_interpolated = np.zeros((len(pressure_levels), temp_avg.shape[1]))  # [pressure, lat]
-
-for j in range(temp_avg.shape[1]):
-    upvp_function = interp1d(pressures[:, j], upvp_avg[:, j], fill_value='extrapolate')
-    upwp_function = interp1d(pressures[:, j], upwp_avg[:, j], fill_value='extrapolate')
-    uv_variance_function = interp1d(pressures[:, j], uv_variance_avg[:, j], fill_value='extrapolate')
-    upvp_interpolated[:, j] = upvp_function(pressure_levels)
-    upwp_interpolated[:, j] = upwp_function(pressure_levels)
-    uv_variance_interpolated[:, j] = uv_variance_function(pressure_levels)
-
 # Save the results to a new .nc file
 with Dataset(output_file, mode='w') as new_nc:
     # Create dimensions
@@ -137,19 +102,20 @@ with Dataset(output_file, mode='w') as new_nc:
     lat_var.units = 'degrees_north'
 
     # Create variables for the zonal means and other variables
-    for var, data in averages_interpolated.items():
+    for var, data in averages.items():
         new_var = new_nc.createVariable(var + '_avg', np.float32, ('pressure', 'lat'))
         new_var[:] = data
 
     # Create variables for 'upvp' and 'uv_variance'
     upvp_var = new_nc.createVariable('upvp', np.float32, ('pressure', 'lat'))
-    upvp_var[:] = upvp_interpolated
+    upvp_var[:] = upvp_avg
 
     upwp_var = new_nc.createVariable('upwp', np.float32, ('pressure', 'lat'))
-    upwp_var[:] = upwp_interpolated
+    upwp_var[:] = upwp_avg
 
     uv_variance_var = new_nc.createVariable('uv_variance', np.float32, ('pressure', 'lat'))
-    uv_variance_var[:] = uv_variance_interpolated
+    uv_variance_var[:] = uv_variance_avg
+
 
     # Optionally, add descriptions, units, or other metadata as attributes to the variables
 
