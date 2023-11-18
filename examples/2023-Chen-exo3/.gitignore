@@ -1,0 +1,2 @@
+# Ignoring the temporary python data files
+*.npy

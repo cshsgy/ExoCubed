@@ -74,10 +74,10 @@ void Forcing(MeshBlock *pmb, Real const time, Real const dt,
         Real m2 = w(IDN, k, j, i) * U;
         Real m3 = w(IDN, k, j, i) * V;
 
-        du(IM1, k, j, i) += dt * f * m2;
-        Real ll_acc_U = f * m3 - f2 * m1;
+        // du(IM1, k, j, i) += dt * f * m2;
+        Real ll_acc_U = f * m3; // - f2 * m1
         Real ll_acc_V = -f * m2;
-        Real acc1, acc2, acc3;
+        Real acc2, acc3;
         pexo3->GetVyVz(&acc2, &acc3, ll_acc_U, ll_acc_V, k, j, i);
         pexo3->ContravariantVectorToCovariant(j, k, acc2, acc3, &acc2, &acc3);
         du(IM2, k, j, i) += dt * acc2;
@@ -177,9 +177,11 @@ Real AngularMomentum(MeshBlock *pmb, int iout) {
         Real vol = pmb->pcoord->dx1f(i) * dx2_ang * dx3_ang * sin_theta;
 
         // Originally here used cos(lat), which is x2v-pi, strange
-        AMz += pmb->phydro->w(IDN, k, j, i) * vol *
-               sqrt((_sqr(x1l) + _sqr(x1u)) / 2.) * cos(lat) *
-               (Omega * sqrt(0.5 * (_sqr(x1l) + _sqr(x1u))) * cos(lat) + U);
+        // AMz += pmb->phydro->w(IDN, k, j, i) * vol *
+        //        sqrt((_sqr(x1l) + _sqr(x1u)) / 2.) * cos(lat) *
+        //        (Omega * sqrt(0.5 * (_sqr(x1l) + _sqr(x1u))) * cos(lat) + U);
+        Real a = (x1l + x1u) / 2.;
+        AMz += pmb->phydro->w(IDN, k, j, i) * vol * (a * cos(lat) * U + a * a * Omega * cos(lat) * cos(lat));
       }
     }
   }
