@@ -12,6 +12,7 @@ setup_test(test_weno)
 setup_test(test_glog)
 setup_test(test_absorber)
 setup_test(test_yaml_read)
+setup_test(test_optable)
 
 if (PVFMM_OPTION STREQUAL "ENABLE_PVFMM")
   setup_test(test_nbody)
