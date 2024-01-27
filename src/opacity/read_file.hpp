@@ -4,6 +4,5 @@
 #include <fstream>
 #include <utility>
 
-using namespace std;
-pair <vector <double>, vector <double>> read_file (string file1, string file2);
+std::pair <std::vector <double>, std::vector <double>> read_file (std::string file1, std::string file2);
 

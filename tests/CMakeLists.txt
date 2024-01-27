@@ -11,6 +11,7 @@ enable_testing()
 setup_test(test_weno)
 setup_test(test_glog)
 setup_test(test_absorber)
+setup_test(test_read_file)
 setup_test(test_yaml_read)
 setup_test(test_optable)
 
