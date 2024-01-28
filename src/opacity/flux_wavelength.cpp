@@ -6,13 +6,15 @@ std::pair <std::vector <double>, std::vector <double>> read_file (std::string fi
     std::vector <double> output_1;
     std::vector <double> output_2;
     // if stream OK = file readable
+    if (file_1.good()) {
         double x;
         // as long as next value readable
         while(file_1 >> x) {
             //put it into output1
             output_1.push_back (x);
         }
-        
+    }
+    if (file_1.good()) {
         double y;
         file_2.ignore(2);
         // as long as next value readable
@@ -20,6 +22,7 @@ std::pair <std::vector <double>, std::vector <double>> read_file (std::string fi
             //put it into output2
             output_2.push_back (y);
         }
+    }
     std::pair <std::vector <double>, std::vector <double>> combined_output = {output_1, output_2};
     return combined_output;
 }
