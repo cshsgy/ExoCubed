@@ -1,4 +1,4 @@
-#include "read_file.hpp"
+#include "flux_wavelength.hpp"
 
 std::pair <std::vector <double>, std::vector <double>> read_file (std::string file1, std::string file2) {
     std::ifstream file_1 {file1};  // open file
