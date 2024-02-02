@@ -17,6 +17,8 @@ AthenaArray<Real> reform_read (std::string filename) {
                 file >> data(j, i);
             }
         }
+    } else {
+        throw std::runtime_error("Unable to open " + filename);
     }
     return data;
 }
@@ -40,6 +42,8 @@ AthenaArray<Real> ff_read (std::string filename) {
         while (std::getline(file, line)) {
             ++ num_of_row;
         }
+    } else {
+        throw std::runtime_error("Unable to open " + filename);
     }
     file.close(); // close it
     file.open(filename);  // open it again
@@ -58,6 +62,8 @@ AthenaArray<Real> ff_read (std::string filename) {
                 file >> data(j,i);
             }
         }
+    } else {
+        throw std::runtime_error("Unable to open " + filename);
     }
     file.close();
     return data;

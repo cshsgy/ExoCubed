@@ -2,7 +2,7 @@
 
 std::vector <double> read_ray (std::string file) {
     std::ifstream data {file};  //open file
-    std::vector <double> output; //store the output
+    std::vector <double> cross_section_output; //store the output
     std::string line; //a temporary storage to get over the first line
     // if stream OK = file readable
     if (data.good()) {
@@ -11,8 +11,10 @@ std::vector <double> read_ray (std::string file) {
         // as long as next value readable
         while(data >> x) {
             //put it into output
-            output.push_back (x);
+            cross_section_output.push_back (x);
         }
+    } else {
+        throw std::runtime_error("Unable to open " + file);
     }
-    return output;
+    return cross_section_output;
 }
