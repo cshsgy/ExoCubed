@@ -20,7 +20,6 @@ void PackDataR3(const AthenaArray<Real> &src, Real *buf, int sn, int en, int si,
   for (int n = sn; n <= en; n++) {
     for (int j = sj; j <= ej; j++) {
       for (int k = ek; k >= sk; k--) {
-#pragma omp simd
         for (int i = si; i <= ei; i++) buf[offset++] = src(n, k, j, i);
       }
     }
@@ -33,7 +32,6 @@ void PackDataR2(const AthenaArray<Real> &src, Real *buf, int sn, int en, int si,
   for (int n = sn; n <= en; n++) {
     for (int k = ek; k >= sk; k--) {
       for (int j = ej; j >= sj; j--) {
-#pragma omp simd
         for (int i = si; i <= ei; i++) buf[offset++] = src(n, k, j, i);
       }
     }
@@ -46,7 +44,6 @@ void PackDataR1(const AthenaArray<Real> &src, Real *buf, int sn, int en, int si,
   for (int n = sn; n <= en; n++) {
     for (int j = ej; j >= sj; j--) {
       for (int k = sk; k <= ek; k++) {
-#pragma omp simd
         for (int i = si; i <= ei; i++) buf[offset++] = src(n, k, j, i);
       }
     }
@@ -59,7 +56,6 @@ void PackDataR0(const AthenaArray<Real> &src, Real *buf, int sn, int en, int si,
   for (int n = sn; n <= en; n++) {
     for (int k = sk; k <= ek; k++) {
       for (int j = sj; j <= ej; j++) {
-#pragma omp simd
         for (int i = si; i <= ei; i++) buf[offset++] = src(n, k, j, i);
       }
     }
@@ -123,7 +119,6 @@ void InteprolateX2(const AthenaArray<Real> &src, AthenaArray<Real> &tgt,
         SrcSide = 1;
       }
 
-#pragma omp simd
       for (int i = si; i <= ei; i++) {
         for (int j = 0; j < N_blk; j++) {
           // Calculate coefficients for src, need to go from 0 to N_blk to cover
@@ -253,7 +248,7 @@ void InteprolateX3(const AthenaArray<Real> &src, AthenaArray<Real> &tgt,
         k_now = ej - j;
         SrcSide = 1;
       }
-#pragma omp simd
+
       for (int i = si; i <= ei; i++) {
         for (int k = 0; k < N_blk; k++) {
           // Calculate coefficients for src, need to go from 0 to N_blk to cover

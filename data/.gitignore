@@ -1,0 +1,6 @@
+# datafile
+*.txt
+*.hit
+
+# hitran par file
+*.par

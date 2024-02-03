@@ -7,27 +7,14 @@ z.junk/
 # homebrew
 Brewfile.lock.json
 
-# hitran par file
-*.par
-
-# datafile
-data/*.txt
-data/*.hit
-
 # tmp file
 *.tmp
-
-# test file
-tests/Testing
 
 # netcdf
 *.nc
 
 # mac
 .DS_Store
-
-# external
-external/*.tar.gz
 
 # vscode
 .vscode
