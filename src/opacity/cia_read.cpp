@@ -1,16 +1,24 @@
 #include "cia_read.hpp"
 
-AthenaArray<Real> reform_read (std::string filename) {
+std::tuple < AthenaArray<Real>, std::vector<double>, std::vector<double>>  reform_read (std::string filename) {
     std::ifstream file {filename};  // open file
     AthenaArray<Real> data; // create storage array
-    std::string line1; // storage for the first line
-    std::string line2; // storage for the second line
+    std::vector <double> temperature_axis;
+    std::vector <double> spectral_axis;
     if (file.good()) {
         int nx; // number of spectral points, horizontal
         int ny; // number of temperature points, vertical
+        double temperature; //temprary storage for temperature data
+        double spectral; //temprary storage for spectral data
         file >> ny >> nx;
-        std::getline(file, line1); // Skip the first line
-        std::getline(file, line2); // Skip the second line
+        for (int i = 0; i < ny; ++i) {
+            file >> temperature;
+            temperature_axis.push_back(temperature);
+        }
+        for (int i = 0; i < nx; ++i) {
+            file >> spectral;
+            spectral_axis.push_back(spectral);
+        }
         data.NewAthenaArray(ny, nx);
         for (int j = 0; j < ny; ++j) {
             for (int i = 0; i < nx; ++i) {
@@ -20,51 +28,59 @@ AthenaArray<Real> reform_read (std::string filename) {
     } else {
         throw std::runtime_error("Unable to open " + filename);
     }
-    return data;
+    std::tuple < AthenaArray<Real>, std::vector<double>, std::vector<double>> data_table = {data, temperature_axis, spectral_axis};
+    return data_table;
 }
 
 //we are going to read the file twice, first to count # of rows and columns and second time 
-AthenaArray<Real> ff_read (std::string filename) {
+std::tuple <AthenaArray<Real>, std::vector<double>, std::vector<double>> ff_read (std::string filename) {
     int num_of_row = 0;
     int num_of_column = 1;
     AthenaArray<Real> data; // create storage array
-    std::ifstream file {filename};  // open file
-    if (file.good()) {
+    std::vector <double> temperature_axis;
+    std::vector <double> spectral_axis;
+    double spectral;
+    double temperature;
+    std::ifstream cia_file {filename};  // open file
+    if (cia_file.good()) {
         std::string line;
-        std::getline(file, line); //get the first line
-        std::getline(file, line); //get the second line
+        std::getline(cia_file, line); //get the first line
+        std::getline(cia_file, line); //get the second line
         //calculate the # of columns base on the # of space
         for (int j = 0; j < line.size(); ++j) {
             if (line[j] == ' ') {
                 ++ num_of_column;
             }
         }
-        while (std::getline(file, line)) {
+        while (std::getline(cia_file, line)) {
             ++ num_of_row;
         }
     } else {
         throw std::runtime_error("Unable to open " + filename);
     }
-    file.close(); // close it
-    file.open(filename);  // open it again
-    if (file.good()) {
-        int skiped;
+    cia_file.close(); // close it
+    cia_file.open(filename);  // open it again
+    if (cia_file.good()) {
         std::string line1; // storage for the first line
-        std::string line2; // storage for the second line
-        std::getline(file, line1); // Skip the first line
-        std::getline(file, line2); // Skip the second line
+        std::getline(cia_file, line1); // Skip the first line
         int ny = num_of_row;
         int nx = num_of_column;
+        for (int j = 0; j < nx; ++j) {
+            cia_file >> temperature;
+            temperature_axis.push_back (temperature); // read off temperature axis
+        }
         data.NewAthenaArray(ny, nx);
         for (int j = 0; j < ny; ++j) {
-            file >> skiped; // skip first double
+            cia_file >> spectral; // skip first double and store it into spectal axis
+            spectral_axis.push_back (spectral);
             for (int i = 0; i < nx; ++i) {
-                file >> data(j,i);
+                cia_file >> data(j,i);
             }
         }
     } else {
         throw std::runtime_error("Unable to open " + filename);
     }
-    file.close();
-    return data;
+    cia_file.close();
+    std::tuple <AthenaArray<Real>, std::vector<double>, std::vector<double>> data_table = {data, temperature_axis, spectral_axis};
+    return data_table;
 }
