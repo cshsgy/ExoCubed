@@ -26,7 +26,8 @@ vis:
   opacity: [H2-vis]
   rt-solver: Disort
   parameters: {fbeam_K: 265., umu0: 1., uph0: 0.}
-  flags: [broad_band, time_dependent, stellar_beam]
+  #flags: [broad_band, time_dependent, stellar_beam]
+  flags: [broad_band, stellar_beam]
 
 Disort-flags:
   ibcnd: false
