@@ -71,6 +71,9 @@ dT_stra     = 10.         # Temperature contrast, K
 z_stra      = 2.E6        # Stratosphere height, m 
 Gamma_trop  = 2.E-4       # Lapse rate, K/m
 
+<astronomy>
+planet        = Jupiter
+
 <radiation>
 dt            = 40.
 radiation_config = hot_jupiter.yaml

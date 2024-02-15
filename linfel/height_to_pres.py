@@ -19,7 +19,7 @@ def generate_uneven_seq(low_limit,up_limit,step_order):
     return np.array(seq)
 
 # Open the original NetCDF file
-with nc.Dataset('first50_polar_hotjupiter-a2-main.nc', 'r') as src:
+with nc.Dataset('/home/linfel/data/hot_jupiter/hotjupiter-a2/last100_polar_hotjupiter-a2-main.nc', 'r') as src:
     # Read the dimensions
     t_dim = src.dimensions['time']
     x2_dim = src.dimensions['lat']
@@ -32,7 +32,7 @@ with nc.Dataset('first50_polar_hotjupiter-a2-main.nc', 'r') as src:
     new_press_levels = np.flip(generate_uneven_seq(3,5,1))
     
     # Create a new NetCDF file
-    with nc.Dataset('first50_pres_hotjupiter.nc', 'w') as dst:
+    with nc.Dataset('/home/linfel/data/hot_jupiter/hotjupiter-a2/last100_pres_hotjupiter.nc', 'w') as dst:
         # Copy dimensions from the source to destination, except for 'x1' which is replaced by 'press'
         dst.createDimension('time', len(t_dim))
         dst.createDimension('lat', len(x2_dim))

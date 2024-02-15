@@ -127,8 +127,9 @@ void RadiationBand::RTSolverDisort::Prepare(MeshBlock const *pmb, int k,
   Direction ray = pmb->pimpl->prad->GetRayInput(0);
   Real dist_au = pmb->pimpl->prad->GetDistanceInAu();
   auto planet = pmb->pimpl->planet;
-
+  
   if (planet && pmy_band_->TestFlag(RadiationFlags::TimeDependent)) {
+    //LogVariableValue("planet_log.txt", "====");
     Real time = pmb->pmy_mesh->time;
     Real lat, lon, colat;
 #ifdef CUBED_SPHERE
