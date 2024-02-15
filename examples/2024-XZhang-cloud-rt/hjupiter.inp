@@ -61,8 +61,10 @@ PressureScaleHeight = 7.56E5
 
 <meshblock>
 nx1        = 32
-nx2        = 40
-nx3        = 40
+#nx2        = 40
+#nx2        = 40
+nx3        = 20
+nx3        = 20
 
 <hydro>
 grav_acc1   = -8.0
