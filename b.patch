@@ -1,0 +1,926 @@
+diff --git a/.gitignore b/.gitignore
+index 74a5c4999..03c7c744f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -31,3 +31,8 @@ external/*.tar.gz
+ 
+ # vscode
+ .vscode
++
++# png file
++linfel/images/*.png
++
++linfel/log*.1
+diff --git a/cmake/exo3.cmake b/cmake/exo3.cmake
+index 356c601b1..d63e3f77f 100644
+--- a/cmake/exo3.cmake
++++ b/cmake/exo3.cmake
+@@ -15,3 +15,6 @@ set(NETCDF ON)
+ set(MPI ON)
+ set(PNETCDF ON)
+ set(RSOLVER hllc_transform)
++set(DISORT ON)
++set(PYTHON_BINDINGS ON)
++set(RT_DISORT ON)
+diff --git a/examples/2023-Chen-exo3/CMakeLists.txt b/examples/2023-Chen-exo3/CMakeLists.txt
+index 6315d163a..448fc5aef 100644
+--- a/examples/2023-Chen-exo3/CMakeLists.txt
++++ b/examples/2023-Chen-exo3/CMakeLists.txt
+@@ -19,7 +19,7 @@ else()
+ endif()
+ 
+ # 2. Copy input file to run directory
+-file(GLOB inputs *.inp *.dat)
++file(GLOB inputs *.inp *.dat *.yaml)
+ foreach(input ${inputs})
+     file(COPY ${input} DESTINATION ${CMAKE_BINARY_DIR}/bin)
+ endforeach()
+diff --git a/examples/2023-Chen-exo3/hot_jupiter.inp b/examples/2023-Chen-exo3/hot_jupiter.inp
+index 0a7e34c7c..55e1b066c 100644
+--- a/examples/2023-Chen-exo3/hot_jupiter.inp
++++ b/examples/2023-Chen-exo3/hot_jupiter.inp
+@@ -26,7 +26,8 @@ dt         = 1.728E7
+ 
+ <time>
+ cfl_number = 0.9          # The Courant, Friedrichs, & Lewy (CFL) Number
+-nlim       = -1           # cycle limit
++#nlim       = -1           # cycle limit
++nlim       = 5           # cycle limit
+ tlim       = 1.0368E8     # time limit
+ xorder     = 5            # horizontal reconstruction order
+ integrator = rk3          # integration method
+@@ -70,6 +71,11 @@ dT_stra     = 10.         # Temperature contrast, K
+ z_stra      = 2.E6        # Stratosphere height, m 
+ Gamma_trop  = 2.E-4       # Lapse rate, K/m
+ 
++<radiation>
++dt            = 40.
++radiation_config = hot_jupiter.yaml
++nstr          = 16
++
+ <problem>
+ Kt         = 1.5E5            # Damping timescale, s
+ Ts         = 1600.            # Surface temperature, K
+diff --git a/examples/2023-Chen-exo3/hot_jupiter.yaml b/examples/2023-Chen-exo3/hot_jupiter.yaml
+new file mode 100644
+index 000000000..161aa49f9
+--- /dev/null
++++ b/examples/2023-Chen-exo3/hot_jupiter.yaml
+@@ -0,0 +1,48 @@
++opacity-sources:
++  - name: H2-vis
++    class: FreedmanSimple2
++    parameters: {scale: 1.}
++
++  - name: H2-ir
++    class: FreedmanSimple2
++    parameters: {scale: 1.}
++
++bands: [ir, vis]
++
++ir:
++  units: cm-1
++  grid-type: regular
++  wavenumber-range: [100., 10000.]
++  num-bins: 1
++  opacity: [H2-ir]
++  rt-solver: Disort
++  flags: [broad_band, thermal_emission]
++
++vis:
++  units: cm-1
++  grid-type: regular
++  wavenumber-range: [10000., 50000.]
++  num-bins: 1
++  opacity: [H2-vis]
++  rt-solver: Disort
++  parameters: {temp0: 265., umu0: 1., phi0: 0.}
++  flags: [broad_band, time_dependent, stellar_beam]
++  #parameters: {fbeam_K: 1000., umu0: 1., phi0: 0.}
++  #flags: [broad_band, time_dependent]
++
++Disort-flags:
++  ibcnd: false
++  usrtau: false
++  usrang: false
++  onlyfl: true
++  spher: false
++  intensity_correction: true
++  old_intensity_correction: false
++  general_source: false
++  output_uum: false
++  quiet: true
++  print-input: false
++  print-fluxes: false
++  print-intensity: false
++  print-transmissivity: false
++  print-phase-function: true
+diff --git a/linfel/calc_avg_pres.py b/linfel/calc_avg_pres.py
+new file mode 100644
+index 000000000..a605586b2
+--- /dev/null
++++ b/linfel/calc_avg_pres.py
+@@ -0,0 +1,125 @@
++
++import numpy as np
++from netCDF4 import Dataset
++from scipy.interpolate import interp1d
++import os
++from tqdm import tqdm
++
++# Set the filepath to your single combined .nc file
++filepath = 'pres_t2_hotjupiter.nc'  # Change this to your file path
++
++# Set the name of the output file where the results will be saved
++output_file = 't2_averages_and_products.nc'
++
++# Variables to process
++variables_to_process = ["temp", "vlat", "vlon", "vel1"]
++
++# the time step where you want start
++start_t = 0
++
++# Initialize accumulators for summing data across all time steps
++data_sums = {}
++upvp_sum = None
++upwp_sum = None
++uv_variance_sum = None
++
++timestep_count = 0
++
++#P0 = 1E5
++#R = 3779
++#g = 8.0
++
++#pressure_levels = np.linspace(1E5, 0.01E5, 100)  # Replace with actual pressure levels
++
++# Extract number of time steps in the file
++with Dataset(filepath, 'r') as nc:
++    num_time_steps = len(nc.variables['time'][:])
++    pressure_levels = nc.variables['press'][:]
++
++# Process each time step
++#Rp = 1E8
++for t in tqdm(range(start_t,num_time_steps), desc="Processing time steps"):
++    with Dataset(filepath, mode='r') as nc:
++        if t==start_t:
++            x1 = nc.variables['press'][:]
++            latitudes = nc.variables['lat'][:]
++        # If this is the first time step, initialize data_sums and other accumulators
++        if timestep_count == 0:
++            for var in variables_to_process:
++                # Initialize the sum arrays
++                data_sums[var] = np.zeros((nc.variables[var].shape[1], nc.variables[var].shape[2]))
++
++            upvp_sum = np.zeros((nc.variables['vlat'].shape[1], nc.variables['vlat'].shape[2]))
++            upwp_sum = np.zeros((nc.variables['vlat'].shape[1], nc.variables['vlat'].shape[2]))
++            uv_variance_sum = np.zeros((nc.variables['vlat'].shape[1], nc.variables['vlat'].shape[2]))
++        
++        # Update sums
++        mean_rho = np.mean(nc.variables['rho'][t], axis=2)
++        for var in variables_to_process:
++            data = nc.variables[var][t]  # We take the first index of the time dimension
++            zonal_mean = np.mean(data, axis=2)  # Zonal mean over longitude, reducing dimension
++            data_sums[var] += zonal_mean  # Summing up the zonal mean data
++
++            if var in ['vlat', 'vlon', 'vel1']:
++                prime = data - np.expand_dims(zonal_mean, axis=2)  # Subtracting zonal mean, keeping dimensions consistent
++
++                if var == 'vlat':
++                    u_prime = prime
++                else:
++                    if var == 'vlon':
++                        v_prime = prime
++                    else:
++                        w_prime = prime
++        # Calculate and sum u'v' and (u'^2 + v'^2) / 2 for each time step
++        upvp = np.mean(u_prime * v_prime, axis=2)  # Zonal mean of the product
++        upwp = np.mean(u_prime * w_prime, axis=2)  # Zonal mean of the product
++        uv_variance = np.mean((u_prime**2 + v_prime**2 + w_prime**2) / 2, axis=2)  # Zonal mean of the variance
++
++        upvp_sum += upvp
++        upwp_sum += upwp
++        uv_variance_sum += uv_variance
++
++        timestep_count += 1  # Update the timestep count
++
++# After processing all files, calculate the averages
++averages = {var: data_sum / timestep_count for var, data_sum in data_sums.items()}  # Averaging over all files
++upvp_avg = upvp_sum / timestep_count  # Averaging over all files
++upwp_avg = upwp_sum / timestep_count  # Averaging over all files
++uv_variance_avg = uv_variance_sum / timestep_count  # Averaging over all files
++
++# Save the results to a new .nc file
++with Dataset(output_file, mode='w') as new_nc:
++    # Create dimensions
++    new_nc.createDimension('pressure', len(pressure_levels))
++    new_nc.createDimension('lat', averages['temp'].shape[1])
++
++    # Create pressure variable
++    pressure_var = new_nc.createVariable('pressure', np.float32, ('pressure',))
++    pressure_var[:] = pressure_levels
++    pressure_var.units = 'Pa'
++
++    # Create latitude variable
++    lat_var = new_nc.createVariable('lat', np.float32, ('lat',))
++    lat_var[:] = np.linspace(-90, 90, averages['temp'].shape[1])
++    lat_var.units = 'degrees_north'
++
++    # Create variables for the zonal means and other variables
++    for var, data in averages.items():
++        new_var = new_nc.createVariable(var + '_avg', np.float32, ('pressure', 'lat'))
++        new_var[:] = data
++
++    # Create variables for 'upvp' and 'uv_variance'
++    upvp_var = new_nc.createVariable('upvp', np.float32, ('pressure', 'lat'))
++    upvp_var[:] = upvp_avg
++
++    upwp_var = new_nc.createVariable('upwp', np.float32, ('pressure', 'lat'))
++    upwp_var[:] = upwp_avg
++
++    uv_variance_var = new_nc.createVariable('uv_variance', np.float32, ('pressure', 'lat'))
++    uv_variance_var[:] = uv_variance_avg
++
++
++    # Optionally, add descriptions, units, or other metadata as attributes to the variables
++
++# Print out a message indicating the script has finished
++print(f"Data processing completed. Results saved to {output_file}.")
+diff --git a/linfel/convert_to_polar.py b/linfel/convert_to_polar.py
+new file mode 100644
+index 000000000..0fc60098b
+--- /dev/null
++++ b/linfel/convert_to_polar.py
+@@ -0,0 +1,102 @@
++import numpy as np
++from netCDF4 import Dataset
++from scipy.interpolate import griddata
++from tqdm import tqdm
++import os
++
++# Path to your single combined .nc file
++filepath = 't2_hotjupiter-a2-main.nc'
++
++# Variables to process
++variables_to_process = ["temp", "theta", "rho", "press", "vlat", "vlon","vel1"]
++
++# Function to interpolate and extrapolate data
++def interpolate_data(lat, lon, data, grid_lats, grid_lons, height):
++    new_data = np.empty((height, grid_lats.shape[0], grid_lats.shape[1]))
++
++    for z in range(height):
++        points = np.column_stack((lat[z, :].ravel(), lon[z, :].ravel()))
++        values = data[z, :].ravel()
++        grid_z = griddata(points, values, (grid_lats, grid_lons), method='linear')
++
++        nan_indices = np.isnan(grid_z)
++        if np.any(nan_indices):
++            grid_z[nan_indices] = griddata(points, values, (grid_lats[nan_indices], grid_lons[nan_indices]), method='nearest')
++
++        new_data[z, :, :] = grid_z
++
++    return new_data
++
++def process_timestep(t):
++    with Dataset(filepath, mode='r') as nc:
++        lat = nc.variables['lat'][t, :, :] * 180 / np.pi
++        lon = nc.variables['lon'][t, :, :] * 180 / np.pi
++        x1 = nc.variables['x1'][:]
++        time_value = nc.variables['time'][t]
++
++        data_arrays = {var: nc.variables[var][t, :, :, :] for var in variables_to_process}
++
++    # Interpolation to regular lat-lon grid
++    lat_min, lat_max = -90, 90
++    lon_min, lon_max = 0, 360
++    #K = 50
++    K = 91
++    new_lats = np.linspace(lat_min, lat_max, K)
++    new_lons = np.linspace(lon_min, lon_max, K)
++    grid_lons, grid_lats = np.meshgrid(new_lons, new_lats)
++
++    new_data_arrays = {}
++    for var, data in data_arrays.items():
++        new_data_arrays[var] = interpolate_data(lat, lon, data, grid_lats, grid_lons, len(x1))
++    
++    return new_data_arrays
++
++
++# Extract number of time steps in the file
++with Dataset(filepath, 'r') as nc:
++    num_time_steps = len(nc.variables['time'][:])
++
++# Process each time step and store results in a list
++results = []
++for t in tqdm(range(num_time_steps), desc="Processing time steps"):
++    results.append(process_timestep(t))
++
++with Dataset(filepath, 'r') as nc:
++    num_time_steps = len(nc.variables['time'][:])
++    x1 = nc.variables['x1'][:]
++
++K = 91  # You can adjust this value as needed
++
++# Save the processed data to a new NetCDF file
++output_filepath = 'polar_' + os.path.basename(filepath)
++with Dataset(output_filepath, mode='w') as new_nc:
++    # Create the dimensions
++    new_nc.createDimension('time', None)  # Unlimited dimension (usually time)
++    new_nc.createDimension('x1', len(x1))
++    new_nc.createDimension('lat', K)
++    new_nc.createDimension('lon', K)
++
++    # Create and assign the time variable
++    time_var = new_nc.createVariable('time', np.float64, ('time',))
++    with Dataset(filepath, 'r') as nc:
++        time_var[:] = nc.variables['time'][:]
++
++    # Create and assign the x1 variable
++    new_nc.createVariable('x1', np.float32, ('x1',))
++    new_nc.variables['x1'][:] = x1
++    
++    lat_var = new_nc.createVariable('lat', np.float32, ('lat',))
++    lat_var[:] = np.linspace(-90, 90, K)
++    
++    lon_var = new_nc.createVariable('lon', np.float32, ('lon',))
++    lon_var[:] = np.linspace(0, 360, K)
++
++    # Create and assign the processed data
++    for var in variables_to_process:
++        new_var = new_nc.createVariable(var, np.float32, ('time', 'x1', 'lat', 'lon'))
++        for t in range(num_time_steps):
++            new_var[t, :, :, :] = results[t][var]
++        # Create and assign the latitude and longitude variables
++
++
++print(f"Processing completed. Results saved to {output_filepath}.")
+diff --git a/linfel/height_to_pres.py b/linfel/height_to_pres.py
+new file mode 100644
+index 000000000..51511cc59
+--- /dev/null
++++ b/linfel/height_to_pres.py
+@@ -0,0 +1,79 @@
++import netCDF4 as nc
++import numpy as np
++from scipy.interpolate import interp1d
++from tqdm import tqdm
++
++
++def generate_uneven_seq(low_limit,up_limit,step_order):
++    """ example:
++        generate_uneven_seq(0,2,1):   [1, 1.1, 1.2, 1.3, 1.4,..., 9.9, 10, 11, 12, 13, 14,..., 99]
++        generate_uneven_seq(-1,1,2):  [0.1, 0.101, 0.102, 0.103,..., 0.999, 1, 1.01, 1.02, 1.03,..., 9.99]
++    """
++    i = low_limit
++    seq = []
++    while i<up_limit:
++        seq_i = list(np.arange(10.**i, 10.**(i+1), 10.**(i-step_order)))
++        seq = seq + seq_i
++        i += 1
++    seq.append(10.**up_limit)
++    return np.array(seq)
++
++# Open the original NetCDF file
++with nc.Dataset('first50_polar_hotjupiter-a2-main.nc', 'r') as src:
++    # Read the dimensions
++    t_dim = src.dimensions['time']
++    x2_dim = src.dimensions['lat']
++    x3_dim = src.dimensions['lon']
++    x1 = src.variables['x1'][:]  # Original vertical coordinates
++    press_var = src.variables['press'][:]  # Original pressure variable
++
++    # Assume 'new_press_levels' is provided as a 1D numpy array of the new pressure levels
++    #new_press_levels = np.linspace(1E5, 0.01E5, 100)
++    new_press_levels = np.flip(generate_uneven_seq(3,5,1))
++    
++    # Create a new NetCDF file
++    with nc.Dataset('first50_pres_hotjupiter.nc', 'w') as dst:
++        # Copy dimensions from the source to destination, except for 'x1' which is replaced by 'press'
++        dst.createDimension('time', len(t_dim))
++        dst.createDimension('lat', len(x2_dim))
++        dst.createDimension('lon', len(x3_dim))
++        dst.createDimension('press', len(new_press_levels))
++
++        # Copy all variables from the source to destination, except those that depend on 'x1'
++        for name, variable in src.variables.items():
++            if 'x1' not in variable.dimensions:
++                dst.createVariable(name, variable.datatype, variable.dimensions)
++                dst.variables[name][:] = src.variables[name][:]
++
++        # Define the new pressure coordinate variable
++        new_press_var = dst.createVariable('press', new_press_levels.dtype, ('press',))
++        new_press_var[:] = new_press_levels
++
++        for name, variable in src.variables.items():
++            print(name,flush=True)
++
++        # Interpolate the variables that depend on 'x1'
++        for name, variable in src.variables.items():
++            if name == 'time' or name == 'lat' or name == 'lon' or name == 'press' or name == 'x1':
++                continue
++            print("Interpolating variable: " + name)
++            if 'x1' in variable.dimensions:
++                # Create the new variable in the destination file
++                new_dimensions = tuple('press' if dim == 'x1' else dim for dim in variable.dimensions)
++                interp_var = dst.createVariable(name, variable.datatype, new_dimensions)
++                
++                # Loop over the additional dimensions
++                for t in tqdm(range(len(t_dim)), desc="Processing time steps"):
++                    print(t,'......',flush=True)
++                    for x2 in range(len(x2_dim)):
++                        for x3 in range(len(x3_dim)):
++                            # Extract the slice of pressure values for the current point
++                            press_slice = press_var[t, :, x2, x3]
++                            # Extract the original data slice
++                            original_data = variable[t, :, x2, x3]
++                            # Create an interpolation function based on the original pressure and data
++                            f = interp1d(press_slice, original_data, kind='linear', bounds_error=False, fill_value="extrapolate")
++                            # Interpolate to the new press levels
++                            interp_data = f(new_press_levels)
++                            # Insert the interpolated data into the variable
++                            interp_var[t, :, x2, x3] = interp_data
+diff --git a/linfel/linshi/linshi_convert_to_polar.py b/linfel/linshi/linshi_convert_to_polar.py
+new file mode 100644
+index 000000000..81d3d7571
+--- /dev/null
++++ b/linfel/linshi/linshi_convert_to_polar.py
+@@ -0,0 +1,101 @@
++import numpy as np
++from netCDF4 import Dataset
++from scipy.interpolate import griddata
++from tqdm import tqdm
++import os
++
++# Path to your single combined .nc file
++filepath = '/home/linfel/ExoCubed/build/bin/hotjupiter-a2/hotjupiter-a2-main.nc'
++
++# Variables to process
++variables_to_process = ["temp", "theta", "rho", "press", "vlat", "vlon","vel1"]
++
++# Function to interpolate and extrapolate data
++def interpolate_data(lat, lon, data, grid_lats, grid_lons, height):
++    new_data = np.empty((height, grid_lats.shape[0], grid_lats.shape[1]))
++
++    for z in range(height):
++        points = np.column_stack((lat[z, :].ravel(), lon[z, :].ravel()))
++        values = data[z, :].ravel()
++        grid_z = griddata(points, values, (grid_lats, grid_lons), method='linear')
++
++        nan_indices = np.isnan(grid_z)
++        if np.any(nan_indices):
++            grid_z[nan_indices] = griddata(points, values, (grid_lats[nan_indices], grid_lons[nan_indices]), method='nearest')
++
++        new_data[z, :, :] = grid_z
++
++    return new_data
++
++def process_timestep(t):
++    with Dataset(filepath, mode='r') as nc:
++        lat = nc.variables['lat'][t, :, :] * 180 / np.pi
++        lon = nc.variables['lon'][t, :, :] * 180 / np.pi
++        x1 = nc.variables['x1'][:]
++        time_value = nc.variables['time'][t]
++
++        data_arrays = {var: nc.variables[var][t, :, :, :] for var in variables_to_process}
++
++    # Interpolation to regular lat-lon grid
++    lat_min, lat_max = -90, 90
++    lon_min, lon_max = 0, 360
++    K = 50
++    new_lats = np.linspace(lat_min, lat_max, K)
++    new_lons = np.linspace(lon_min, lon_max, K)
++    grid_lons, grid_lats = np.meshgrid(new_lons, new_lats)
++
++    new_data_arrays = {}
++    for var, data in data_arrays.items():
++        new_data_arrays[var] = interpolate_data(lat, lon, data, grid_lats, grid_lons, len(x1))
++    
++    return new_data_arrays
++
++
++# Extract number of time steps in the file
++with Dataset(filepath, 'r') as nc:
++    num_time_steps = len(nc.variables['time'][:])
++
++# Process each time step and store results in a list
++results = []
++for t in tqdm(range(num_time_steps-1,num_time_steps), desc="Processing time steps"):
++    results.append(process_timestep(t))
++
++with Dataset(filepath, 'r') as nc:
++    num_time_steps = len(nc.variables['time'][:])
++    x1 = nc.variables['x1'][:]
++
++K = 50  # You can adjust this value as needed
++
++# Save the processed data to a new NetCDF file
++output_filepath = 'linshi_polar_' + os.path.basename(filepath)
++with Dataset(output_filepath, mode='w') as new_nc:
++    # Create the dimensions
++    new_nc.createDimension('time', None)  # Unlimited dimension (usually time)
++    new_nc.createDimension('x1', len(x1))
++    new_nc.createDimension('lat', K)
++    new_nc.createDimension('lon', K)
++
++    # Create and assign the time variable
++    time_var = new_nc.createVariable('time', np.float64, ('time',))
++    with Dataset(filepath, 'r') as nc:
++        time_var[:] = nc.variables['time'][0]
++
++    # Create and assign the x1 variable
++    new_nc.createVariable('x1', np.float32, ('x1',))
++    new_nc.variables['x1'][:] = x1
++    
++    lat_var = new_nc.createVariable('lat', np.float32, ('lat',))
++    lat_var[:] = np.linspace(-90, 90, K)
++    
++    lon_var = new_nc.createVariable('lon', np.float32, ('lon',))
++    lon_var[:] = np.linspace(0, 360, K)
++
++    # Create and assign the processed data
++    for var in variables_to_process:
++        new_var = new_nc.createVariable(var, np.float32, ('time', 'x1', 'lat', 'lon'))
++        for t in range(len(results)):
++            new_var[t, :, :, :] = results[t][var]
++        # Create and assign the latitude and longitude variables
++
++
++print(f"Processing completed. Results saved to {output_filepath}.")
+diff --git a/linfel/plot_pt_profile.py b/linfel/plot_pt_profile.py
+new file mode 100644
+index 000000000..85892f8d7
+--- /dev/null
++++ b/linfel/plot_pt_profile.py
+@@ -0,0 +1,43 @@
++from netCDF4 import Dataset
++import matplotlib.pyplot as plt
++import numpy as np
++
++# read the data
++data_path = "/home/linfel/ExoCubedlinfel/linfel/last2_pres_hotjupiter.nc"
++dataset = Dataset(data_path,'r')
++time = dataset.variables['time'][:]
++lat = dataset.variables['lat'][:]
++lon = dataset.variables['lon'][:]
++press = dataset.variables['press'][:]
++temp = dataset.variables['temp'][:]
++
++
++x = lon
++y = press
++data = temp[-1,:,45,:]
++# Create a figure and a set of subplots
++plt.figure(figsize=(10, 6))
++
++# Plot contour
++contour = plt.contour(x, y, data)
++plt.colorbar(contour, label='Temperature')
++
++# Plot pcolor
++#pc = plt.pcolor(x, y, data, shading='auto')
++#plt.colorbar(pc, label='Temperature')
++
++# Labels and title
++plt.xlabel('Longitude')
++plt.ylabel('Pressure (log scale)')
++plt.title('Temperature Distribution with Logarithmic Pressure Axis')
++
++# Set the y-axis to a logarithmic scale
++plt.yscale('log')
++
++# Inverting the y-axis if pressure increases with depth/altitude
++plt.gca().invert_yaxis()
++
++# Adjust the ticks on the y-axis to be more readable
++#plt.yticks(pressure, labels=np.round(np.log10(pressure), 2))
++
++plt.savefig("images/test3.png",dpi=300)
+diff --git a/linfel/plot_zonal_mean_wind.py b/linfel/plot_zonal_mean_wind.py
+new file mode 100644
+index 000000000..0235a345e
+--- /dev/null
++++ b/linfel/plot_zonal_mean_wind.py
+@@ -0,0 +1,39 @@
++from netCDF4 import Dataset
++import matplotlib.pyplot as plt
++import numpy as np
++
++# read the data
++data_path = "linshi_averages_and_products.nc"
++dataset = Dataset(data_path,'r')
++lat = dataset.variables['lat'][:]
++pressure = dataset.variables['pressure'][:]
++vlon_avg = dataset.variables['vlon_avg'][:]
++
++
++x = lat
++y = pressure
++data = vlon_avg
++# Create a figure and a set of subplots
++plt.figure(figsize=(10, 6))
++
++# Create a pseudocolor plot with a non-regular rectangular grid
++c = plt.pcolor(x, y, data, shading='auto', cmap='RdBu_r', vmin=-np.max(np.abs(data)), vmax=np.max(np.abs(data)))
++
++# Add a colorbar to show the temperature scale
++plt.colorbar(c, label='Wind speed')
++
++# Labels and title
++plt.xlabel('Latitude')
++plt.ylabel('Pressure (log scale)')
++plt.title('Zonal-mean meridional wind')
++
++# Set the y-axis to a logarithmic scale
++plt.yscale('log')
++
++# Inverting the y-axis if pressure increases with depth/altitude
++plt.gca().invert_yaxis()
++
++# Adjust the ticks on the y-axis to be more readable
++#plt.yticks(pressure, labels=np.round(np.log10(pressure), 2))
++
++plt.savefig("images/meridwind_test1.png",dpi=300)
+diff --git a/src/exo3/cubed_sphere.cpp b/src/exo3/cubed_sphere.cpp
+index 98106da67..5fc40e818 100644
+--- a/src/exo3/cubed_sphere.cpp
++++ b/src/exo3/cubed_sphere.cpp
+@@ -16,6 +16,9 @@
+ #include "cubed_sphere.hpp"
+ #include "cubed_sphere_utility.hpp"
+ 
++// For file I/O operations
++#include <fstream>
++
+ #ifdef MPI_PARALLEL
+ #include <mpi.h>
+ #endif
+@@ -72,6 +75,19 @@ Real CubedSphere::GenerateMeshX3(Real x, LogicalLocation const &loc) {
+   return (0.5 * (x - x_l) / (x_u - x_l) - 0.25) * PI;  // Add Pi back later!!
+ }
+ 
++
++// Logging function to append the variable value to a file
++void CubedSphere::logVariableValue(const std::string& filename, Real value1, Real value2) const {
++    std::ofstream outputFile;
++    outputFile.open(filename, std::ios_base::app); // Open file in append mode
++    if (outputFile.is_open()) {
++        outputFile << "lat: " << value1 << "  lon: " << value2 << std::endl; // Write variable value to file
++        outputFile.close();
++    } else {
++        std::cerr << "Error: Unable to open file " << filename << std::endl;
++    }
++}
++
+ // Obtain Lat and Lon (radians) from x2 and x3
+ // k is not used for now
+ // Find the block number
+@@ -87,6 +103,7 @@ void CubedSphere::GetLatLon(Real *lat, Real *lon, int k, int j, int i) const {
+   Real dY = tan(pcoord->x3v(k));
+   cs::RLLFromXYP(dY, -dX, blockID - 1, *lon, *lat);
+   *lon = 2.0 * PI - *lon;
++  //logVariableValue("variable_log.txt", *lat/PI*180.0, *lon/PI*180.0);
+ }
+ 
+ // Obtain Lat and Lon (radians) from x2 and x3
+diff --git a/src/exo3/cubed_sphere.hpp b/src/exo3/cubed_sphere.hpp
+index 8995f23a2..9277db8c8 100644
+--- a/src/exo3/cubed_sphere.hpp
++++ b/src/exo3/cubed_sphere.hpp
+@@ -23,6 +23,7 @@ class CubedSphere {
+   static Real GenerateMeshX2(Real x, LogicalLocation const &loc);
+   static Real GenerateMeshX3(Real x, LogicalLocation const &loc);
+ 
++  void logVariableValue(const std::string& filename, Real value1, Real value2) const;
+   void GetLatLon(Real *lat, Real *lon, int k, int j, int i) const;
+   void GetLatLonFace2(Real *lat, Real *lon, int k, int j, int i) const;
+   void GetLatLonFace3(Real *lat, Real *lon, int k, int j, int i) const;
+diff --git a/src/harp/rt_solver_disort.cpp b/src/harp/rt_solver_disort.cpp
+index 680b7d922..a6840cffb 100644
+--- a/src/harp/rt_solver_disort.cpp
++++ b/src/harp/rt_solver_disort.cpp
+@@ -4,6 +4,10 @@
+ // C/C++
+ #include <cmath>
+ #include <iostream>
++#include <iomanip>
++
++// For file I/O operations
++#include <fstream>
+ 
+ // external
+ #include <yaml-cpp/yaml.h>
+@@ -54,9 +58,15 @@ RadiationBand::RTSolverDisort::RTSolverDisort(RadiationBand *pmy_band,
+     SetFlags(to_map_bool(rad["Disort-flags"]));
+   }
+ 
++  Application::Logger app("harp");
++
+   // override disort planck flag
+   if (pmy_band->TestFlag(RadiationFlags::ThermalEmission)) {
+     ds_.flag.planck = true;
++    app->Log("Planck function is enabled for band " + pmy_band->GetName());
++  } else {
++    ds_.flag.planck = false;
++    app->Log("Planck function is disabled for band " + pmy_band->GetName());
+   }
+ 
+   SetHeader("Disort solving band " + pmy_band_->GetName());
+@@ -96,37 +106,48 @@ void RadiationBand::RTSolverDisort::Resize(int nlyr, int nstr) {
+ //! block r = 1 gets, 4 - 3 - 2
+ //! block r = 2 gets, 2 - 1 - 0
+ 
++// Logging function to append the variable value to a file
++void RadiationBand::RTSolverDisort::LogVariableValue(const std::string& filename, std::string outputstring) {
++    std::ofstream outputFile;
++    outputFile.open(filename, std::ios_base::app); // Open file in append mode
++    if (outputFile.is_open()) {
++	outputFile << std::setw(60) << outputstring << std::endl;
++        outputFile.close();
++    } else {
++        std::cerr << "Error: Unable to open file " << filename << std::endl;
++    }
++}
++
+ void RadiationBand::RTSolverDisort::Prepare(MeshBlock const *pmb, int k,
+                                             int j) {
+   auto &wmin = pmy_band_->wrange_.first;
+   auto &wmax = pmy_band_->wrange_.second;
+ 
+-  Direction ray;
+-  Real dist_au = 1.;
++  Direction ray = pmb->pimpl->prad->GetRayInput(0);
++  Real dist_au = pmb->pimpl->GetDistanceInAu();
++  auto planet = pmb->pimpl->planet;
+ 
+-  if (pmy_band_->TestFlag(RadiationFlags::StellarBeam)) {
+-    if (pmb == nullptr) {
+-      throw RuntimeError("RTSolverDisort::Prepare",
+-                         "MeshBlock must be allocated for stellar radiation");
+-    }
++  if (planet && pmy_band_->TestFlag(RadiationFlags::TimeDependent)) {
+     Real time = pmb->pmy_mesh->time;
+-    auto planet = pmb->pimpl->planet;
+-    if (pmy_band_->TestFlag(RadiationFlags::TimeDependent)) {
+-      Real lat, lon, colat;
++    Real lat, lon, colat;
+ #ifdef CUBED_SPHERE
+-      pmb->pimpl->pexo3->GetLatLon(&lat, &lon, k, j, pmb->ie);
+-      colat = M_PI / 2. - lat;
++    pmb->pimpl->pexo3->GetLatLon(&lat, &lon, k, j, pmb->ie);
++    colat = M_PI / 2. - lat;
+ #else // FIXME: add another condition
+-      colat = pmb->pcoord->x2v(j);
+-      lon = pmb->pcoord->x3v(k);
++    colat = pmb->pcoord->x2v(j);
++    lon = pmb->pcoord->x3v(k);
+ #endif  // CUBED_SPHERE
+-      ray = planet->ParentZenithAngle(time, colat, lon);
+-      dist_au = planet->ParentDistanceInAu(time);
+-    } else if (pmb != nullptr) {
+-      ray = pmb->pimpl->prad->GetRayInput(0);
+-      dist_au = pmb->pimpl->GetDistanceInAu();
+-    }
+-  } else {
++    ray = planet->ParentZenithAngle(time, colat, lon);
++    dist_au = planet->ParentDistanceInAu(time);
++    ////////////////////////////////
++    std::string outString1 = "k:" + std::to_string(k) +
++                         " j:" + std::to_string(j) +
++                         " lat:" + std::to_string(lat / M_PI * 180.0) +
++                         " lon:" + std::to_string(lon / M_PI * 180.0) +
++                         " zen:" + std::to_string((M_PI-std::acos(ray.mu)) / M_PI * 180.0);
++    LogVariableValue("zenith_log.txt", outString1);
++    ////////////////////////////////
++  } else {  // constant zenith angle
+     if (pmy_band_->HasPar("umu0")) {
+       ray.mu = pmy_band_->GetPar<Real>("umu0");
+     }
+@@ -134,10 +155,53 @@ void RadiationBand::RTSolverDisort::Prepare(MeshBlock const *pmb, int k,
+     if (pmy_band_->HasPar("phi0")) {
+       ray.phi = pmy_band_->GetPar<Real>("phi0");
+     }
+-
+-    dist_au = pmb->pimpl->GetDistanceInAu();
+   }
+ 
++//  Direction ray;
++//  Real dist_au = 1.;
++//
++//  if (pmy_band_->TestFlag(RadiationFlags::StellarBeam)) {
++//    if (pmb == nullptr) {
++//      throw RuntimeError("RTSolverDisort::Prepare",
++//                         "MeshBlock must be allocated for stellar radiation");
++//    }
++//    Real time = pmb->pmy_mesh->time;
++//    auto planet = pmb->pimpl->planet;
++//    if (pmy_band_->TestFlag(RadiationFlags::TimeDependent)) {
++//      Real lat, lon, colat;
++//#ifdef CUBED_SPHERE
++//      pmb->pimpl->pexo3->GetLatLon(&lat, &lon, k, j, pmb->ie);
++//      colat = M_PI / 2. - lat;
++//#else // FIXME: add another condition
++//      colat = pmb->pcoord->x2v(j);
++//      lon = pmb->pcoord->x3v(k);
++//#endif  // CUBED_SPHERE
++//      ray = planet->ParentZenithAngle(time, colat, lon);
++//      dist_au = planet->ParentDistanceInAu(time);
++//      ////////////////////////////////
++//      std::string outputString = "k:" + std::to_string(k) +
++//                           " j:" + std::to_string(j) +
++//                           " lat:" + std::to_string(lat / M_PI * 180.0) +
++//                           " lon:" + std::to_string(lon / M_PI * 180.0) +
++//                           " zen:" + std::to_string((M_PI-std::acos(ray.mu)) / M_PI * 180.0);
++//      LogVariableValue("zenith_log.txt", outputString);
++//      ////////////////////////////////
++//    } else if (pmb != nullptr) {
++//      ray = pmb->pimpl->prad->GetRayInput(0);
++//      dist_au = pmb->pimpl->GetDistanceInAu();
++//    }
++//  } else {
++//    if (pmy_band_->HasPar("umu0")) {
++//      ray.mu = pmy_band_->GetPar<Real>("umu0");
++//    }
++//
++//    if (pmy_band_->HasPar("phi0")) {
++//      ray.phi = pmy_band_->GetPar<Real>("phi0");
++//    }
++//
++//    dist_au = pmb->pimpl->GetDistanceInAu();
++//  }
++
+   if (ds_.flag.ibcnd != 0) {
+     throw ValueError("RTSolverDisort::CalRadtranFlux", "ibcnd", ds_.flag.ibcnd,
+                      0);
+@@ -164,20 +228,44 @@ void RadiationBand::RTSolverDisort::Prepare(MeshBlock const *pmb, int k,
+     ds_.bc.ttemp = 0.;
+   }
+ 
++//  if (pmy_band_->TestFlag(RadiationFlags::BroadBand)) {
++//    // stellar source function overrides fbeam
++//    if (pmy_band_->TestFlag(RadiationFlags::StellarBeam)) {
++//      if (pmy_band_->HasPar("temp0")) {
++//      	Real Ttop = pmy_band_->GetPar<Real>("temp0");
++//      	ds_.bc.fbeam = Constants::stefanBoltzmann * pow(Ttop, 4);
++//    	} else if (pmy_band_->HasPar("fbeam")) {
++//       	  ds_.bc.fbeam = pmy_band_->GetPar<Real>("fbeam");
++//    	} else {
++//	  ds_.bc.fbeam = planet->ParentInsolationFlux(wmin, wmax, 1.);
++//  	  ds_.bc.fbeam /= dist_au * dist_au;
++//        }
++//    } else {
++//      ds_.bc.fbeam = 0.;
++//    }
++//    // planck source function
++//    ds_.wvnmlo = wmin;
++//    ds_.wvnmhi = wmax;
++//  }
++
+   if (pmy_band_->TestFlag(RadiationFlags::BroadBand)) {
+     // stellar source function overrides fbeam
+-    if (pmy_band_->TestFlag(RadiationFlags::StellarBeam)) {
+-      ds_.bc.fbeam = pmb->pimpl->planet->ParentInsolationFlux(wmin, wmax, 1.);
+-    } else if (pmy_band_->HasPar("fbeam_K")) {
+-      Real Ttop = pmy_band_->GetPar<Real>("fbeam_K");
+-      ds_.bc.fbeam = Constants::stefanBoltzmann * pow(Ttop, 4);
+-    } else if (pmy_band_->HasPar("fbeam")) {
+-      ds_.bc.fbeam = pmy_band_->GetPar<Real>("fbeam");
++    if (pmy_band_->HasPar("S0")) {
++      ds_.bc.fbeam = pmy_band_->GetPar<Real>("S0");
++    } else if (pmy_band_->HasPar("temp0")) {
++      Real temp0 = pmy_band_->GetPar<Real>("temp0");
++      ds_.bc.fbeam = Constants::stefanBoltzmann * pow(temp0, 4);
++    } else if (planet && planet->HasParentFlux()) {
++      ds_.bc.fbeam = planet->ParentInsolationFlux(wmin, wmax, 1.);
+     } else {
+       ds_.bc.fbeam = 0.;
+     }
+-    ds_.bc.fbeam /= dist_au * dist_au;
+ 
++    std::string outString2 = "fbeam:" + std::to_string(ds_.bc.fbeam) +
++                         " dist_au:" + std::to_string(dist_au);
++    LogVariableValue("fbeam_dist_log.txt", outString2);
++    ds_.bc.fbeam /= dist_au * dist_au;
++    
+     // planck source function
+     ds_.wvnmlo = wmin;
+     ds_.wvnmhi = wmax;
+diff --git a/src/harp/rt_solvers.hpp b/src/harp/rt_solvers.hpp
+index 2e985f735..dc10a933d 100644
+--- a/src/harp/rt_solvers.hpp
++++ b/src/harp/rt_solvers.hpp
+@@ -3,6 +3,7 @@
+ 
+ // C/C++
+ #include <string>
++#include <iomanip>
+ 
+ // athena
+ #include <athena/athena.hpp>
+@@ -81,6 +82,7 @@ class RadiationBand::RTSolverDisort : public RadiationBand::RTSolver,
+ 
+  public:  // member functions
+   void Prepare(MeshBlock const *pmb, int k, int j) override;
++  void LogVariableValue(const std::string& filename, std::string outputstring);
+   void Resize(int nlyr, int nstr) override;
+ 
+  public:  // inbound functions

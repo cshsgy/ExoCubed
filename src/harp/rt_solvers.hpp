@@ -3,6 +3,7 @@
 
 // C/C++
 #include <string>
+#include <iomanip>
 
 // athena
 #include <athena/athena.hpp>
@@ -81,6 +82,7 @@ class RadiationBand::RTSolverDisort : public RadiationBand::RTSolver,
 
  public:  // member functions
   void Prepare(MeshBlock const *pmb, int k, int j) override;
+  void LogVariableValue(const std::string& filename, std::string outputstring);
   void Resize(int nlyr, int nstr) override;
 
  public:  // inbound functions

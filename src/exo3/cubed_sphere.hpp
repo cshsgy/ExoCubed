@@ -23,6 +23,7 @@ class CubedSphere {
   static Real GenerateMeshX2(Real x, LogicalLocation const &loc);
   static Real GenerateMeshX3(Real x, LogicalLocation const &loc);
 
+  void logVariableValue(const std::string& filename, Real value1, Real value2) const;
   void GetLatLon(Real *lat, Real *lon, int k, int j, int i) const;
   void GetLatLonFace2(Real *lat, Real *lon, int k, int j, int i) const;
   void GetLatLonFace3(Real *lat, Real *lon, int k, int j, int i) const;

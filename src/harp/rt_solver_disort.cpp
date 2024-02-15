@@ -4,6 +4,10 @@
 // C/C++
 #include <cmath>
 #include <iostream>
+#include <iomanip>
+
+// For file I/O operations
+#include <fstream>
 
 // external
 #include <yaml-cpp/yaml.h>
@@ -102,6 +106,19 @@ void RadiationBand::RTSolverDisort::Resize(int nlyr, int nstr) {
 //! block r = 1 gets, 4 - 3 - 2
 //! block r = 2 gets, 2 - 1 - 0
 
+// Logging function to append the variable value to a file
+void RadiationBand::RTSolverDisort::LogVariableValue(const std::string& filename, std::string outputstring) {
+    std::ofstream outputFile;
+    outputFile.open(filename, std::ios_base::app); // Open file in append mode
+    if (outputFile.is_open()) {
+       outputFile << std::setw(60) << outputstring << std::endl;
+        outputFile.close();
+    } else {
+        std::cerr << "Error: Unable to open file " << filename << std::endl;
+    }
+}
+
+
 void RadiationBand::RTSolverDisort::Prepare(MeshBlock const *pmb, int k,
                                             int j) {
   auto &wmin = pmy_band_->wrange_.first;
@@ -123,6 +140,14 @@ void RadiationBand::RTSolverDisort::Prepare(MeshBlock const *pmb, int k,
 #endif  // CUBED_SPHERE
     ray = planet->ParentZenithAngle(time, colat, lon);
     dist_au = planet->ParentDistanceInAu(time);
+    ////////////////////////////////
+    std::string outString1 = "k:" + std::to_string(k) +
+                         " j:" + std::to_string(j) +
+                         " lat:" + std::to_string(lat / M_PI * 180.0) +
+                         " lon:" + std::to_string(lon / M_PI * 180.0) +
+                         " zen:" + std::to_string((M_PI-std::acos(ray.mu)) / M_PI * 180.0);
+    LogVariableValue("zenith_log.txt", outString1);
+    ////////////////////////////////
   } else {  // constant zenith angle
     if (pmy_band_->HasPar("umu0")) {
       ray.mu = pmy_band_->GetPar<Real>("umu0");
@@ -132,6 +157,51 @@ void RadiationBand::RTSolverDisort::Prepare(MeshBlock const *pmb, int k,
       ray.phi = pmy_band_->GetPar<Real>("phi0");
     }
   }
+
+//  Direction ray;
+//  Real dist_au = 1.;
+//
+//  if (pmy_band_->TestFlag(RadiationFlags::StellarBeam)) {
+//    if (pmb == nullptr) {
+//      throw RuntimeError("RTSolverDisort::Prepare",
+//                         "MeshBlock must be allocated for stellar radiation");
+//    }
+//    Real time = pmb->pmy_mesh->time;
+//    auto planet = pmb->pimpl->planet;
+//    if (pmy_band_->TestFlag(RadiationFlags::TimeDependent)) {
+//      Real lat, lon, colat;
+//#ifdef CUBED_SPHERE
+//      pmb->pimpl->pexo3->GetLatLon(&lat, &lon, k, j, pmb->ie);
+//      colat = M_PI / 2. - lat;
+//#else // FIXME: add another condition
+//      colat = pmb->pcoord->x2v(j);
+//      lon = pmb->pcoord->x3v(k);
+//#endif  // CUBED_SPHERE
+//      ray = planet->ParentZenithAngle(time, colat, lon);
+//      dist_au = planet->ParentDistanceInAu(time);
+//      ////////////////////////////////
+//      std::string outputString = "k:" + std::to_string(k) +
+//                           " j:" + std::to_string(j) +
+//                           " lat:" + std::to_string(lat / M_PI * 180.0) +
+//                           " lon:" + std::to_string(lon / M_PI * 180.0) +
+//                           " zen:" + std::to_string((M_PI-std::acos(ray.mu)) / M_PI * 180.0);
+//      LogVariableValue("zenith_log.txt", outputString);
+//      ////////////////////////////////
+//    } else if (pmb != nullptr) {
+//      ray = pmb->pimpl->prad->GetRayInput(0);
+//      dist_au = pmb->pimpl->GetDistanceInAu();
+//    }
+//  } else {
+//    if (pmy_band_->HasPar("umu0")) {
+//      ray.mu = pmy_band_->GetPar<Real>("umu0");
+//    }
+//
+//    if (pmy_band_->HasPar("phi0")) {
+//      ray.phi = pmy_band_->GetPar<Real>("phi0");
+//    }
+//
+//    dist_au = pmb->pimpl->GetDistanceInAu();
+//  }
 
   if (ds_.flag.ibcnd != 0) {
     throw ValueError("RTSolverDisort::CalRadtranFlux", "ibcnd", ds_.flag.ibcnd,
@@ -170,6 +240,9 @@ void RadiationBand::RTSolverDisort::Prepare(MeshBlock const *pmb, int k,
     } else {
       ds_.bc.fbeam = 0.;
     }
+    std::string outString2 = "fbeam:" + std::to_string(ds_.bc.fbeam) +
+                         " dist_au:" + std::to_string(dist_au);
+    LogVariableValue("fbeam_dist_log.txt", outString2);
     ds_.bc.fbeam /= dist_au * dist_au;
   }
 

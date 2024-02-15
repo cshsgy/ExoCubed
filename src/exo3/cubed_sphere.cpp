@@ -16,6 +16,9 @@
 #include "cubed_sphere.hpp"
 #include "cubed_sphere_utility.hpp"
 
+// For file I/O operations
+#include <fstream>
+
 #ifdef MPI_PARALLEL
 #include <mpi.h>
 #endif
@@ -72,6 +75,19 @@ Real CubedSphere::GenerateMeshX3(Real x, LogicalLocation const &loc) {
   return (0.5 * (x - x_l) / (x_u - x_l) - 0.25) * PI;  // Add Pi back later!!
 }
 
+
+// Logging function to append the variable value to a file
+void CubedSphere::logVariableValue(const std::string& filename, Real value1, Real value2) const {
+    std::ofstream outputFile;
+    outputFile.open(filename, std::ios_base::app); // Open file in append mode
+    if (outputFile.is_open()) {
+        outputFile << "lat: " << value1 << "  lon: " << value2 << std::endl; // Write variable value to file
+        outputFile.close();
+    } else {
+        std::cerr << "Error: Unable to open file " << filename << std::endl;
+    }
+}
+
 // Obtain Lat and Lon (radians) from x2 and x3
 // k is not used for now
 // Find the block number
@@ -87,6 +103,7 @@ void CubedSphere::GetLatLon(Real *lat, Real *lon, int k, int j, int i) const {
   Real dY = tan(pcoord->x3v(k));
   cs::RLLFromXYP(dY, -dX, blockID - 1, *lon, *lat);
   *lon = 2.0 * PI - *lon;
+  //logVariableValue("variable_log.txt", *lat/PI*180.0, *lon/PI*180.0);
 }
 
 // Obtain Lat and Lon (radians) from x2 and x3

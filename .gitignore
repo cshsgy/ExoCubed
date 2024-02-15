@@ -31,3 +31,8 @@ external/*.tar.gz
 
 # vscode
 .vscode
+
+# png file
+linfel/images/*.png
+
+linfel/log*.1
