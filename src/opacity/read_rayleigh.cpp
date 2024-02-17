@@ -1,6 +1,12 @@
-#include "ray_read.hpp"
+// C/C++
+#include <fstream>
+#include <utility>
+#include <exception>
 
-std::vector<double> read_ray(std::string file) {
+// opacity
+#include "read_rayleigh.hpp"
+
+std::vector<double> read_rayleigh(std::string file) {
   std::ifstream data{file};                  // open file
   std::vector<double> cross_section_output;  // store the output
   std::string line;  // a temporary storage to get over the first line

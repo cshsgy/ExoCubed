@@ -1,5 +1,6 @@
 // C/C++
 #include <fstream>
+#include <exception>
 
 // athena
 #include <athena/athena.hpp>
