@@ -1,0 +1,9 @@
+# hitran par file
+*.par
+
+# datafile
+*.txt
+*.hit
+
+# data folder
+*/
