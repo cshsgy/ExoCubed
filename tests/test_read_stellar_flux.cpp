@@ -10,7 +10,7 @@
 // harp
 #include <harp/read_stellar_flux.hpp>
 
-std::string ck_data_folder = "ck_data_01242024/";
+std::string data_folder = "ck_data_01242024/";
 
 TEST(read_stellar_flux, test_case1) {
   std::vector<double> expected_result = {
@@ -20,8 +20,8 @@ TEST(read_stellar_flux, test_case1) {
       44557.440115296864, 4298.3275481968085};
 
   auto app = Application::GetInstance();
-  auto file1 = app->FindResource(ck_data_folder + "sw_band_flux_HD189_11.txt");
-  auto file2 = app->FindResource(ck_data_folder + "wavelengths_GCM_11.txt");
+  auto file1 = app->FindResource(data_folder + "sw_band_flux_HD189_11.txt");
+  auto file2 = app->FindResource(data_folder + "wavelengths_GCM_11.txt");
   auto total_out = read_stellar_flux(file1, file2);
 
   EXPECT_EQ(total_out.first, expected_result);
@@ -33,8 +33,8 @@ TEST(read_stellar_flux, test_case2) {
                                          4.400, 8.70,  20.00, 324.68};
 
   auto app = Application::GetInstance();
-  auto file1 = app->FindResource(ck_data_folder + "sw_band_flux_HD189_11.txt");
-  auto file2 = app->FindResource(ck_data_folder + "wavelengths_GCM_11.txt");
+  auto file1 = app->FindResource(data_folder + "sw_band_flux_HD189_11.txt");
+  auto file2 = app->FindResource(data_folder + "wavelengths_GCM_11.txt");
   auto total_out = read_stellar_flux(file1, file2);
 
   EXPECT_EQ(total_out.second, expected_result);
@@ -53,8 +53,8 @@ TEST(read_stellar_flux, test_case3) {
   auto expected_result = std::make_pair(output1, output2);
 
   auto app = Application::GetInstance();
-  auto file1 = app->FindResource(ck_data_folder + "sw_band_flux_HD189_11.txt");
-  auto file2 = app->FindResource(ck_data_folder + "wavelengths_GCM_11.txt");
+  auto file1 = app->FindResource(data_folder + "sw_band_flux_HD189_11.txt");
+  auto file2 = app->FindResource(data_folder + "wavelengths_GCM_11.txt");
 
   auto result = read_stellar_flux(file1, file2);
   EXPECT_EQ(result, expected_result);

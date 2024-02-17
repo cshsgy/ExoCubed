@@ -1,9 +1,16 @@
-#include "cia_read.hpp"
+// C/C++
+#include <fstream>
 
-std::tuple<AthenaArray<Real>, std::vector<double>, std::vector<double>>
-reform_read(std::string filename) {
+// athena
+#include <athena/athena.hpp>
+
+// opacity
+#include "read_cia_ff.hpp"
+
+std::tuple<AthenaArray<double>, std::vector<double>, std::vector<double>>
+read_cia_reform(std::string filename) {
   std::ifstream file{filename};  // open file
-  AthenaArray<Real> data;        // create storage array
+  AthenaArray<double> data;        // create storage array
   std::vector<double> temperature_axis;
   std::vector<double> spectral_axis;
   if (file.good()) {
@@ -29,18 +36,18 @@ reform_read(std::string filename) {
   } else {
     throw std::runtime_error("Unable to open " + filename);
   }
-  std::tuple<AthenaArray<Real>, std::vector<double>, std::vector<double>>
+  std::tuple<AthenaArray<double>, std::vector<double>, std::vector<double>>
       data_table = {data, temperature_axis, spectral_axis};
   return data_table;
 }
 
 // we are going to read the file twice, first to count # of rows and columns and
 // second time
-std::tuple<AthenaArray<Real>, std::vector<double>, std::vector<double>> ff_read(
-    std::string filename) {
+std::tuple<AthenaArray<double>, std::vector<double>, std::vector<double>>
+read_freefree(std::string filename) {
   int num_of_row = 0;
   int num_of_column = 1;
-  AthenaArray<Real> data;  // create storage array
+  AthenaArray<double> data;  // create storage array
   std::vector<double> temperature_axis;
   std::vector<double> spectral_axis;
   double spectral;
@@ -85,7 +92,7 @@ std::tuple<AthenaArray<Real>, std::vector<double>, std::vector<double>> ff_read(
     throw std::runtime_error("Unable to open " + filename);
   }
   cia_file.close();
-  std::tuple<AthenaArray<Real>, std::vector<double>, std::vector<double>>
+  std::tuple<AthenaArray<double>, std::vector<double>, std::vector<double>>
       data_table = {data, temperature_axis, spectral_axis};
   return data_table;
 }
