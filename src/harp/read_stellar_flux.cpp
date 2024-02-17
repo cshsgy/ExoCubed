@@ -1,6 +1,9 @@
-#include "flux_wavelength.hpp"
+// C/C++
+#include <fstream>
 
-std::pair<std::vector<double>, std::vector<double>> read_file(
+#include "read_stellar_flux.hpp"
+
+std::pair<std::vector<double>, std::vector<double>> read_stellar_flux(
     std::string file1, std::string file2) {
   std::ifstream file_flux{file1};        // open file
   std::ifstream file_wavelength{file2};  // open file

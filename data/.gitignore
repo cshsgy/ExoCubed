@@ -7,3 +7,6 @@
 
 # data folder
 */
+
+# tmp files
+.*
