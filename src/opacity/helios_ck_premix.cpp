@@ -9,9 +9,9 @@
 
 void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid) 
 {
-  std::ifstream file(filename);
+  std::ifstream file(fname);
   if (!file.is_open()) {
-    throw std::runtime_error("Failed to open file: " + filename);
+    throw std::runtime_error("Failed to open file: " + fname);
   }
 
   size_t num_bands;
@@ -69,5 +69,4 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid)
       }
 
   file.close();
-  return 0;
 }

@@ -33,6 +33,6 @@ class HeliosCKPremix: public AbsorberCK {
   HeliosCKPremix(std::string name) : AbsorberCK(name) {}
   virtual ~HeliosCKPremix() {}
   void LoadCoefficient(std::string fname, size_t bid) override;
-}
+};
 
 #endif  // SRC_OPACITY_ABSORBER_CK_HPP_
