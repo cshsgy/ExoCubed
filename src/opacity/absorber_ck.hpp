@@ -14,7 +14,6 @@ class AbsorberCK : public Absorber {
   virtual ~AbsorberCK() {}
 
   void LoadCoefficient(std::string fname, size_t bid) override;
-  // Real ckAbsorptionCoefficient(int mw, int mg, Real const prim[]) const;
   Real GetAttenuation(Real g1, Real g2, AirParcel const& var) const override;
 
  protected:
@@ -24,7 +23,7 @@ class AbsorberCK : public Absorber {
   //! interpolation axes
   std::vector<Real> axis_;
 
-  //! absorption coefficient
+  //! absorption coefficients
   std::vector<Real> kcoeff_;
 };
 
@@ -32,7 +31,9 @@ class HeliosCKPremix: public AbsorberCK {
  public:
   HeliosCKPremix(std::string name) : AbsorberCK(name) {}
   virtual ~HeliosCKPremix() {}
+
   void LoadCoefficient(std::string fname, size_t bid) override;
+  Real GetAttenuation(Real g1, Real g2, AirParcel const& var) const override;
 };
 
 #endif  // SRC_OPACITY_ABSORBER_CK_HPP_

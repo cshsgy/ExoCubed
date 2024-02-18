@@ -4,6 +4,13 @@
 #include <vector>
 #include <cmath>
 
+// canoe
+#include <air_parcel.hpp>
+#include <constants.hpp>
+
+// climath
+#include <climath/interpolation.h>
+
 // opacity
 #include "absorber_ck.hpp"
 
@@ -17,7 +24,7 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid)
   size_t num_bands;
 
   // temperature, pressure, band, g-points
-  file >> len_[1] >> len_[0] >> num_bands >> len_[2];
+  file >> len_[0] >> len_[1] >> num_bands >> len_[2];
 
   if (bid >= num_bands) {
     throw std::runtime_error("Band index out of range: " + std::to_string(bid));
@@ -27,27 +34,31 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid)
   kcoeff_.resize(len_[0] * len_[1] * len_[2]);
 
   // temperature grid
-  for (int i = 0; i < len_[1]; ++i) {
-    file >> axis_[len_[0] + i];
+  for (int i = 0; i < len_[0]; ++i) {
+    file >> axis_[i];
   }
 
   // pressure grid
-  for (int j = 0; j < len_[0]; ++j) {
-    file >> axis_[j];
+  for (int j = 0; j < len_[1]; ++j) {
+    Real pres;
+    file >> pres;
+    axis_[len_[0] + j] = log(pres);
   }
 
-  Real dummy, wmin, wmax;
-  // band wavelength
-  for (int b = 0; b <= num_bands; ++b) {
-    if (b != bid) {
-      file >> dummy;
-    } else {
-      file >> wmin >> wmax;
+  Real wmin, wmax;
+  file >> wmin;
+  // band wavelengths
+  for (int b = 0; b < num_bands; ++b) {
+    if (b == bid) {
+      file >> wmax;
       break;
+    } else {
+      file >> wmin;
     }
   }
 
   // g-points and weights
+  Real dummy;
   for (int g = 0; g < len_[2]; ++g) {
     Real gpoint;
     file >> gpoint >> dummy;
@@ -57,16 +68,25 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid)
   int n = 0;
   for (int i = 0; i < len_[0]; ++i)
     for (int j = 0; j < len_[1]; ++j)
-      for (int b = num_bands - 1; b >= 0; --b) {
-        if (b != bid) {
-          file >> dummy;
-        } else {
+      for (int b = 0; b < num_bands; ++b) {
+        if (b == bid) {
           for (int g = 0; g < len_[2]; ++g, ++n) {
             file >> kcoeff_[n];
             kcoeff_[n] = log(std::max(kcoeff_[n], 1.0e-99));
           }
+        } else {
+          file >> dummy;
         }
       }
 
   file.close();
+}
+
+Real HeliosCKPremix::GetAttenuation(Real g1, Real g2,
+                                    AirParcel const& var) const {
+  // temperature, log-pressure, wave-scaled g-point
+  Real val, coord[3] = {var.q[IDN], log(var.q[IPR]), g1};
+  interpn(&val, coord, kcoeff_.data(), axis_.data(), len_, 3, 1);
+  Real dens = var.q[IPR] / (Constants::kBoltz * var.q[IDN]);
+  return exp(val) * dens; // ln(cm^2 / molecule) -> 1/m
 }
