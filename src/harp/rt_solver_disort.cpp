@@ -55,21 +55,21 @@ RadiationBand::RTSolverDisort::RTSolverDisort(RadiationBand *pmy_band,
   }
 
   if (pmy_band->HasPar("btemp")) {
-    ds_.bc.btemp = pmy_band->GetPar("btemp");
+    ds_.bc.btemp = pmy_band->GetPar<Real>("btemp");
   }
 
   if (pmy_band->HasPar("albedo")) {
-    ds_.bc.albedo = pmy_band->GetPar("albedo");
+    ds_.bc.albedo = pmy_band->GetPar<Real>("albedo");
   } else { 
     ds_.bc.albedo = 1.;
   }
 
   if (pmy_band->HasPar("ttemp")) {
-    ds_.bc.ttemp = pmy_band->GetPar("ttemp");
+    ds_.bc.ttemp = pmy_band->GetPar<Real>("ttemp");
   }
 
   if (pmy_band->HasPar("temis")) {
-    ds_.bc.temis = pmy_band->GetPar("temis");
+    ds_.bc.temis = pmy_band->GetPar<Real>("temis");
   } else {
     ds_.bc.temis = 0.;
   }
