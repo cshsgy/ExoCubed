@@ -1,15 +1,15 @@
 <comment>
-problem   = Dense sinking bubble test
+problem   = Hot Jupiter Double Gray Test
 reference = Straka et al., 1993
 configure = --patch=drum --coord=spherical_polar --prob=hjupiter --flux=lmars --nghost=3 --pnetcdf_path=../pnetcdf -pnetcdf -mpi
 
 <job>
-problem_id = hjupiter   # problem ID: basename of output filenames
+problem_id = shj   # problem ID: basename of output filenames
 tasklist   = ImplicitHydroTasks
 
 <output0>
 file_type  = rst
-dt         = 1.728E6
+dt         = 1.728E8
 
 <output1>
 file_type  = hst          # History data dump
@@ -18,72 +18,72 @@ dt         = 1.728E5      # time increment between outputs
 <output2>
 file_type  = pnetcdf      # Binary data dump
 variable   = prim         # variables to be output
-dt         = 1.728E5      # time increment between outputs
+dt         = 1.728E6      # time increment between outputs
 
 <output3>
 file_type  = pnetcdf
 variable   = uov
-dt         = 1.728E5
+dt         = 1.728E6
 
 <output4>
 file_type  = pnetcdf
 variable   = rad
-dt         = 1.728E5
+dt         = 1.728E6
 
 <time>
 cfl_number = 0.9          # The Courant, Friedrichs, & Lewy (CFL) Number
 nlim       = -1           # cycle limit
-tlim       = 1.0368E8     # time limit
+tlim       = 1.0368E10     # time limit
 xorder     = 5            # horizontal reconstruction order
 integrator = rk3          # integration method
 
 <mesh>
 nx1        = 32           # Number of zones in X1-direction
-x1min      = 1.E8         # minimum value of X1
-x1max      = 1.03E8       # maximum value of X1
+x1min      = 8.E7         # minimum value of X1
+x1max      = 8.28E7       # maximum value of X1
 ix1_bc     = reflecting   # inner-X1 boundary flag
 ox1_bc     = reflecting   # outer-X1 boundary flag
 
-nx2        = 80           # Number of zones in X2-direction
+nx2        = 64           # Number of zones in X2-direction
 x2min      = 0.     # minimum value of X2
 x2max      = 1.E3      # maximum value of X2
 ix2_bc     = periodic        # inner-X2 boundary flag
 ox2_bc     = periodic        # outer-X2 boundary flag
 
-nx3        = 120          # Number of zones in X3-direction
+nx3        = 96          # Number of zones in X3-direction
 x3min      = 0.0          # minimum value of X3
 x3max      = 1.E3      # maximum value of X3
 ix3_bc     = periodic     # inner-X3 boundary flag
 ox3_bc     = periodic     # outer-X3 boundary flag
 
-ReferencePressure = 1.E5
-PressureScaleHeight = 7.56E5
+ReferencePressure = 0.    # not used
+PressureScaleHeight = 0.  # not used
 
 <meshblock>
 nx1        = 32
-nx2        = 20
-nx3        = 20
+nx2        = 8
+nx3        = 8
 
 <hydro>
-grav_acc1   = -8.0
+grav_acc1   = -23.1
 gamma       = 1.4         # gamma = C_p/C_v
 implicit_flag = 9
 
 <thermodynamics>
-Rd          = 3779.       # Gas constant
+Rd          = 3714.       # Gas constant
 
 <astronomy>
 planet        = HJ
 HJ.parent     = Sun
-HJ.re         = 1.E5      # km
-HJ.rp         = 1.E5      # km
+HJ.re         = 8.E4      # km
+HJ.rp         = 8.E4      # km
 HJ.obliq      = 0.        # deg
-HJ.spinp      = 3.        # day
-HJ.orbit_a    = 0.03      # au
+HJ.spinp      = 2.218577        # day
+HJ.orbit_a    = 0.03106      # au
 HJ.orbit_e    = 0.
 HJ.orbit_i    = 0.        # deg
-HJ.orbit_p    = 3.        # day
-HJ.grav_eq    = 10.       # m/s^2
+HJ.orbit_p    = 2.218577        # day
+HJ.grav_eq    = 23.1       # m/s^2
 HJ.equinox    = 0.
 
 <radiation>
@@ -92,9 +92,9 @@ nstr          = 4
 radiation_config = hjupiter.yaml
 
 <problem>
-Ts         = 1600.            # Surface temperature, K
-p0         = 1.E5             # Surface pressure, Pa
-Omega      = 2.1E-5           # Rotational frequency
+Ts         = 3000.            # Surface temperature, K
+p0         = 2.E7             # Surface pressure, Pa
+Omega      = 3.277869E-5       # Rotational frequency
 
 sponge_tau = 1.E4
 sponge_layer = 5
