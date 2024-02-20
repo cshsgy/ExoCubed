@@ -15,6 +15,7 @@ temp = dataset.variables['temp'][:]
 x = lon
 y = lat
 data = temp[-1,150,:,:]
+pressure = press[150]
 # Create a figure and a set of subplots
 plt.figure(figsize=(10, 6))
 
@@ -29,7 +30,7 @@ plt.colorbar(pc, label='Temperature')
 # Labels and title
 plt.xlabel('Longitude')
 plt.ylabel('Latitude')
-plt.title('Temperature and horizontal winds on the X bar isobaric plane')
+plt.title(f'Temperature and horizontal winds on the {pressure} Pa isobaric plane')
 
 # Set the y-axis to a logarithmic scale
 #plt.yscale('log')
