@@ -121,7 +121,7 @@ void Forcing(MeshBlock *pmb, Real const time, Real const dt,
   for (int k = pmb->ks; k <= pmb->ke; ++k)
     for (int j = pmb->js; j <= pmb->je; ++j) {
       int i = pmb->is;
-      du(IEN, k, j ,i) += bflux / pmb->pcoord->dx1v(i) * dt;
+      du(IEN, k, j ,i) += bflux / pmb->pcoord->dx1f(i) * dt;
     }
 }
 
@@ -132,7 +132,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin) {
   grav = -pin->GetReal("hydro", "grav_acc1");
   Ts = pin->GetReal("problem", "Ts");
   p0 = pin->GetReal("problem", "p0");
-  bflux = pin->GetReal("problem", "bflux");
+  bflux = pin->GetReal("problem", "bflux", 0.);
   sponge_tau = pin->GetReal("problem", "sponge_tau");
   sponge_layer = pin->GetInteger("problem", "sponge_layer");
 
