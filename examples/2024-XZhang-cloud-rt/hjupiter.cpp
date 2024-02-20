@@ -132,7 +132,7 @@ void Mesh::InitUserMeshData(ParameterInput *pin) {
   grav = -pin->GetReal("hydro", "grav_acc1");
   Ts = pin->GetReal("problem", "Ts");
   p0 = pin->GetReal("problem", "p0");
-  bflux = pin->GetReal("problem", "bflux", 0.);
+  bflux = pin->GetOrAddReal("problem", "bflux", 0.);
   sponge_tau = pin->GetReal("problem", "sponge_tau");
   sponge_layer = pin->GetInteger("problem", "sponge_layer");
 
