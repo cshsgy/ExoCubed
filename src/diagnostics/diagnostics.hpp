@@ -1,27 +1,28 @@
-#ifndef DIAGNOSTICS_HPP_
-#define DIAGNOSTICS_HPP_
+#ifndef SRC_DIAGNOSTICS_HPP_
+#define SRC_DIAGNOSTICS_HPP_
 
-// C++ header
+// C/C++
 #include <string>
 
-// Athena++ headers
-#include "../athena_arrays.hpp"
-#include "../mesh/mesh.hpp"
+// Athena++
+#include <athena/athena_arrays.hpp>
+#include <athena/mesh/mesh.hpp>
+
+// exchanger
+#include <exchanger/linear_exchanger.hpp>
 
 class ParameterInput;
 
-class Diagnostics {
+class Diagnostics : public NamedGroup {
  public:
   // data
-  std::string myname, type, grid;
-  std::string varname, long_name, units;
-  Diagnostics *prev, *next;
+  std::string type, grid, units;
   AthenaArray<Real> data;
-  int ncycle;
 
   // functions
-  Diagnostics(MeshBlock *pmb, ParameterInput *pin);
-  Diagnostics(MeshBlock *pmb, std::string name);
+  Diagnostics(MeshBlock *pmb, 
+              std::string short_name,
+              std::string long_name);
   virtual ~Diagnostics();
 
   Diagnostics *operator[](std::string name);
@@ -41,14 +42,17 @@ class Diagnostics {
   virtual void Finalize(AthenaArray<Real> const &w) {}
 
  protected:
-  MeshBlock *pmy_block_;
+  MeshBlock const *pmy_block_;
+
   int ncells1_, ncells2_, ncells3_;
+  int ncycle_;
 
   //! mean and eddy component
   AthenaArray<Real> mean_, eddy_;
 
   //! MPI color of each rank
   std::vector<int> color_;
+
   //! rank of the bottom block
   std::vector<int> brank_;
 
@@ -192,4 +196,4 @@ class Tendency : public Diagnostics {
   AthenaArray<Real> wh_, up_;
 };
 
-#endif
+#endif  // SRC_DIAGNOSTICS_HPP_

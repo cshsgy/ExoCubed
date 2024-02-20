@@ -76,13 +76,13 @@ Diagnostics::Diagnostics(MeshBlock *pmb, ParameterInput *pin)
   pmb->pdebug->Leave();
 }
 
-Diagnostics::Diagnostics(MeshBlock *pmb, std::string name)
-    : myname(name),
-      varname(name),
-      prev(nullptr),
-      next(nullptr),
-      ncycle(0),
-      pmy_block_(pmb) {
+Diagnostics::Diagnostics(MeshBlock *pmb, 
+                         std::string short_name,
+                         std::string long_name)
+    : NamedGroup(short_name, short_name, long_name),
+      pmy_block_(pmb),
+      ncycle_(0) {
+  auto app = App
   pmb->pdebug->Enter("Diagnostics-" + name);
   std::stringstream msg;
   ncells1_ = pmb->block_size.nx1 + 2 * (NGHOST);
@@ -113,13 +113,6 @@ Diagnostics::Diagnostics(MeshBlock *pmb, std::string name)
     brank_[i] = -1;
     color_[i] = -1;
   }
-
-  pmb->pdebug->Leave();
-}
-
-Diagnostics::~Diagnostics() {
-  if (prev != nullptr) prev->next = next;
-  if (next != nullptr) next->prev = prev;
 }
 
 Diagnostics *Diagnostics::operator[](std::string name) {

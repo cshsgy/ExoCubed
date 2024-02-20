@@ -164,8 +164,12 @@ class LinearExchanger : public Exchanger<T> {
 
 template <typename T>
 class PlanarExchanger : public Exchanger<T> {
- public:
+ public:  // constructor and destructor
   PlanarExchanger();
+
+ protected:
+  gatherAllData23_(AthenaArray<Real> &total_vol, 
+                   AthenaArray<Real> &total_data);
 };
 
 #endif  // SRC_EXCHANGER_EXCHANGER_HPP_

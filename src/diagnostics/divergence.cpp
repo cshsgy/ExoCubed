@@ -1,5 +1,8 @@
-#include "../coordinates/coordinates.hpp"
-#include "../reconstruct/interpolation.hpp"
+// athena
+#include <athena/coordinates/coordinates.hpp>
+#include <athena/reconstruct/interpolation.hpp>
+
+// canoe
 #include "diagnostics.hpp"
 
 Divergence::Divergence(MeshBlock *pmb) : Diagnostics(pmb, "div") {
