@@ -105,6 +105,9 @@ Radiation::Radiation(MeshBlock *pmb, ParameterInput *pin) {
 
   // time control
   SetCooldownTime(pin->GetOrAddReal("radiation", "dt", 0.));
+
+  // relaxation time
+  relax_time_ = pin->GetOrAddReal("radiation", "relax_time", 1.);
 }
 
 Radiation::~Radiation() {
@@ -159,11 +162,13 @@ void Radiation::CalRadiance(MeshBlock const *pmb, int k, int j) {
   }
 }
 
-void Radiation::CalTimescale(MeshBlock const* pmb, int k, int j, int il,
-                             int iu) {
+void Radiation::CalTimeStep(MeshBlock const* pmb, int k, int j, int il,
+                            int iu) {
   Real total_flux1 = 0., total_flux2 = 0.;
   auto pcoord = pmb->pcoord;
   auto phydro = pmb->phydro;
+
+  time_step_ = 1.e99;
 
   for (size_t b = 0; b < bands_.size(); ++b) {
     total_flux1 += flxup(b, k, j, il) - flxdn(b, k, j, il);
@@ -174,8 +179,11 @@ void Radiation::CalTimescale(MeshBlock const* pmb, int k, int j, int il,
       total_flux2 += flxup(b, k, j, i + 1) - flxdn(b, k, j, i + 1);
     }
     rtime(k, j, i) = pcoord->dx1f(i) * phydro->u(IEN, k, j, i) 
-      / std::abs(total_flux2 - total_flux1);
+      / (total_flux2 - total_flux1);
     total_flux1 = total_flux2;
+    if (rtime(k, j, i) > 0.) {
+      time_step_ = std::min(time_step_, rtime(k, j, i));
+    }
   }
 }
 
