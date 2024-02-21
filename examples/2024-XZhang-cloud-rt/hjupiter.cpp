@@ -48,6 +48,7 @@ void MeshBlock::InitUserMeshBlockData(ParameterInput *pin) {
 void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin) {
   auto pexo3 = pimpl->pexo3;
   auto pthermo = Thermodynamics::GetInstance();
+  auto prad = pimpl->prad;
 
   Real lat, lon;
   Real U, V;
@@ -55,7 +56,8 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin) {
   Real zenith;
 
   for (int k = ks; k <= ke; ++k)
-    for (int j = js; j <= je; ++j)
+    for (int j = js; j <= je; ++j) {
+      prad->CalTimescale(this, k, j, is, ie);
       for (int i = is; i <= ie; ++i) {
         user_out_var(0, k, j, i) = pthermo->GetTemp(this, k, j, i);
         user_out_var(1, k, j, i) = pthermo->PotentialTemp(this, p0, k, j, i);
@@ -73,6 +75,7 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin) {
         zenith = std::acos(ray.mu) / M_PI * 180.0;
         user_out_var(6, k, j, i) = zenith;
       }
+    }
 }
 
 void Forcing(MeshBlock *pmb, Real const time, Real const dt,
