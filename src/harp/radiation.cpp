@@ -100,6 +100,9 @@ Radiation::Radiation(MeshBlock *pmb, ParameterInput *pin) {
     bands_[n]->bflxdn.InitWithShallowSlice(flxdn, 4, n, 1);
   }
 
+  // radiative time scale
+  rtime.NewAthenaArray(ncells3, ncells2, ncells1);
+
   // time control
   SetCooldownTime(pin->GetOrAddReal("radiation", "dt", 0.));
 }
@@ -156,11 +159,30 @@ void Radiation::CalRadiance(MeshBlock const *pmb, int k, int j) {
   }
 }
 
+void Radiation::CalTimescale(MeshBlock const* pmb, int k, int j, int il,
+                             int iu) {
+  Real total_flux1 = 0., total_flux2 = 0.;
+  auto pcoord = pmb->pcoord;
+  auto phydro = pmb->phydro;
+
+  for (size_t b = 0; b < bands_.size(); ++b) {
+    total_flux1 += flxup(b, k, j, il) - flxdn(b, k, j, il);
+  }
+
+  for (int i = il; i <= iu; ++i) {
+    for (size_t b = 0; b < bands_.size(); ++b) {
+      total_flux2 += flxup(b, k, j, i + 1) - flxdn(b, k, j, i + 1);
+    }
+    rtime(k, j, i) = pcoord->dx1f(i) * phydro->u(IEN, k, j, i) 
+      / std::abs(total_flux2 - total_flux1);
+    total_flux1 = total_flux2;
+  }
+}
+
 void Radiation::AddRadiativeFlux(Hydro *phydro, int k, int j, int il,
                                  int iu) const {
   // x1-flux divergence
   for (size_t b = 0; b < bands_.size(); ++b) {
-#pragma omp simd
     for (int i = il; i <= iu; ++i)
       phydro->flux[X1DIR](IEN, k, j, i) +=
           flxup(b, k, j, i) - flxdn(b, k, j, i);

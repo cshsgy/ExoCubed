@@ -38,6 +38,9 @@ class Radiation : public RestartGroup,
   //! downward flux of all bands
   AthenaArray<Real> flxdn;
 
+  //! radiative timescale
+  AthenaArray<Real> rtime;
+
  public:  // constructor and destructor
   // Radiation() {}
   Radiation(MeshBlock *pmb, ParameterInput *pin);
@@ -65,6 +68,9 @@ class Radiation : public RestartGroup,
 
   //! \brief Calculate the radiance
   void CalRadiance(MeshBlock const *pmb, int k, int j);
+
+  //! \brief Calculate the radiance
+  void CalTimescale(MeshBlock const *pmb, int k, int j, int il, int iu);
 
  public:  // outbound functions
   //! \brief Add the radiative flux to hydro energy flux
