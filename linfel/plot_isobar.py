@@ -10,12 +10,27 @@ lat = dataset.variables['lat'][:]
 lon = dataset.variables['lon'][:]
 press = dataset.variables['press'][:]
 temp = dataset.variables['temp'][:]
+vlat = dataset.variables['vlat'][:]
+vlon = dataset.variables['vlon'][:]
 
 
-x = lon
-y = lat
-data = temp[-1,150,:,:]
+# specify the time slices for averaging
+timeslices = range(50)
+# specify the index of the isobaric plane
+press_idx = 150
+
+# average data over time
+data = np.mean(temp[timeslices,press_idx,:,:], axis=0)
+mean_vlat = np.mean(vlat[timeslices,press_idx,:,:], axis=0)
+mean_vlon = np.mean(vlon[timeslices,press_idx,:,:], axis=0)
+
+# Calculate wind speed
+wind_speed = (mean_vlat**2 + mean_vlon**2)**0.5
+
+# get the pressure at the isobaric plane
 pressure = press[150]
+print(f"# isobaric plane {pressure} Pa")
+
 # Create a figure and a set of subplots
 plt.figure(figsize=(10, 6))
 
@@ -24,8 +39,11 @@ plt.figure(figsize=(10, 6))
 #plt.colorbar(contour, label='Temperature')
 
 # Plot pcolor
-pc = plt.pcolor(x, y, data, shading='auto')
+pc = plt.pcolor(lon, lat, data, shading='auto')
 plt.colorbar(pc, label='Temperature')
+
+# Plot the wind vectors with quiver
+plt.quiver(lon, lat, mean_vlat, mean_vlon, width=0.001, headwidth=3, headlength=5)
 
 # Labels and title
 plt.xlabel('Longitude')
@@ -41,4 +59,4 @@ plt.title(f'Temperature and horizontal winds on the {pressure} Pa isobaric plane
 # Adjust the ticks on the y-axis to be more readable
 #plt.yticks(pressure, labels=np.round(np.log10(pressure), 2))
 
-plt.savefig("images/test4.png",dpi=300)
+plt.savefig("images/test6.png",dpi=300)
