@@ -62,6 +62,12 @@ class Radiation : public RestartGroup,
   //! \brief Get total number of incoming rays
   size_t GetNumOutgoingRays() const;
 
+  //! Get radiation time step
+  Real GetTimeStep() const { return time_step_; }
+
+  //! Get relaxation time
+  Real GetRelaxTime() const { return relax_time_; }
+
  public:  // inbound functions
   //! \brief Calculate the radiative flux
   void CalFlux(MeshBlock const *pmb, int k, int j, int il, int iu);
@@ -70,7 +76,7 @@ class Radiation : public RestartGroup,
   void CalRadiance(MeshBlock const *pmb, int k, int j);
 
   //! \brief Calculate the radiance
-  void CalTimescale(MeshBlock const *pmb, int k, int j, int il, int iu);
+  void CalTimeStep(MeshBlock const *pmb, int k, int j, int il, int iu);
 
  public:  // outbound functions
   //! \brief Add the radiative flux to hydro energy flux
@@ -87,6 +93,12 @@ class Radiation : public RestartGroup,
 
   //! incomming rays
   std::vector<Direction> rayInput_;
+
+  //! radiation relaxation time
+  Real relax_time_;
+
+  //! radiation time step
+  Real time_step_;
 };
 
 using RadiationPtr = std::shared_ptr<Radiation>;

@@ -31,7 +31,7 @@
 // harp
 #include "harp/radiation.hpp"
 
-Real p0, Ts, Omega, grav, sponge_tau, bflux;
+Real p0, Ts, Omega, grav, sponge_tau, bflux, gammad, Tmin;
 int sponge_layer;
 
 void MeshBlock::InitUserMeshBlockData(ParameterInput *pin) {
@@ -48,7 +48,6 @@ void MeshBlock::InitUserMeshBlockData(ParameterInput *pin) {
 void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin) {
   auto pexo3 = pimpl->pexo3;
   auto pthermo = Thermodynamics::GetInstance();
-  auto prad = pimpl->prad;
 
   Real lat, lon;
   Real U, V;
@@ -57,7 +56,6 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin) {
 
   for (int k = ks; k <= ke; ++k)
     for (int j = js; j <= je; ++j) {
-      prad->CalTimescale(this, k, j, is, ie);
       for (int i = is; i <= ie; ++i) {
         user_out_var(0, k, j, i) = pthermo->GetTemp(this, k, j, i);
         user_out_var(1, k, j, i) = pthermo->PotentialTemp(this, p0, k, j, i);
@@ -83,6 +81,8 @@ void Forcing(MeshBlock *pmb, Real const time, Real const dt,
              AthenaArray<Real> const &bcc, AthenaArray<Real> &du,
              AthenaArray<Real> &cons_scalar) {
   auto pexo3 = pmb->pimpl->pexo3;
+  auto pthermo = Thermodynamics::GetInstance();
+  auto prad = pmb->pimpl->prad;
 
   for (int k = pmb->ks; k <= pmb->ke; ++k)
     for (int j = pmb->js; j <= pmb->je; ++j)
@@ -110,6 +110,9 @@ void Forcing(MeshBlock *pmb, Real const time, Real const dt,
         du(IM3, k, j, i) += dt * acc3;
       }
 
+  Real Rd = pthermo->GetRd();
+  Real cv = 1. / (gammad - 1.) * Rd;
+
   // Sponge Layer
   for (int k = pmb->ks; k <= pmb->ke; ++k)
     for (int j = pmb->js; j <= pmb->je; ++j)
@@ -126,6 +129,30 @@ void Forcing(MeshBlock *pmb, Real const time, Real const dt,
       int i = pmb->is;
       du(IEN, k, j ,i) += bflux / pmb->pcoord->dx1f(i) * dt;
     }
+
+  // minimum temperature
+  for (int k = pmb->ks; k <= pmb->ke; ++k)
+    for (int j = pmb->js; j <= pmb->je; ++j)
+      for (int i = pmb->is; i <= pmb->ie; ++i) {
+        Real temp = pthermo->GetTemp(pmb, k, j, i);
+        if (temp < Tmin) {
+          du(IEN, k, j, i) += cv * (Tmin - temp) * (dt / prad->GetRelaxTime()) 
+            * w(IDN, k, j, i);
+        }
+      }
+}
+
+Real TimeStep(MeshBlock *pmb) {
+  auto prad = pmb->pimpl->prad;
+  Real time = pmb->pmy_mesh->time;
+
+  for (int k = pmb->ks; k <= pmb->ke; ++k)
+    for (int j = pmb->js; j <= pmb->je; ++j) {
+      prad->CalTimeStep(pmb, k, j, pmb->is, pmb->ie);
+    }
+
+  return prad->GetTimeStep() * (1. + time / prad->GetRelaxTime());
+>>>>>>> a10e7fb1 (add Tmin, runs for 20 days)
 }
 
 //! \fn void Mesh::InitUserMeshData(ParameterInput *pin)
@@ -138,9 +165,12 @@ void Mesh::InitUserMeshData(ParameterInput *pin) {
   bflux = pin->GetOrAddReal("problem", "bflux", 0.);
   sponge_tau = pin->GetReal("problem", "sponge_tau");
   sponge_layer = pin->GetInteger("problem", "sponge_layer");
+  gammad = pin->GetReal("hydro", "gamma");
+  Tmin = pin->GetReal("problem", "Tmin");
 
   // forcing function
   EnrollUserExplicitSourceFunction(Forcing);
+  //EnrollUserTimeStepFunction(TimeStep);
 }
 
 //! \fn void MeshBlock::ProblemGenerator(ParameterInput *pin)
