@@ -9,11 +9,11 @@ tasklist   = ImplicitHydroTasks
 
 <output0>
 file_type  = rst
-dt         = 1.728E7
+dt         = 1.728E5
 
 <output1>
 file_type  = hst          # History data dump
-dt         = 1.728E6      # time increment between outputs
+dt         = 1.728E5      # time increment between outputs
 
 <output2>
 file_type  = pnetcdf      # Binary data dump
