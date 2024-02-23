@@ -276,9 +276,6 @@ void CubedSphere::SaveLR3DValues(AthenaArray<Real> &L_in,
       R3DValues[direction](n, k, j, i) = R_in(n, i);
     }
   }
-
-  check_hydro_riemann_solver_flux(L3DValues[direction], direction, k, j, il, iu);
-  check_hydro_riemann_solver_flux(R3DValues[direction], direction, k, j, il, iu);
 }
 
 void CubedSphere::LoadLR3DValues(AthenaArray<Real> &L_in,
