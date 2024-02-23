@@ -115,9 +115,9 @@ void Forcing(MeshBlock *pmb, Real const time, Real const dt,
 
   // Sponge Layer
   for (int k = pmb->ks; k <= pmb->ke; ++k)
-    for (int j = pmb->js; j <= pmb->je; ++j)
+    for (int j = pmb->js; j <= pmb->je; ++j) {
+      Real tau = sponge_tau;
       for (int i = pmb->ie - sponge_layer; i <= pmb->ie; ++i) {
-        Real tau = sponge_tau;
         du(IVX, k, j, i) -= w(IVX, k, j, i) * (dt / tau) * w(IDN, k, j, i);
         du(IVY, k, j, i) -= w(IVY, k, j, i) * (dt / tau) * w(IDN, k, j, i);
         du(IVZ, k, j, i) -= w(IVZ, k, j, i) * (dt / tau) * w(IDN, k, j, i);

@@ -99,5 +99,5 @@ Omega      = 2.1E-5           # Rotational frequency
 bflux      = 907259.9         # bottom upward flux, W/m2   (2000K equivalent)
 Tmin       = 1600.
 
-sponge_tau = 1.E5
+sponge_tau = 1.E4
 sponge_layer = 10
