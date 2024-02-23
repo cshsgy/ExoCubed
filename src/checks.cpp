@@ -21,31 +21,32 @@
 #endif
 
 std::string print_column_table(std::string name, AthenaArray<Real> const& var,
-                               int n, int k, int j, int il, int iu,
-                               int width = 1) {
+                               int k, int j, int il, int iu, int width = 1) {
   std::stringstream msg;
 
   msg << "rank = " << Globals::my_rank << ", " << name << " dump:" << std::endl;
 
   for (int i = il; i <= iu; ++i) {
-    msg << "i = " << i << " |";
-    msg << std::setw(8) << var(n, k, j, i) << ", ";
-    msg << std::endl;
+    msg << "i = " << std::setw(4) << i << " |";
+    msg << std::setw(4) << "(";
+    for (int n = 0; n < NHYDRO; ++n) msg << var(n, k, j, i) << ", ";
+    msg << ")" << std::endl;
   }
 
   return msg.str();
 }
 
 std::string print_column_table(std::string name, AthenaArray<Real> const& var,
-                               int n, int il, int iu) {
+                               int il, int iu) {
   std::stringstream msg;
 
   msg << "rank = " << Globals::my_rank << ", " << name << " dump:" << std::endl;
 
   for (int i = il; i <= iu; ++i) {
-    msg << "i = " << i << " |";
-    msg << std::setw(8) << var(n, i) << ", ";
-    msg << std::endl;
+    msg << "i = " << std::setw(4) << i << " |";
+    msg << std::setw(4) << "(";
+    for (int n = 0; n < NHYDRO; ++n) msg << var(n, i) << ", ";
+    msg << ")" << std::endl;
   }
 
   return msg.str();
@@ -59,10 +60,10 @@ void check_eos_cons2prim(AthenaArray<Real> const& prim, int k, int j, int il,
     Real const& w_p = prim(IPR, k, j, i);
 
     LOG_IF(FATAL, std::isnan(w_d) || (w_d < 0.))
-        << print_column_table("prim", prim, IDN, k, j, il, iu);
+        << print_column_table("prim-den", prim, k, j, il, iu);
 
     LOG_IF(FATAL, std::isnan(w_p) || (w_p < 0.))
-        << print_column_table("prim", prim, IPR, k, j, il, iu);
+        << print_column_table("prim-pre", prim, k, j, il, iu);
   }
 #endif  // ENABLE_GLOG
 }
@@ -70,7 +71,7 @@ void check_eos_cons2prim(AthenaArray<Real> const& prim, int k, int j, int il,
 // dirty fix for negative pressure and density
 void fix_eos_cons2prim(MeshBlock* pmb, AthenaArray<Real>& prim, int k, int j,
                        int il, int iu) {
-  auto pthermo = Thermodynamics::GetInstance();
+  /*auto pthermo = Thermodynamics::GetInstance();
   auto pcoord = pmb->pcoord;
   Real Rd = pthermo->GetRd();
   Real grav = pmb->phydro->hsrc.GetG1();
@@ -92,29 +93,29 @@ void fix_eos_cons2prim(MeshBlock* pmb, AthenaArray<Real>& prim, int k, int j,
       prim(IPR, k, j, i) =
           prim(IPR, k, j, ifix - 1) * exp(grav * z / (Rd * temp));
     }
-  }
+  }*/
 }
 
 void fix_reconstruct_x2(AthenaArray<Real>& wl, AthenaArray<Real>& wr,
                         AthenaArray<Real> const& w, int k, int j, int il,
                         int iu) {
-  for (int i = il; i <= iu; ++i) {
+  /*for (int i = il; i <= iu; ++i) {
     if (wl(IDN, i) < 0.) wl(IDN, i) = w(IDN, k, j - 1, i);
     if (wr(IDN, i) < 0.) wr(IDN, i) = w(IDN, k, j, i);
     if (wl(IPR, i) < 0.) wl(IPR, i) = w(IPR, k, j - 1, i);
     if (wr(IPR, i) < 0.) wr(IPR, i) = w(IPR, k, j, i);
-  }
+  }*/
 }
 
 void fix_reconstruct_x3(AthenaArray<Real>& wl, AthenaArray<Real>& wr,
                         AthenaArray<Real> const& w, int k, int j, int il,
                         int iu) {
-  for (int i = il; i <= iu; ++i) {
+  /*for (int i = il; i <= iu; ++i) {
     if (wl(IDN, i) < 0.) wl(IDN, i) = w(IDN, k - 1, j, i);
     if (wr(IDN, i) < 0.) wr(IDN, i) = w(IDN, k, j, i);
     if (wl(IPR, i) < 0.) wl(IPR, i) = w(IPR, k - 1, j, i);
     if (wr(IPR, i) < 0.) wr(IPR, i) = w(IPR, k, j, i);
-  }
+  }*/
 }
 
 void check_reconstruct(AthenaArray<Real> const& wl, AthenaArray<Real> const& wr,
@@ -123,16 +124,16 @@ void check_reconstruct(AthenaArray<Real> const& wl, AthenaArray<Real> const& wr,
   for (int i = il; i <= iu; ++i) {
     char name[80];
     snprintf(name, 80, "wl-den-%d", dir + 1);
-    LOG_IF(FATAL, wl(IDN, i) < 0.) << print_column_table(name, wl, IDN, il, iu);
+    LOG_IF(FATAL, wl(IDN, i) < 0.) << print_column_table(name, wl, il, iu);
 
     snprintf(name, 80, "wr-den-%d", dir + 1);
-    LOG_IF(FATAL, wr(IDN, i) < 0.) << print_column_table(name, wr, IDN, il, iu);
+    LOG_IF(FATAL, wr(IDN, i) < 0.) << print_column_table(name, wr, il, iu);
 
     snprintf(name, 80, "wl-pre-%d", dir + 1);
-    LOG_IF(FATAL, wl(IPR, i) < 0.) << print_column_table(name, wl, IPR, il, iu);
+    LOG_IF(FATAL, wl(IPR, i) < 0.) << print_column_table(name, wl, il, iu);
 
     snprintf(name, 80, "wr-pre-%d", dir + 1);
-    LOG_IF(FATAL, wr(IPR, i) < 0.) << print_column_table(name, wr, IPR, il, iu);
+    LOG_IF(FATAL, wr(IPR, i) < 0.) << print_column_table(name, wr, il, iu);
   }
 #endif  // ENABLE_GLOG
 }
@@ -157,16 +158,16 @@ void check_decomposition(AthenaArray<Real> const& wl,
 #ifdef ENABLE_GLOG
   for (int i = il; i <= iu; ++i) {
     LOG_IF(FATAL, wl(IDN, k, j, i) < 0.)
-        << print_column_table("wl-den", wl, IDN, k, j, il, iu);
+        << print_column_table("wl-den", wl, k, j, il, iu);
 
     LOG_IF(FATAL, wr(IDN, k, j, i) < 0.)
-        << print_column_table("wr-den", wr, IDN, k, j, il, iu);
+        << print_column_table("wr-den", wr, k, j, il, iu);
 
     LOG_IF(ERROR, wl(IPR, k, j, i) < 0.)
-        << print_column_table("wl-pre", wl, IPR, k, j, il, iu);
+        << print_column_table("wl-pre", wl, k, j, il, iu);
 
     LOG_IF(ERROR, wr(IPR, k, j, i) < 0.)
-        << print_column_table("wl-pre", wr, IPR, k, j, il, iu);
+        << print_column_table("wl-pre", wr, k, j, il, iu);
   }
 #endif  // ENABLE_GLOG
 }
@@ -181,17 +182,17 @@ void check_implicit_cons(AthenaArray<Real> const& cons, int il, int iu, int jl,
         Real const& u_e = cons(IEN, k, j, i);
 
         LOG_IF(FATAL, std::isnan(u_d) || (u_d < 0.))
-            << print_column_table("cons", cons, IDN, k, j, il, iu);
+            << print_column_table("cons-den", cons, k, j, il, iu);
 
         LOG_IF(FATAL, std::isnan(u_e) || (u_e < 0.))
-            << print_column_table("cons", cons, IEN, k, j, il, iu);
+            << print_column_table("cons-eng", cons, k, j, il, iu);
       }
 #endif  // ENABLE_GLOG
 }
 
 void fix_implicit_cons(MeshBlock* pmb, AthenaArray<Real>& cons, int il, int iu,
                        int jl, int ju, int kl, int ku) {
-  auto pthermo = Thermodynamics::GetInstance();
+  /*auto pthermo = Thermodynamics::GetInstance();
   auto pcoord = pmb->pcoord;
   Real Rd = pthermo->GetRd();
   Real grav = pmb->phydro->hsrc.GetG1();
@@ -207,20 +208,30 @@ void fix_implicit_cons(MeshBlock* pmb, AthenaArray<Real>& cons, int il, int iu,
         }
       }
 
-      AirParcel air0 =
-          AirParcelHelper::gather_from_conserved(pmb, k, j, ifix - 1);
+      AirParcel air0(AirParcel::Type::MassConc);
+      for (int n = 0; n < NHYDRO; ++n)
+        air0.w[n] = cons(n, k, j, ifix - 1);
       air0.ToMoleFraction();
       Real temp = air0.w[IDN];
+      air0.ToMassFraction();
+
+      AirParcel air(AirParcel::Type::MassConc);
 
       for (int i = ifix; i <= iu; ++i) {
-        AirParcel air = AirParcelHelper::gather_from_conserved(pmb, k, j, i);
+        for (int n = 0; n < NHYDRO; ++n)
+          air.w[n] = cons(n, k, j, i);
         air.ToMassFraction();
 
         Real z = pcoord->x1v(i) - pcoord->x1v(ifix - 1);
-        air.w[IDN] = cons(IDN, k, j, ifix - 1) * exp(grav * z / (Rd * temp));
-        air.w[IPR] = cons(IPR, k, j, ifix - 1) * exp(grav * z / (Rd * temp));
+        air.w[IDN] = air0.w[IDN] * exp(grav * z / (Rd * temp));
+        air.w[IPR] = air0.w[IPR] * exp(grav * z / (Rd * temp));
+        air.w[IVX] = 0.;
+        //air.w[IVY] = air0.w[IVY];
+        //air.w[IVZ] = air0.w[IVZ];
 
-        AirParcelHelper::distribute_to_conserved(pmb, k, j, i, air);
+        air.ToMassConcentration();
+        for (int n = 0; n < NHYDRO; ++n)
+          cons(n, k, j, i) = air.w[n];
       }
-    }
+    }*/
 }
