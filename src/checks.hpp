@@ -8,11 +8,10 @@
 class MeshBlock;
 
 std::string print_column_table(std::string name, AthenaArray<Real> const& var,
-                               int n, int k, int j, int il, int iu,
-                               int width = 1);
+                               int k, int j, int il, int iu, int width = 1);
 
 std::string print_column_table(std::string name, AthenaArray<Real> const& var,
-                               int n, int il, int iu);
+                               int il, int iu);
 
 void check_eos_cons2prim(AthenaArray<Real> const& prim, int k, int j, int il,
                          int iu);
