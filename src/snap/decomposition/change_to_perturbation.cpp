@@ -102,7 +102,7 @@ void Decomposition::ChangeToPerturbation(AthenaArray<Real> &w, int kl, int ku,
       for (int i = is - NGHOST; i <= ie + NGHOST; ++i) {
         // save pressure and density
         pres_(k, j, i) = w(IPR, k, j, i);
-        dens_(k, j, i) = w(IDN, k, j, i);
+        // dens_(k, j, i) = w(IDN, k, j, i);
 
         // interpolate hydrostatic pressure, prevent divided by zero
         Real psv, dsv;
@@ -116,7 +116,7 @@ void Decomposition::ChangeToPerturbation(AthenaArray<Real> &w, int kl, int ku,
 
         // change pressure/density to pertubation quantities
         w(IPR, k, j, i) -= psv;
-        w(IDN, k, j, i) -= dsv;
+        // w(IDN, k, j, i) -= dsv;
       }
     }
 
@@ -168,7 +168,7 @@ void Decomposition::RestoreFromPerturbation(AthenaArray<Real> &w,
 
   for (int i = is - NGHOST; i <= ie + NGHOST; ++i) {
     w(IPR, k, j, i) = pres_(k, j, i);
-    w(IDN, k, j, i) = dens_(k, j, i);
+    // w(IDN, k, j, i) = dens_(k, j, i);
   }
 
   for (int i = il; i <= iu; ++i) {
@@ -180,12 +180,6 @@ void Decomposition::RestoreFromPerturbation(AthenaArray<Real> &w,
 
     Real dsf = pow(psf_(k, j, i), 1. / entropy_(0, k, j)) *
                exp(-entropy_(1, k, j) / entropy_(0, k, j));
-
-    wr(IDN, i) += dsf;
-    if (wr(IDN, i) < 0.) wr(IDN, i) = dsf;
-
-    wl(IDN, i) += dsf;
-    if (wl(IDN, i) < 0.) wl(IDN, i) = dsf;
   }
 
   /* debug
