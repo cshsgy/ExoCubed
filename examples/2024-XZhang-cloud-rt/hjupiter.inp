@@ -96,7 +96,7 @@ relax_time    = 1.E4
 Ts         = 3000.            # Surface temperature, K
 p0         = 2.E7             # Surface pressure, Pa
 Omega      = 3.277869E-5       # Rotational frequency
-Tmin       = 1600.
+Tmin       = 0.
 
-sponge_tau = 1.E5
+sponge_tau = 1.E4
 sponge_layer = 10
