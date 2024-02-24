@@ -6,12 +6,62 @@
 
 // variable names with a _ following remain to be obtained from other places
 
+auto pthermo = Thermodynamics::GetInstance();
+Real Rd = pthermo->GetRd();
+Real gammad = pthermo->GetGammad();
+Real cp = Rd * gammad / (gammad-1.);
+
+// type of the function
+void search_convective_adjustment(std::vector<AirParcel>& air_column, Coordinates *pcoord, Real grav,
+													 int k, int j) {
+	
+	size_t length = air_column.size();
+
+	// initialize il and iu, the lower and upper level between which the airparcels need
+	// convective adjustment 
+	int il = -1;
+	int iu = ie;   //REVISE ie AS LENGTH
+	
+	// determine il where theta starts to decrease with height	
+	for (int i = is; i <= ie-1; ++i) {   // where to get is and ie?
+		auto& air2 = air_column[i+1].ToMassFraction();
+		auto& air1 = air_column[i].ToMassFraction();
+		if (GetTheta(air2) - GetTheta(air1) < -1e-3) {
+			il = i;
+			break;
+		}	
+	}
+
+	// if there is nowhere theta decreases with height, end the function
+	if (il == -1) {return;}
+
+	// determine iu where theta starts to increase with height
+	for (int i = il + 1; i <= ie; ++i) {
+		if (i == ie) {
+			iu = i;
+			break;
+		}
+
+		auto& air2 = air_column[i+1].ToMassFraction();
+		auto& air1 = air_column[i].ToMassFraction();
+		if (GetTheta(air2) - GetTheta(air1) > 1e-3) {
+			iu = i;
+			break;
+		}
+	}
+
+	// execute convective adjustment to the aircolumn segment 'il-iu' 
+	if (il != -1) {
+		convective_adjustment(air_column, pcoord, grav, k, j, il, iu);
+	}
+
+	// return the current adjusted air column 
+	return search_convective_adjustment(air_column, pcoord, grav, k,j);
+}
+
+
 void convective_adjustment(std::vector<AirParcel>& air, Coordinates *pcoord, Real grav,
 													 int k, int j, int il, int iu) {
-  auto pthermo = Thermodynamics::GetInstance();
-  Real Rd = pthermo->GetRd();
-	Real gammad = pthermo->GetGammad();
-	Real cp = Rd * gammad / (gammad-1.);
   
   Real total_energy = 0.;
   Real total_mass = 0.;
@@ -21,9 +71,8 @@ void convective_adjustment(std::vector<AirParcel>& air, Coordinates *pcoord, Rea
   // sum the energy and mass of all air parcels that to be adjusted (conservation of energy and mass)
   for (int i = il; i <= iu; ++i) {
     parcel = &air[i];
-    //auto&& air = AirParcelHelper::gather_from_primitive(pmb, k, j, i);
-    parcel.ToMassConcentration();    // if this is necessary?  parcel->ToMassConcentration() ?
-    
+    parcel->ToMassFraction();
+
 		Real volume = pcoord->GetCellVolume(k, j, i);
     Real temp = parcel->w[IPR] / Rd / parcel->w[IDN]; // IDN is density, IPR is pressure
 		                                                  // primitive
@@ -79,4 +128,16 @@ void convective_adjustment(std::vector<AirParcel>& air, Coordinates *pcoord, Rea
 			mass_conserved = true;
 		}
   }
+}
+
+
+
+Real GetTheta(AirParcel const& air) {
+	Real pres_ref = 1.0e5;
+	Real pres = air.w[IPR];
+	Real rho = air.w[IDN];
+	Real temp = pres / Rd / rho; 
+	
+	Real theta = temp * pow(pres_ref / pres, Rd / cp); 
+	return theta;	
 }
