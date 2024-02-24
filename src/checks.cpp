@@ -101,30 +101,7 @@ void fix_eos_cons2prim(MeshBlock* pmb, AthenaArray<Real>& prim, int k, int j,
 
 void fix_reconstruct_x1(MeshBlock* pmb, AthenaArray<Real>& wl,
                         AthenaArray<Real>& wr, AthenaArray<Real> const& w,
-                        int k, int j, int il, int iu) {
-  Real grav = -pmb->phydro->hsrc.GetG1();
-  Real dz = pmb->pcoord->dx1f(il - 1);
-  Real H = w(IPR, k, j, il - 1) / (w(IDN, k, j, il - 1) * grav);
-
-  for (int i = il; i <= iu; ++i) {
-    if (wl(IDN, i) < 0.) {
-      wl(IDN, i) = w(IDN, k, j, i - 1) * exp(-dz / H);
-    }
-    if (wl(IPR, i) < 0.) {
-      wl(IPR, i) = w(IPR, k, j, i - 1) * exp(-dz / H);
-    }
-
-    dz = pmb->pcoord->dx1f(i + 1);
-    H = w(IPR, k, j, i + 1) / (w(IDN, k, j, i + 1) * grav);
-
-    if (wr(IDN, i) < 0.) {
-      wr(IDN, i) = w(IDN, k, j, i) * exp(dz / H);
-    }
-    if (wr(IPR, i) < 0.) {
-      wr(IPR, i) = w(IPR, k, j, i) * exp(dz / H);
-    }
-  }
-}
+                        int k, int j, int il, int iu) {}
 
 void fix_reconstruct_x2(AthenaArray<Real>& wl, AthenaArray<Real>& wr,
                         AthenaArray<Real> const& w, int k, int j, int il,

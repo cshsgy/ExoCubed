@@ -38,7 +38,7 @@ dt         = 1
 cfl_number = 0.9          # The Courant, Friedrichs, & Lewy (CFL) Number
 nlim       = -1           # cycle limit
 tlim       = 1.0368E10     # time limit
-xorder     = 5            # horizontal reconstruction order
+xorder     = 2            # horizontal reconstruction order
 integrator = rk3          # integration method
 shock_capture = true
 
@@ -92,17 +92,18 @@ HJ.grav_eq    = 23.1       # m/s^2
 HJ.equinox    = 0.
 
 <radiation>
-dt            = 500.
+dt            = 200.
 nstr          = 4
 radiation_config = hjupiter.yaml
 relax_time    = 1.E4
 
 <problem>
 Ts         = 1600.            # Surface temperature, K
-p0         = 1.E5             # Surface pressure, Pa
-Omega      = 2.1E-5           # Rotational frequency
-bflux      = 907259.9         # bottom upward flux, W/m2   (2000K equivalent)
-Tmin       = 1600.
+Omega      = 2.1E-5           # Rotational frequency, 1/s
+Ts         = 5000.            # Surface temperature, K
+Ps         = 1.E7             # Surface pressure, Pa
+Tmin       = 1600.            # isothermal temperature, K
+bflux      = 0                # bottom upward flux, w/m^2
 
-sponge_tau = 1.E4
+sponge_tau = 1.E5
 sponge_layer = 10
