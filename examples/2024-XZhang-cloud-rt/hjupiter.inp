@@ -30,12 +30,17 @@ file_type  = pnetcdf
 variable   = rad
 dt         = 1.728E5
 
+<output5>
+file_type  = dbg
+dt         = 1
+
 <time>
 cfl_number = 0.9          # The Courant, Friedrichs, & Lewy (CFL) Number
 nlim       = -1           # cycle limit
 tlim       = 1.0368E10     # time limit
 xorder     = 5            # horizontal reconstruction order
 integrator = rk3          # integration method
+shock_capture = true
 
 <mesh>
 nx1        = 64           # Number of zones in X1-direction
@@ -94,9 +99,9 @@ relax_time    = 1.E4
 
 <problem>
 Ts         = 3000.            # Surface temperature, K
-p0         = 2.E7             # Surface pressure, Pa
+Ps         = 2.E7             # Surface pressure, Pa
 Omega      = 3.277869E-5       # Rotational frequency
-Tmin       = 0.
+Tmin       = 1200.
 
 sponge_tau = 1.E4
 sponge_layer = 10

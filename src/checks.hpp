@@ -22,6 +22,10 @@ void fix_eos_cons2prim(MeshBlock* pmb, AthenaArray<Real>& prim, int k, int j,
 void check_reconstruct(AthenaArray<Real> const& wl, AthenaArray<Real> const& wr,
                        int ivx, int k, int j, int il, int iu);
 
+void fix_reconstruct_x1(MeshBlock* pmb, AthenaArray<Real>& wl,
+                        AthenaArray<Real>& wr, AthenaArray<Real> const& w,
+                        int k, int j, int il, int iu);
+
 void fix_reconstruct_x2(AthenaArray<Real>& wl, AthenaArray<Real>& wr,
                         AthenaArray<Real> const& w, int k, int j, int il,
                         int iu);
