@@ -71,7 +71,7 @@ void check_eos_cons2prim(AthenaArray<Real> const& prim, int k, int j, int il,
 // dirty fix for negative pressure and density
 void fix_eos_cons2prim(MeshBlock* pmb, AthenaArray<Real>& prim, int k, int j,
                        int il, int iu) {
-  /*auto pthermo = Thermodynamics::GetInstance();
+  auto pthermo = Thermodynamics::GetInstance();
   auto pcoord = pmb->pcoord;
   Real Rd = pthermo->GetRd();
   Real grav = pmb->phydro->hsrc.GetG1();
@@ -92,30 +92,60 @@ void fix_eos_cons2prim(MeshBlock* pmb, AthenaArray<Real>& prim, int k, int j,
           prim(IDN, k, j, ifix - 1) * exp(grav * z / (Rd * temp));
       prim(IPR, k, j, i) =
           prim(IPR, k, j, ifix - 1) * exp(grav * z / (Rd * temp));
+      prim(IVX, k, j, i) /= 2.;
+      prim(IVY, k, j, i) /= 2.;
+      prim(IVZ, k, j, i) /= 2.;
     }
-  }*/
+  }
+}
+
+void fix_reconstruct_x1(MeshBlock* pmb, AthenaArray<Real>& wl,
+                        AthenaArray<Real>& wr, AthenaArray<Real> const& w,
+                        int k, int j, int il, int iu) {
+  Real grav = -pmb->phydro->hsrc.GetG1();
+  Real dz = pmb->pcoord->dx1f(il - 1);
+  Real H = w(IPR, k, j, il - 1) / (w(IDN, k, j, il - 1) * grav);
+
+  for (int i = il; i <= iu; ++i) {
+    if (wl(IDN, i) < 0.) {
+      wl(IDN, i) = w(IDN, k, j, i - 1) * exp(-dz / H);
+    }
+    if (wl(IPR, i) < 0.) {
+      wl(IPR, i) = w(IPR, k, j, i - 1) * exp(-dz / H);
+    }
+
+    dz = pmb->pcoord->dx1f(i + 1);
+    H = w(IPR, k, j, i + 1) / (w(IDN, k, j, i + 1) * grav);
+
+    if (wr(IDN, i) < 0.) {
+      wr(IDN, i) = w(IDN, k, j, i) * exp(dz / H);
+    }
+    if (wr(IPR, i) < 0.) {
+      wr(IPR, i) = w(IPR, k, j, i) * exp(dz / H);
+    }
+  }
 }
 
 void fix_reconstruct_x2(AthenaArray<Real>& wl, AthenaArray<Real>& wr,
                         AthenaArray<Real> const& w, int k, int j, int il,
                         int iu) {
-  /*for (int i = il; i <= iu; ++i) {
+  for (int i = il; i <= iu; ++i) {
     if (wl(IDN, i) < 0.) wl(IDN, i) = w(IDN, k, j - 1, i);
     if (wr(IDN, i) < 0.) wr(IDN, i) = w(IDN, k, j, i);
     if (wl(IPR, i) < 0.) wl(IPR, i) = w(IPR, k, j - 1, i);
     if (wr(IPR, i) < 0.) wr(IPR, i) = w(IPR, k, j, i);
-  }*/
+  }
 }
 
 void fix_reconstruct_x3(AthenaArray<Real>& wl, AthenaArray<Real>& wr,
                         AthenaArray<Real> const& w, int k, int j, int il,
                         int iu) {
-  /*for (int i = il; i <= iu; ++i) {
+  for (int i = il; i <= iu; ++i) {
     if (wl(IDN, i) < 0.) wl(IDN, i) = w(IDN, k - 1, j, i);
     if (wr(IDN, i) < 0.) wr(IDN, i) = w(IDN, k, j, i);
     if (wl(IPR, i) < 0.) wl(IPR, i) = w(IPR, k - 1, j, i);
     if (wr(IPR, i) < 0.) wr(IPR, i) = w(IPR, k, j, i);
-  }*/
+  }
 }
 
 void check_reconstruct(AthenaArray<Real> const& wl, AthenaArray<Real> const& wr,
@@ -192,7 +222,7 @@ void check_implicit_cons(AthenaArray<Real> const& cons, int il, int iu, int jl,
 
 void fix_implicit_cons(MeshBlock* pmb, AthenaArray<Real>& cons, int il, int iu,
                        int jl, int ju, int kl, int ku) {
-  /*auto pthermo = Thermodynamics::GetInstance();
+  auto pthermo = Thermodynamics::GetInstance();
   auto pcoord = pmb->pcoord;
   Real Rd = pthermo->GetRd();
   Real grav = pmb->phydro->hsrc.GetG1();
@@ -209,8 +239,7 @@ void fix_implicit_cons(MeshBlock* pmb, AthenaArray<Real>& cons, int il, int iu,
       }
 
       AirParcel air0(AirParcel::Type::MassConc);
-      for (int n = 0; n < NHYDRO; ++n)
-        air0.w[n] = cons(n, k, j, ifix - 1);
+      for (int n = 0; n < NHYDRO; ++n) air0.w[n] = cons(n, k, j, ifix - 1);
       air0.ToMoleFraction();
       Real temp = air0.w[IDN];
       air0.ToMassFraction();
@@ -218,20 +247,18 @@ void fix_implicit_cons(MeshBlock* pmb, AthenaArray<Real>& cons, int il, int iu,
       AirParcel air(AirParcel::Type::MassConc);
 
       for (int i = ifix; i <= iu; ++i) {
-        for (int n = 0; n < NHYDRO; ++n)
-          air.w[n] = cons(n, k, j, i);
+        for (int n = 0; n < NHYDRO; ++n) air.w[n] = cons(n, k, j, i);
         air.ToMassFraction();
 
         Real z = pcoord->x1v(i) - pcoord->x1v(ifix - 1);
         air.w[IDN] = air0.w[IDN] * exp(grav * z / (Rd * temp));
         air.w[IPR] = air0.w[IPR] * exp(grav * z / (Rd * temp));
-        air.w[IVX] = 0.;
-        //air.w[IVY] = air0.w[IVY];
-        //air.w[IVZ] = air0.w[IVZ];
+        air.w[IVX] /= 2.;
+        air.w[IVY] /= 2.;
+        air.w[IVZ] /= 2.;
 
         air.ToMassConcentration();
-        for (int n = 0; n < NHYDRO; ++n)
-          cons(n, k, j, i) = air.w[n];
+        for (int n = 0; n < NHYDRO; ++n) cons(n, k, j, i) = air.w[n];
       }
-    }*/
+    }
 }

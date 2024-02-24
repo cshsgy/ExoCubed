@@ -118,6 +118,8 @@ void EquationOfState::ConservedToPrimitive(
       fix_eos_cons2prim(pmb, prim, k, j, il, iu);
       check_eos_cons2prim(prim, k, j, il, iu);
     }
+
+  PrimitiveToConserved(prim, bcc, cons, pco, il, iu, jl, ju, kl, ku);
 }
 
 //----------------------------------------------------------------------------------------
