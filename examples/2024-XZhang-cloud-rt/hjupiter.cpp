@@ -181,8 +181,7 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
         if (air.w[IDN] < Tmin) break;
         AirParcelHelper::distribute_to_conserved(this, k, j, i, air);
         pthermo->Extrapolate(&air, pcoord->dx1f(i),
-                             Thermodynamics::Method::PseudoAdiabat, grav,
-                             1.e-5);
+                             Thermodynamics::Method::PseudoAdiabat, grav);
       }
 
       // Replace adiabatic atmosphere with isothermal atmosphere if temperature
