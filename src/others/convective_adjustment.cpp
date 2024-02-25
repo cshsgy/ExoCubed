@@ -15,15 +15,15 @@ Real cp = Rd * gammad / (gammad-1.);
 void search_convective_adjustment(std::vector<AirParcel>& air_column, Coordinates *pcoord, Real grav,
 													 int k, int j) {
 	
-	size_t length = air_column.size();
+	size_t nlayers = air_column.size();
 
 	// initialize il and iu, the lower and upper level between which the airparcels need
 	// convective adjustment 
 	int il = -1;
-	int iu = ie;   //REVISE ie AS LENGTH
+	int iu = nlayers-1;   //REVISE ie AS LENGTH
 	
 	// determine il where theta starts to decrease with height	
-	for (int i = is; i <= ie-1; ++i) {   // where to get is and ie?
+	for (int i = 0; i < nlayers-1; ++i) {   // where to get is and ie?
 		auto& air2 = air_column[i+1].ToMassFraction();
 		auto& air1 = air_column[i].ToMassFraction();
 		if (GetTheta(air2) - GetTheta(air1) < -1e-3) {
@@ -36,11 +36,8 @@ void search_convective_adjustment(std::vector<AirParcel>& air_column, Coordinate
 	if (il == -1) {return;}
 
 	// determine iu where theta starts to increase with height
-	for (int i = il + 1; i <= ie; ++i) {
-		if (i == ie) {
-			iu = i;
-			break;
-		}
+	for (int i = il + 1; i <= iu; ++i) {
+		if (i == iu) {break;}
 
 		auto& air2 = air_column[i+1].ToMassFraction();
 		auto& air1 = air_column[i].ToMassFraction();
@@ -60,7 +57,7 @@ void search_convective_adjustment(std::vector<AirParcel>& air_column, Coordinate
 }
 
 
-void convective_adjustment(std::vector<AirParcel>& air, Coordinates *pcoord, Real grav,
+void convective_adjustment(std::vector<AirParcel>& air_column, Coordinates *pcoord, Real grav,
 													 int k, int j, int il, int iu) {
   
   Real total_energy = 0.;
@@ -70,7 +67,7 @@ void convective_adjustment(std::vector<AirParcel>& air, Coordinates *pcoord, Rea
 
   // sum the energy and mass of all air parcels that to be adjusted (conservation of energy and mass)
   for (int i = il; i <= iu; ++i) {
-    parcel = &air[i];
+    parcel = &air_column[i];
     parcel->ToMassFraction();
 
 		Real volume = pcoord->GetCellVolume(k, j, i);
@@ -101,7 +98,7 @@ void convective_adjustment(std::vector<AirParcel>& air, Coordinates *pcoord, Rea
 		Real new_total_energy = 0.;
 		Real new_total_mass = 0.;
 		for (int i = il; i <= iu; ++i) {
-			parcel = &air[i];
+			parcel = &air_column[i];
 			temp = guess_temp_0 - grav / cp * (pcoord->x1v(i) - pcoord->x1v(il));
 			parcel->w[IPR] = guess_pres_0 * pow(temp / guess_temp_0, cp / Rd); 
 			parcel->w[IDN] = parcel->w[IPR] / Rd / temp;
