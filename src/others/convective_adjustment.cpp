@@ -1,10 +1,15 @@
+#include <cmath>
+
+// athena
+#include <athena/coordinates/coordinates.hpp>
+
+// canoe
 #include "air_parcel.hpp"
+
 // snap
 #include "snap/thermodynamics/thermodynamics.hpp"
 
 //thermodynamics/saturation_adjustment.cpp  as reference
-
-// variable names with a _ following remain to be obtained from other places
 
 auto pthermo = Thermodynamics::GetInstance();
 Real Rd = pthermo->GetRd();
@@ -12,21 +17,21 @@ Real gammad = pthermo->GetGammad();
 Real cp = Rd * gammad / (gammad-1.);
 
 // type of the function
-void search_convective_adjustment(std::vector<AirParcel>& air_column, Coordinates *pcoord, Real grav,
-													 int k, int j) {
+void recursively_search_convective_adjustment(std::vector<AirParcel>& air_column, 
+																							Coordinates *pcoord, Real grav, int k, int j) {
 	
 	size_t nlayers = air_column.size();
 
 	// initialize il and iu, the lower and upper level between which the airparcels need
 	// convective adjustment 
 	int il = -1;
-	int iu = nlayers-1;   //REVISE ie AS LENGTH
+	int iu = nlayers-1;
 	
 	// determine il where theta starts to decrease with height	
 	for (int i = 0; i < nlayers-1; ++i) {   // where to get is and ie?
 		auto& air2 = air_column[i+1].ToMassFraction();
 		auto& air1 = air_column[i].ToMassFraction();
-		if (GetTheta(air2) - GetTheta(air1) < -1e-3) {
+		if (GetTheta(air2) - GetTheta(air1) < -1e-2) {
 			il = i;
 			break;
 		}	
@@ -41,7 +46,7 @@ void search_convective_adjustment(std::vector<AirParcel>& air_column, Coordinate
 
 		auto& air2 = air_column[i+1].ToMassFraction();
 		auto& air1 = air_column[i].ToMassFraction();
-		if (GetTheta(air2) - GetTheta(air1) > 1e-3) {
+		if (GetTheta(air2) - GetTheta(air1) > 1e-2) {
 			iu = i;
 			break;
 		}
@@ -52,8 +57,8 @@ void search_convective_adjustment(std::vector<AirParcel>& air_column, Coordinate
 		convective_adjustment(air_column, pcoord, grav, k, j, il, iu);
 	}
 
-	// return the current adjusted air column 
-	return search_convective_adjustment(air_column, pcoord, grav, k,j);
+	// Recursive call to search further 
+	return recursively_search_convective_adjustment(air_column, pcoord, grav, k,j);
 }
 
 
@@ -75,7 +80,8 @@ void convective_adjustment(std::vector<AirParcel>& air_column, Coordinates *pcoo
 		                                                  // primitive
     total_mass += parcel->w[IDN] * volume;
     total_energy += parcel->w[IDN] * volume * (cp / gammad * temp + grav * pcoord->x1v(i));
-
+		
+		// record the pressure and density of the lower and upper parcel of the air column section
     if (i == il) {
       Real pres_l = parcel->w[IPR];
       Real rho_l = parcel->w[IDN];
@@ -85,18 +91,27 @@ void convective_adjustment(std::vector<AirParcel>& air_column, Coordinates *pcoo
       Real rho_u = parcel->w[IDN];
     }
   }
-  
+ 
+  // the initial guess of pressure and density of lower parcel
   Real guess_pres_0 = 0.5 * (pres_l + pres_u); 
   Real guess_rho_0 = 0.5 * (rho_l + rho_u);
 
-  bool energy_conserved = false;
+	Real new_total_energy;
+	Real new_total_mass;
+
+	Real total_energy_bias;
+  Real total_mass_bias;
+
+	bool energy_conserved = false;
   bool mass_conserved = false;
   
+	// calculate new total mass and energy after the convective adjustment
   while (energy_conserved == false || mass_conserved == false) {
   	Real guess_temp_0 = guess_pres_0 / guess_rho_0 / Rd;
-		
-		Real new_total_energy = 0.;
-		Real new_total_mass = 0.;
+		auto& volume_0 = pcoord->GetCellVolume(k, j, il); 
+
+		new_total_energy = 0.;
+		new_total_mass = 0.;
 		for (int i = il; i <= iu; ++i) {
 			parcel = &air_column[i];
 			temp = guess_temp_0 - grav / cp * (pcoord->x1v(i) - pcoord->x1v(il));
@@ -107,26 +122,25 @@ void convective_adjustment(std::vector<AirParcel>& air_column, Coordinates *pcoo
 			new_total_energy += parcel->w[IDN] * volume * (cp / gammad * temp + grav * pcoord->x1v(i));
 		}
 
-		if (new_total_energy - total_energy > 5.) {
-			guess_pres_0 -= 0.5;  // need control guess_temp_0 positive
-														// how much delta P -> how much delta E
-		} else if (new_total_energy - total_energy < -5.) {
-			guess_pres_0 += 0.5;
-		} else {
-			energy_conserved = true;
-		}
+		// examine if energy conservation is satisfied
+		total_energy_bias = new_total_energy - total_energy;
+		if (fabs(total_energy_bias) > 5.) {
+			Real dE_dP = (cp-Rd+grav*pcoord->x1v(il)/guess_temp_0) * volume_0 / Rd;
+			Real pres_change = total_energy_bias / dE_dP;
+			while (pres_change >= guess_pres_0) {pres_change *= 0.4;} // 
+			guess_pres_0 -= pres_change;
+		} else {energy_conserved = true;}
 
-		if (new_total_mass - total_mass > 5.) {
-			guess_rho_0 -= 0.5;   // need control guess_rho_0 positive
-														// how much delta rho -> how much delta mass
-		} else if (new_total_mass - total_mass < -5.) {
-			guess_rho_0 += 0.5;
-		} else {
-			mass_conserved = true;
-		}
+	  // examine if mass conservation is satisfied
+		total_mass_bias = new_total_mass - total_mass;
+		if (fabs(total_mass_bias) > 5.) {
+			Real dm_drho = volume_0;
+			Real rho_change = total_mass_bias / dm_drho;
+			while (rho_change >= guess_rho_0) {rho_change *= 0.4;}
+			guess_rho_0 -= rho_change;
+		} else {mass_conserved = true;}
   }
 }
-
 
 
 Real GetTheta(AirParcel const& air) {
