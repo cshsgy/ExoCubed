@@ -41,8 +41,7 @@ class ExchangerBase {
 template <typename T>
 class Exchanger : public ExchangerBase {
  public:  // constructor and destructor
-  using DataType = typename MessageTraits<T>::DataType;
-  using BufferType = std::vector<DataType>;
+  using BufferType = std::vector<T>;
 #ifdef MPI_PARALLEL
   using ExchangerBase::mpi_comm_;
 #endif
@@ -69,6 +68,8 @@ class Exchanger : public ExchangerBase {
 #endif  // MPI_PARALLEL
   }
 
+  virtual void Regroup(MeshBlock *pmb, CoordinateDirection dir) {}
+
   //! \brief Clear buffer
   virtual void ClearBuffer(MeshBlock const *pmb) {
     for (int n = 0; n < MessageTraits<T>::num_buffers; ++n) {
@@ -84,13 +85,20 @@ class Exchanger : public ExchangerBase {
   }
 
  protected:
-  enum BoundaryStatus status_flag_[MessageTraits<T>::num_buffers];
-  BufferType send_buffer_[MessageTraits<T>::num_buffers];
-  BufferType recv_buffer_[MessageTraits<T>::num_buffers];
+  //! \brief MPI color of each block
+  std::vector<int> color_;
+
+  //! \brief MPI rank of the bottom of each block
+  std::vector<int> brank_;
+
+ protected:
+  std::vector<enum BoundaryStatus> status_flag_;
+  std::vector<BufferType> send_buffer_;
+  std::vector<BufferType> recv_buffer_;
 
 #ifdef MPI_PARALLEL
-  MPI_Request req_mpi_send_[MessageTraits<T>::num_buffers];
-  MPI_Request req_mpi_recv_[MessageTraits<T>::num_buffers];
+  std::vector<MPI_Request> req_mpi_send_;
+  std::vector<MPI_Request> req_mpi_recv_;
 #endif  // MPI_PARALLEL
 };
 
@@ -152,14 +160,7 @@ class LinearExchanger : public Exchanger<T> {
 
  public:  // member functions
   int GetRankInGroup() const;
-  void Regroup(MeshBlock const *pmb, CoordinateDirection dir);
-
- private:
-  //! \brief MPI color of each block
-  std::vector<int> color_;
-
-  //! \brief MPI rank of the bottom of each block
-  std::vector<int> brank_;
+  void Regroup(MeshBlock *pmb, CoordinateDirection dir) override;
 };
 
 template <typename T>
@@ -167,9 +168,10 @@ class PlanarExchanger : public Exchanger<T> {
  public:  // constructor and destructor
   PlanarExchanger();
 
+  void Regroup(MeshBlock *pmb, CoordinateDirection dir) override;
+
  protected:
-  gatherAllData23_(AthenaArray<Real> &total_vol, 
-                   AthenaArray<Real> &total_data);
+  gatherAllData23_(AthenaArray<Real> &total_vol, AthenaArray<Real> &total_data);
 };
 
 #endif  // SRC_EXCHANGER_EXCHANGER_HPP_

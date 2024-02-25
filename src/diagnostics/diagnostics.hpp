@@ -20,23 +20,10 @@ class Diagnostics : public NamedGroup {
   AthenaArray<Real> data;
 
   // functions
-  Diagnostics(MeshBlock *pmb, 
-              std::string short_name,
-              std::string long_name);
+  Diagnostics(MeshBlock *pmb, std::string short_name, std::string long_name);
   virtual ~Diagnostics();
 
   Diagnostics *operator[](std::string name);
-
-  template <typename Dg>
-  Diagnostics *AddDiagnostics(Dg const &d) {
-    Dg *pd = new Dg(d);
-    Diagnostics *p = this;
-    while (p->next != nullptr) p = p->next;
-    p->next = pd;
-    p->next->prev = p;
-    p->next->next = nullptr;
-    return p->next;
-  }
 
   virtual void Progress(AthenaArray<Real> const &w) {}
   virtual void Finalize(AthenaArray<Real> const &w) {}
@@ -65,6 +52,14 @@ class Diagnostics : public NamedGroup {
   void setColor_(int *color, CoordinateDirection dir);
   void gatherAllData23_(AthenaArray<Real> &total_vol,
                         AthenaArray<Real> &total_data);
+};
+
+using DiagnosticsPtr = std::shared_ptr<Diagnostics>;
+using DiagnosticsContainer = std::vector<DiagnosticsPtr>;
+
+class DiagnosticsFactory {
+ public:
+  static DiagnosticsContainer CreateFrom(ParameterInput *pin, std::string key);
 };
 
 // register all diagnostics
