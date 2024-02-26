@@ -4,7 +4,7 @@
 // canoe
 #include "air_parcel.hpp"
 
-void convective_adjustment(std::vector<AirParcel>& air_column, Coordinates *pcoord, Real grav,
+void convective_adjustment(std::vector<AirParcel>& air_column, Real* x1_ptr, Real grav,
 													 int k, int j, int il, int iu);
 
 
@@ -12,7 +12,7 @@ void convective_adjustment(std::vector<AirParcel>& air_column, Coordinates *pcoo
 Real GetTheta(AirParcel const& air);
 
 void recursively_search_convective_adjustment(std::vector<AirParcel>& air_column, 
-																						Coordinates *pcoord, Real grav, int k, int j);
+																						Real* x1_ptr, Real grav, int k, int j);
 
 
 
