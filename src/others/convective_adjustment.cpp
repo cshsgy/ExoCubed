@@ -11,16 +11,17 @@
 
 //thermodynamics/saturation_adjustment.cpp  as reference
 
-auto pthermo = Thermodynamics::GetInstance();
-Real Rd = pthermo->GetRd();
-Real gammad;
-Real cp;
-Real cv;
 
 
 void convective_adjustment(std::vector<AirParcel>& air_column, Coordinates *pcoord, Real grav,
 													 int k, int j, int il, int iu) {
-  Real temp, volume;
+	auto pthermo = Thermodynamics::GetInstance();
+	Real Rd = pthermo->GetRd();
+	Real gammad;
+	Real cp;
+	Real cv;
+  
+	Real temp, volume;
 	
 	// the pressure and density of the lower and upper parcel of the air column section
 	Real pres_l = air_column[il].w[IPR];
@@ -108,13 +109,15 @@ void convective_adjustment(std::vector<AirParcel>& air_column, Coordinates *pcoo
 
 
 Real GetTheta(AirParcel const& air) {
+	auto pthermo = Thermodynamics::GetInstance();
+	Real Rd = pthermo->GetRd();
 	Real pres_ref = 1.0e5;
 	Real pres = air.w[IPR];
 	Real rho = air.w[IDN];
 	Real temp = pres / Rd / rho; 
 	
-	gammad = pthermo->GetGammad(air);
-	cp = Rd * gammad / (gammad-1.);
+	Real gammad = pthermo->GetGammad(air);
+	Real cp = Rd * gammad / (gammad-1.);
 	Real theta = temp * pow(pres_ref / pres, Rd /cp); 
 	return theta;	
 }
@@ -141,7 +144,9 @@ void recursively_search_convective_adjustment(std::vector<AirParcel>& air_column
 	}
 
 	// if there is nowhere theta decreases with height, end the function
-	if (il == -1) {return;}
+	if (il == -1) {
+		std::cout << "no adjustment" << std::endl;
+		return;}
 
 	// determine iu where theta starts to increase with height
 	for (int i = il + 1; i <= iu; ++i) {
