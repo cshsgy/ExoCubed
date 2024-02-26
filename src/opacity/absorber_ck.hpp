@@ -33,6 +33,7 @@ class HeliosCKPremix: public AbsorberCK {
   virtual ~HeliosCKPremix() {}
 
   void LoadCoefficient(std::string fname, size_t bid) override;
+  void LoadCoefficient(std::string fname, size_t bid, std::ofstream &of);
   Real GetAttenuation(Real g1, Real g2, AirParcel const& var) const override;
 };
 

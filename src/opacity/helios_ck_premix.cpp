@@ -14,7 +14,7 @@
 // opacity
 #include "absorber_ck.hpp"
 
-void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid) 
+void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid)
 {
   std::ifstream file(fname);
   if (!file.is_open()) {
@@ -23,7 +23,7 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid)
 
   size_t num_bands;
 
-  // temperature, pressure, band, g-points
+  // number of temperature, pressure, band, g-points
   file >> len_[0] >> len_[1] >> num_bands >> len_[2];
 
   if (bid >= num_bands) {
@@ -57,8 +57,12 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid)
     }
   }
 
-  // g-points and weights
   Real dummy;
+  for (int i = 0; i < num_bands - bid; ++i) {
+    file >> dummy;
+  }
+
+  // g-points and weightss
   for (int g = 0; g < len_[2]; ++g) {
     Real gpoint;
     file >> gpoint >> dummy;
@@ -74,11 +78,90 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid)
             file >> kcoeff_[n];
             kcoeff_[n] = log(std::max(kcoeff_[n], 1.0e-99));
           }
+        }
+        else {
+          file >> dummy;
+        }
+      file.close();
+    }
+}
+
+//an overload version of the function for testing purpose
+void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid, std::ofstream &of)
+{
+  std::ifstream file(fname);
+  if (!file.is_open()) {
+    throw std::runtime_error("Failed to open file: " + fname);
+  }
+
+  size_t num_bands;
+
+  // number of temperature, pressure, band, g-points
+  file >> len_[0] >> len_[1] >> num_bands >> len_[2];
+
+  if (bid >= num_bands) {
+    throw std::runtime_error("Band index out of range: " + std::to_string(bid));
+  }
+
+  axis_.resize(len_[0] + len_[1] + len_[2]);
+  kcoeff_.resize(len_[0] * len_[1] * len_[2]);
+
+  // temperature grid
+  for (int i = 0; i < len_[0]; ++i) {
+    file >> axis_[i];
+    of << axis_[i] << std::endl; //print to check
+  }
+
+  // pressure grid
+  for (int j = 0; j < len_[1]; ++j) {
+    Real pres;
+    file >> pres;
+    of << pres << std::endl; //print to check
+    axis_[len_[0] + j] = log(pres);
+  }
+
+  Real wmin, wmax;
+  file >> wmin;
+  // band wavelengths
+  for (int b = 0; b < num_bands; ++b) {
+    if (b == bid) {
+      file >> wmax;
+      of << wmax; // print to check
+      of << wmin << std::endl; //print to check
+      break;
+    } else {
+      file >> wmin;
+    }
+  }
+
+  Real dummy;
+  for (int i = 0; i < num_bands - bid; ++i) {
+    file >> dummy;
+  }
+
+  // g-points and weightss
+  for (int g = 0; g < len_[2]; ++g) {
+    Real gpoint;
+    file >> gpoint >> dummy;
+    axis_[len_[0] + len_[1] + g] = wmin + (wmax - wmin) * gpoint;
+    of << axis_[len_[0] + len_[1] + g]; //print to check
+  }
+
+  int n = 0;
+  for (int i = 0; i < len_[0]; ++i)
+    for (int j = 0; j < len_[1]; ++j)
+      for (int b = 0; b < num_bands; ++b) {
+        if (b == bid) {
+          for (int g = 0; g < len_[2]; ++g, ++n) {
+            file >> kcoeff_[n];
+            of << kcoeff_[n]; //print to check
+            kcoeff_[n] = log(std::max(kcoeff_[n], 1.0e-99));
+          }
+          of << std::endl; //change line after every eight number
         } else {
           file >> dummy;
         }
       }
-
   file.close();
 }
 
