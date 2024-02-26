@@ -31,6 +31,8 @@
 // harp
 #include "harp/radiation.hpp"
 
+#include <others/convective_adjustment.hpp>
+
 Real Ps, Ts, Omega, grav, sponge_tau, bflux, gammad, Tmin;
 int sponge_layer;
 
@@ -206,30 +208,34 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
 
 ////////// test convective adjustment
 
-	std::vector<AirParcel> test_air_column;
   for (int k = ks; k < ks+1; ++k)
     for (int j = js; j < js+1; ++j) {
 
-      // half a grid to cell center
-      pthermo->Extrapolate(&air, pcoord->dx1f(is) / 2.,
-                           Thermodynamics::Method::ReversibleAdiabat, grav);
 
       for (int i = is; i <= ie; ++i) {
 				air.SetZero();
 				air.w[IPR] = Ps;
 				air.w[IDN] = Ts;
         AirParcelHelper::distribute_to_conserved(this, k, j, i, air);
-        pthermo->Extrapolate(&air, pcoord->dx1f(i),
-                             Thermodynamics::Method::PseudoAdiabat, grav);
       }
 		}
 
-	AirColumn ac = gather_from_conserved(this, ks, js);
+	AirColumn aircolumn = gather_from_conserved(this, ks, js);
+  distribute_to_primitive(this, ks, js, aircolumn);
 	
-	recursively_search_convective_adjustment(ac, pcoord, grav, ks, js);
+	std::vector<AirParcel> vector_ac;
+
+	for (auto& air : aircolumn) {
+		vector_ac.push_back(air);
+	}
 
 
+	recursively_search_convective_adjustment(vector_ac, pcoord, grav, ks, js);
 
+	for (int i = is; i <= ie; ++i) {
+		theta_out = GetTheta(vector_ac[i]);
+		
+	}
 
 
 
