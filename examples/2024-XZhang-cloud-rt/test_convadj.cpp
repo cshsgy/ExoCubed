@@ -175,35 +175,6 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
   auto pthermo = Thermodynamics::GetInstance();
 
   AirParcel air(AirParcel::Type::MoleFrac);
-  // construct atmosphere from bottom up
-  for (int k = ks; k <= ke; ++k)
-    for (int j = js; j <= je; ++j) {
-      air.SetZero();
-      air.w[IPR] = Ps;
-      air.w[IDN] = Ts;
-
-      // half a grid to cell center
-      pthermo->Extrapolate(&air, pcoord->dx1f(is) / 2.,
-                           Thermodynamics::Method::ReversibleAdiabat, grav);
-
-      int i = is;
-      for (; i <= ie; ++i) {
-        if (air.w[IDN] < Tmin) break;
-        AirParcelHelper::distribute_to_conserved(this, k, j, i, air);
-        pthermo->Extrapolate(&air, pcoord->dx1f(i),
-                             Thermodynamics::Method::PseudoAdiabat, grav);
-      }
-
-      // Replace adiabatic atmosphere with isothermal atmosphere if temperature
-      // is too low
-      for (; i <= ie; ++i) {
-        AirParcelHelper::distribute_to_conserved(this, k, j, i, air);
-        pthermo->Extrapolate(&air, pcoord->dx1f(i),
-                             Thermodynamics::Method::Isothermal, grav);
-      }
-    }
-
-
 
 
 ////////// test convective adjustment
@@ -231,16 +202,16 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
 
 
 	recursively_search_convective_adjustment(vector_ac, pcoord, grav, ks, js);
+	
+
+	// output
+	std::ofstream outputFile;
+  outputFile.open("theta_test.csv", std::ios_base::app); // Open file in append mode
 
 	for (int i = is; i <= ie; ++i) {
 		theta_out = GetTheta(vector_ac[i]);
-		
+		outputFile << theta_out << std::endl;
 	}
-
-
-
-
-
-
+	outputFile.close();
 
 }
