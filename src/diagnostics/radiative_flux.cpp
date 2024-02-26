@@ -11,9 +11,9 @@
 // canoe
 #include "diagnostics.hpp"
 
-RadiativeFlux::RadiativeFlux(MeshBlock *pmb) : 
-  Diagnostics(pmb, "radflux", "total upward radiative flux,total downward radiative flux")
-{
+RadiativeFlux::RadiativeFlux(MeshBlock *pmb)
+    : Diagnostics(pmb, "radflux",
+                  "total upward radiative flux,total downward radiative flux") {
   type = "VECTORS";
   grid = "--F";
   units = "w/m^2";

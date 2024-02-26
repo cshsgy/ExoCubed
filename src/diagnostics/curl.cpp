@@ -5,9 +5,7 @@
 // canoe
 #include "diagnostics.hpp"
 
-Curl::Curl(MeshBlock *pmb) : 
-  Diagnostics(pmb, "curl", "curl")
-{
+Curl::Curl(MeshBlock *pmb) : Diagnostics(pmb, "curl", "curl") {
   units = "1/s";
   if (pmb->block_size.nx3 > 1) {
     type = "VECTORS";

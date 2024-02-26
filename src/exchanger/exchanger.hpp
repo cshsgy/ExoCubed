@@ -2,8 +2,8 @@
 #define SRC_EXCHANGER_EXCHANGER_HPP_
 
 // Athena++
-#include <athena/mesh/mesh.hpp>
 #include <athena/bvals/bvals.hpp>
+#include <athena/mesh/mesh.hpp>
 
 // canoe
 #include <configure.hpp>

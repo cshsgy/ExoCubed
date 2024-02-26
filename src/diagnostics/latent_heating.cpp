@@ -9,9 +9,8 @@
 // canoe
 #include "diagnostics.hpp"
 
-LatentHeating::LatentHeating(MeshBlock *pmb) : 
-  Diagnostics(pmb, "Lvheating", "Latent Heating")
-{
+LatentHeating::LatentHeating(MeshBlock *pmb)
+    : Diagnostics(pmb, "Lvheating", "Latent Heating") {
   type = "SCALARS";
   grid = "--C";
   units = "W/m^3";

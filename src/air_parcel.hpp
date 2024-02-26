@@ -171,15 +171,14 @@ class AirParcel {
       w[i] += rates[0];
 
       // cloud concentration rates
-      auto& cloud_index = pthermo->GetCloudIndices(i);
-      for (int n = 1; n < rates.size(); ++n)
-        c[cloud_index[n - 1]] += rates[n];
+      auto &cloud_index = pthermo->GetCloudIndices(i);
+      for (int n = 1; n < rates.size(); ++n) c[cloud_index[n - 1]] += rates[n];
     }
 
     // vapor + vapor <=> cloud
-    for (auto const& [ij, info] : cloud_reaction_map_) {
+    for (auto const &[ij, info] : cloud_reaction_map_) {
       auto rates = TryEquilibriumTP_VaporVaporCloud(*this, ij);
-      auto& indx = info.first;
+      auto &indx = info.first;
 
       // vapor condensation rate
       w[indx[0]] += rates[0];
@@ -289,15 +288,15 @@ class AirParcel {
 
     // vpaor <=> cloud
     for (int i = 1; i <= NVAPOR; ++i)
-      for (auto& j : pthermo->GetCloudIndices(i)) {
+      for (auto &j : pthermo->GetCloudIndices(i)) {
         w[i] += c[j];
         c[j] = 0.;
       }
 
     // vapor + vapor <=> cloud
-    for (auto const& [ij, info] : pthermo->GetCloudReactions()) {
-      auto& indx = info.first;
-      auto& stoi = info.second;
+    for (auto const &[ij, info] : pthermo->GetCloudReactions()) {
+      auto &indx = info.first;
+      auto &stoi = info.second;
 
       w[indx[0]] += stoi[0] / stoi[2] * c[indx[2]];
       c[indx[2]] = 0.;

@@ -18,7 +18,7 @@
 #include <utils/fileio.hpp>
 
 // harp
-#include <harp/spectral_grid.hpp> // Direction
+#include <harp/spectral_grid.hpp>  // Direction
 
 // astro
 #include "celestrial_body.hpp"

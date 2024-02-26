@@ -23,10 +23,7 @@
 // snap
 #include "snap/thermodynamics/thermodynamics.hpp"
 
-Real __attribute__((weak))
-AirParcel::Gammad() const {
-  return 1.4;
-}
+Real __attribute__((weak)) AirParcel::Gammad() const { return 1.4; }
 
 Real AirParcel::DlnTDlnP(Real latent[]) const {
   // calculate gammad
@@ -37,8 +34,7 @@ Real AirParcel::DlnTDlnP(Real latent[]) const {
 
   Real f_sig = 1.;
   // vapor
-  for (int n = 1; n <= NVAPOR; ++n)
-    f_sig += w[n] * (cp_ratio_mole_[n] - 1.);
+  for (int n = 1; n <= NVAPOR; ++n) f_sig += w[n] * (cp_ratio_mole_[n] - 1.);
   // cloud
   for (int n = 0; n < NCLOUD; ++n)
     f_sig += c[n] * (cp_ratio_mole_[1 + NVAPOR + n] - 1.);

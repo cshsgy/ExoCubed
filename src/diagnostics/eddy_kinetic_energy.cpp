@@ -19,9 +19,8 @@
 #include <mpi.h>
 #endif
 
-EddyKineticEnergy::EddyKineticEnergy(MeshBlock *pmb) : 
-  Diagnostics(pmb, "eke", "eddy kinetic energy, mean kinetic energy")
-{
+EddyKineticEnergy::EddyKineticEnergy(MeshBlock *pmb)
+    : Diagnostics(pmb, "eke", "eddy kinetic energy, mean kinetic energy") {
   type = "VECTORS";
   grid = "--C";
   units = "J/m^3,J/m^3";

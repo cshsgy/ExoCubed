@@ -14,9 +14,7 @@
 
 Diagnostics::Diagnostics(MeshBlock *pmb, std::string name,
                          std::string long_name)
-    : NamedGroup(name, long_name),
-      pmy_block_(pmb),
-      ncycle_(0) {
+    : NamedGroup(name, long_name), pmy_block_(pmb), ncycle_(0) {
   Application::Logger app("main");
   app->Log("Initialize Diagnostics");
 

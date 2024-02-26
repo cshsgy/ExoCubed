@@ -9,8 +9,7 @@
 #include "diagnostics.hpp"
 
 TemperatureAnomaly::TemperatureAnomaly(MeshBlock *pmb)
-    : Diagnostics(pmb, "tempa", "Temperature anomaly")
-{
+    : Diagnostics(pmb, "tempa", "Temperature anomaly") {
   type = "SCALARS";
   units = "K";
   mean_.NewAthenaArray(ncells1_);
@@ -56,8 +55,8 @@ void TemperatureAnomaly::Finalize(AthenaArray<Real> const &w) {
     }
 
 #ifdef MPI_PARALLEL
-  MPI_Allreduce(MPI_IN_PLACE, mean_.data(), mean_.GetSize(),
-                MPI_ATHENA_REAL, MPI_SUM, mpi_comm_);
+  MPI_Allreduce(MPI_IN_PLACE, mean_.data(), mean_.GetSize(), MPI_ATHENA_REAL,
+                MPI_SUM, mpi_comm_);
 #endif
 
   // temperature anomaly

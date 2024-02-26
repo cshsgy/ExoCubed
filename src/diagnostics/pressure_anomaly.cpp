@@ -4,9 +4,8 @@
 // canoe
 #include "diagnostics.hpp"
 
-PressureAnomaly::PressureAnomaly(MeshBlock *pmb) : 
-  Diagnostics(pmb, "presa", "Pressure anomaly")
-{
+PressureAnomaly::PressureAnomaly(MeshBlock *pmb)
+    : Diagnostics(pmb, "presa", "Pressure anomaly") {
   type = "SCALARS";
   units = "pa";
   mean_.NewAthenaArray(ncells1_);

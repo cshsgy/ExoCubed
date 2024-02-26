@@ -20,7 +20,7 @@
 #include <athena/mesh/mesh.hpp>
 
 // canoe
-//#include <air_parcel.hpp>
+// #include <air_parcel.hpp>
 #include <configure.hpp>
 #include <constants.hpp>
 
@@ -148,14 +148,11 @@ class Thermodynamics {
 
   //! \return the index of the cloud
   //! \param[in] i the index of the vapor
-  IndexSet GetCloudIndices(int i) const { 
-    return cloud_index_set_[i]; 
-  }
+  IndexSet GetCloudIndices(int i) const { return cloud_index_set_[i]; }
 
   //! \return the cloud reaction map
   //! \param[in] i the index of the vapor
-  std::map<IndexPair, ReactionInfo>
-  GetCloudReactions() const { 
+  std::map<IndexPair, ReactionInfo> GetCloudReactions() const {
     return cloud_reaction_map_;
   }
 
@@ -336,9 +333,9 @@ class Thermodynamics {
     return qfrac.w[n] / (qfrac.w[n] + rates[0]);
   }
 
- public: // template functions
-  template<typename T>
-  Real GetTemp(T const& w) const {
+ public:  // template functions
+  template <typename T>
+  Real GetTemp(T const &w) const {
     Real feps = 1.;
 
     for (int n = 1; n <= NVAPOR; ++n) {
@@ -348,8 +345,8 @@ class Thermodynamics {
     return w[IPR] / (w[IDN] * Rd_ * feps);
   }
 
-  template<typename T>
-  Real GetCpMass(T const& w) const {
+  template <typename T>
+  Real GetCpMass(T const &w) const {
     Real gammad = AirParcel::gammad_ref;
 
     Real qsig = 1.;

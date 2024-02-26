@@ -5,9 +5,7 @@
 // canoe
 #include "diagnostics.hpp"
 
-Divergence::Divergence(MeshBlock *pmb) : 
-  Diagnostics(pmb, "div", "divergence") 
-{
+Divergence::Divergence(MeshBlock *pmb) : Diagnostics(pmb, "div", "divergence") {
   type = "SCALARS";
   units = "1/s";
 

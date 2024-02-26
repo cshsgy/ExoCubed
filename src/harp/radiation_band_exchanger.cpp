@@ -134,8 +134,7 @@ void RadiationBand::Transfer(MeshBlock const *pmb, int n) {
 
   if (nblocks > 1) {
 #ifdef MPI_PARALLEL
-    MPI_Allgather(&send_buffer_[n], size,
-                  MPI_ATHENA_REAL, &recv_buffer_[n],
+    MPI_Allgather(&send_buffer_[n], size, MPI_ATHENA_REAL, &recv_buffer_[n],
                   size, MPI_ATHENA_REAL, mpi_comm_);
 #endif  // MPI_PARALLEL
   } else {

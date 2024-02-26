@@ -7,8 +7,8 @@
 // diagnostics
 #include "diagnostics.hpp"
 
-DiagnosticsContainer DiagnosticsFactory::CreateFrom(
-    MeshBlock *pmb, ParameterInput *pin) {
+DiagnosticsContainer DiagnosticsFactory::CreateFrom(MeshBlock *pmb,
+                                                    ParameterInput *pin) {
   DiagnosticsContainer diag;
 
   char cstr[80];

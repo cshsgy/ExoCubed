@@ -11,6 +11,4 @@
 // exchanger
 #include "exchanger.hpp"
 
-
-
 #endif  // SRC_EXCHANGER_NEIGHBOR_EXCHANGER_HPP_

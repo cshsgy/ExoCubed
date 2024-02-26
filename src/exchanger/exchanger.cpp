@@ -1,6 +1,6 @@
 // athena
-#include <athena/globals.hpp>
 #include <athena/bvals/bvals.hpp>
+#include <athena/globals.hpp>
 #include <athena/mesh/mesh.hpp>
 
 // canoe

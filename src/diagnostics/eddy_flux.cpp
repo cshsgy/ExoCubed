@@ -12,8 +12,8 @@
 // canoe
 #include "diagnostics.hpp"
 
-EddyFlux::EddyFlux(MeshBlock *pmb) : 
-  Diagnostics(pmb, "eddyflux", "Z-coordinate eddy flux");
+EddyFlux::EddyFlux(MeshBlock *pmb)
+    : Diagnostics(pmb, "eddyflux", "Z-coordinate eddy flux");
 {
   type = "VECTORS";
   grid = "--C";

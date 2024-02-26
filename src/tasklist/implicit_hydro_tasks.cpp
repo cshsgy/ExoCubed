@@ -261,8 +261,10 @@ TaskStatus ImplicitHydroTasks::ImplicitCorrection(MeshBlock *pmb, int stage) {
       wghts[4] = 0.;
       pmb->WeightedAve(ph->u, pmb->pimpl->du, ph->u2, ph->u2, ph->u2, wghts);
 
-      fix_implicit_cons(pmb, ph->u, pmb->is, pmb->ie, pmb->js, pmb->je, pmb->ks, pmb->ke);
-      check_implicit_cons(ph->u, pmb->is, pmb->ie, pmb->js, pmb->je, pmb->ks, pmb->ke);
+      fix_implicit_cons(pmb, ph->u, pmb->is, pmb->ie, pmb->js, pmb->je, pmb->ks,
+                        pmb->ke);
+      check_implicit_cons(ph->u, pmb->is, pmb->ie, pmb->js, pmb->je, pmb->ks,
+                          pmb->ke);
     }
     return TaskStatus::next;
   }

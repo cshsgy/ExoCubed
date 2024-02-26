@@ -24,10 +24,10 @@
 // canoe
 #include "diagnostics.hpp"
 
-SphericalAngularMomentum::SphericalAngularMomentum(MeshBlock *pmb) : 
-  Diagnostics(pmb, "am",
-      "mass,moment of inertia relative to a thin spherical shell,mean angular velocity")
-{
+SphericalAngularMomentum::SphericalAngularMomentum(MeshBlock *pmb)
+    : Diagnostics(pmb, "am",
+                  "mass,moment of inertia relative to a thin spherical "
+                  "shell,mean angular velocity") {
   type = "VECTORS";
   grid = "---";
   units = "kg,1,1/s";

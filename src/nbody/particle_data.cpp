@@ -57,14 +57,11 @@ void commit_mpi_particle_data() {
                        offsetof(ParticleData, pid),
                        offsetof(ParticleData, time)};
 
-  MPI_Type_create_struct(3, counts, disps, types,
-                         &MPI_PARTICLE_DATA);
+  MPI_Type_create_struct(3, counts, disps, types, &MPI_PARTICLE_DATA);
   MPI_Type_commit(&MPI_PARTICLE_DATA);
 }
 
-void free_mpi_particle_data() {
-  MPI_Type_free(&MPI_PARTICLE_DATA);
-}
+void free_mpi_particle_data() { MPI_Type_free(&MPI_PARTICLE_DATA); }
 
 #else  // NOT_MPI_PARALLEL
 

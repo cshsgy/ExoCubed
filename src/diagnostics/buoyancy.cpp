@@ -7,9 +7,7 @@
 // diagnostics
 #include "diagnostics.hpp"
 
-Buoyancy::Buoyancy(MeshBlock* pmb) : 
-  Diagnostics(pmb, "b", "buoyancy")
-{
+Buoyancy::Buoyancy(MeshBlock* pmb) : Diagnostics(pmb, "b", "buoyancy") {
   type = "SCALARS";
   units = "m/s^2";
   data.NewAthenaArray(ncells3_, ncells2_, ncells1_);

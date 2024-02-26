@@ -101,9 +101,7 @@ class HydroMean : public Diagnostics {
 };
 
 // 4. temperature anomaly
-class TemperatureAnomaly : public Diagnostics,
-                           public PlanarExchanger<Real, 0>
-{
+class TemperatureAnomaly : public Diagnostics, public PlanarExchanger<Real, 0> {
  public:
   TemperatureAnomaly(MeshBlock *pmb);
   virtual ~TemperatureAnomaly() {}

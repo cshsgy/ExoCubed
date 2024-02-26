@@ -9,8 +9,7 @@ endmacro()
 # athena variables
 set_if_empty(NUMBER_GHOST_CELLS 3)
 
-# canoe configure
-#set(COORDINATE_SYSTEM "spherical_polar")
+# canoe configure set(COORDINATE_SYSTEM "spherical_polar")
 set(CUBED_SPHERE ON)
 set(NETCDF OFF)
 set(PNETCDF ON)

@@ -24,10 +24,8 @@ class OutputParameters;
 class NamedGroup {
  public:
   explicit NamedGroup(std::string name) : myname_(name) {}
-  NamedGroup(std::string name, 
-             std::string long_name) : 
-    myname_(name), long_name_(long_name)
-  {}
+  NamedGroup(std::string name, std::string long_name)
+      : myname_(name), long_name_(long_name) {}
 
   virtual ~NamedGroup() {}
 

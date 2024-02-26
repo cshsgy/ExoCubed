@@ -187,18 +187,18 @@ void ParticleBase::Transfer(MeshBlock const *pmb, int n) {
   for (auto &nb : pmb->pbval->neighbor) {
     if (nb.snb.rank == Globals::my_rank) {  // on the same process
       MeshBlock *neighbor = pmb->pmy_mesh->FindMeshBlock(nb.snb.gid);
-      auto exchanger = static_cast<ParticleBase*>(
+      auto exchanger = static_cast<ParticleBase *>(
           neighbor->pimpl->GetExchanger("Particle"));
       exchanger->recv_buffer_[nb.targetid].swap(send_buffer_[nb.bufid]);
       exchanger->SetBoundaryStatus(nb.targetid, BoundaryStatus::arrived);
     }
 #ifdef MPI_PARALLEL
     else {  // MPI
-      int tag = MessageHelper::create_mpi_tag(nb.snb.lid, nb.targetid, "Particle");
+      int tag =
+          MessageHelper::create_mpi_tag(nb.snb.lid, nb.targetid, "Particle");
       int ssize = send_buffer_[nb.bufid].size();
-      MPI_Isend(send_buffer_[nb.bufid].data(), ssize,
-                MPI_PARTICLE_DATA, nb.snb.rank, tag, mpi_comm_,
-                &req_mpi_send_[nb.bufid]);
+      MPI_Isend(send_buffer_[nb.bufid].data(), ssize, MPI_PARTICLE_DATA,
+                nb.snb.rank, tag, mpi_comm_, &req_mpi_send_[nb.bufid]);
     }
 #endif
   }
