@@ -31,10 +31,10 @@ void Thermodynamics::rk4IntegrateLnp(AirParcel *air, Real dlnp, Method method,
     // calculate tendency
     if (method == Method::ReversibleAdiabat ||
         method == Method::PseudoAdiabat) {
-      chi[rk] = calDlnTDlnP(*air, latent);
+      chi[rk] = air->DlnTDlnP(latent);
     } else if (method == Method::DryAdiabat) {
       for (int i = 1; i <= NVAPOR; ++i) latent[i] = 0;
-      chi[rk] = calDlnTDlnP(*air, latent);
+      chi[rk] = air->DlnTDlnP(latent);
     } else {  // isothermal
       chi[rk] = 0.;
     }

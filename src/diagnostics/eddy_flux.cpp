@@ -4,15 +4,19 @@
 #include <mpi.h>
 #endif
 
-#include "../coordinates/coordinates.hpp"
-#include "../reconstruct/interpolation.hpp"
-#include "../thermodynamics/thermodynamics.hpp"
+// athena
+#include <athena/coordinates/coordinates.hpp>
+#include <athena/reconstruct/interpolation.hpp>
+#include <athena/thermodynamics/thermodynamics.hpp>
+
+// canoe
 #include "diagnostics.hpp"
 
-EddyFlux::EddyFlux(MeshBlock *pmb) : Diagnostics(pmb, "eddyflux") {
+EddyFlux::EddyFlux(MeshBlock *pmb) : 
+  Diagnostics(pmb, "eddyflux", "Z-coordinate eddy flux");
+{
   type = "VECTORS";
   grid = "--C";
-  long_name = "Z-coordinate eddy flux";
   eddy_.NewAthenaArray(NHYDRO, ncells3_, ncells2_, ncells1_);
   mean_.NewAthenaArray(NHYDRO, ncells3_, ncells2_, ncells1_);
   data.NewAthenaArray(2 * NHYDRO, 1, 1, ncells1_);

@@ -1,6 +1,14 @@
+// C/C++
+#include <cstring>
 
-DiagnosticsContainer DiagnosticsFactory::CreateFrom(ParameterInput *pin,
-                                                    std::string key) {
+// athena
+#include <athena/parameter_input.hpp>
+
+// diagnostics
+#include "diagnostics.hpp"
+
+DiagnosticsContainer DiagnosticsFactory::CreateFrom(
+    MeshBlock *pmb, ParameterInput *pin) {
   DiagnosticsContainer diag;
 
   char cstr[80];
@@ -21,7 +29,7 @@ DiagnosticsContainer DiagnosticsFactory::CreateFrom(ParameterInput *pin,
     else if (name == "presa")  // 5.
       diag.push_back(std::make_shared<PressureAnomaly>(pmb));
     else if (name == "eddyflux")  // 6.
-      diag.push_back(std::make_shred<EddyFlux>(pmb));
+      diag.push_back(std::make_shared<EddyFlux>(pmb));
     else if (name == "hydroflux")  // 7.
       diag.push_back(std::make_shared<HydroFlux>(pmb));
     else if (name == "div_h")  // 8.
@@ -41,4 +49,6 @@ DiagnosticsContainer DiagnosticsFactory::CreateFrom(ParameterInput *pin,
     }
     p = std::strtok(NULL, " ,");
   }
+
+  return diag;
 }

@@ -12,22 +12,24 @@
 #include <cstring>
 #include <sstream>
 #include <stdexcept>
+
 // MPI headers
 #ifdef MPI_PARALLEL
 #include <mpi.h>
 #endif
 
 // Athena++ header
-#include "../coordinates/coordinates.hpp"
-#include "../math/core.h"
+#include <athena/coordinates/coordinates.hpp>
+
+// canoe
 #include "diagnostics.hpp"
 
-AngularMomentum::AngularMomentum(MeshBlock *pmb) : Diagnostics(pmb, "am") {
+SphericalAngularMomentum::SphericalAngularMomentum(MeshBlock *pmb) : 
+  Diagnostics(pmb, "am",
+      "mass,moment of inertia relative to a thin spherical shell,mean angular velocity")
+{
   type = "VECTORS";
   grid = "---";
-  long_name =
-      "mass,moment of inertia relative to a thin spherical shell,mean angular "
-      "velocity";
   units = "kg,1,1/s";
   data.NewAthenaArray(3, 1, 1, 1);
   if (strcmp(COORDINATE_SYSTEM, "spherical_polar") != 0) {
@@ -35,11 +37,11 @@ AngularMomentum::AngularMomentum(MeshBlock *pmb) : Diagnostics(pmb, "am") {
     msg << "### FATAL ERROR in AngularMomentum::AngularMomentum" << std::endl
         << "Diagnostics 'am' can only be used in spherical_polar geometry."
         << std::endl;
-    ATHENA_ERROR(msg);
+    throw std::runtime_error(msg.str().c_str());
   }
 }
 
-void AngularMomentum::Finalize(AthenaArray<Real> const &w) {
+void SphericalAngularMomentum::Finalize(AthenaArray<Real> const &w) {
   MeshBlock *pmb = pmy_block_;
   Coordinates *pcoord = pmb->pcoord;
   int is = pmb->is, js = pmb->js, ks = pmb->ks;

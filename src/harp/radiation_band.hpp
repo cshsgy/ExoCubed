@@ -15,11 +15,10 @@
 
 // canoe
 #include <air_parcel.hpp>
-#include <common.hpp>
 #include <virtual_groups.hpp>
 
 // exchanger
-#include <exchanger/linear_exchanger.hpp>
+#include <exchanger/exchanger.hpp>
 
 // harp
 #include "spectral_grid.hpp"
@@ -34,7 +33,7 @@ class RadiationBand : public NamedGroup,
                       public ParameterGroup,
                       public ASCIIOutputGroup,
                       public StringReprGroup,
-                      public LinearExchanger<RadiationBand> {
+                      public LinearExchanger<Real, 2> {
  public:  // public access data
   // implementation of RT Solver
   class RTSolver;

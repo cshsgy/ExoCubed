@@ -17,8 +17,8 @@
 // utils
 #include <utils/fileio.hpp>
 
-// canoe
-#include <common.hpp>
+// harp
+#include <harp/spectral_grid.hpp> // Direction
 
 // astro
 #include "celestrial_body.hpp"

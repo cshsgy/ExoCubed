@@ -10,9 +10,6 @@
 // canoe
 #include <configure.hpp>
 
-// exchanger
-#include <exchanger/message_traits.hpp>
-
 // nbody
 #include "particle_data.hpp"
 #include "particles.hpp"
@@ -61,12 +58,12 @@ void commit_mpi_particle_data() {
                        offsetof(ParticleData, time)};
 
   MPI_Type_create_struct(3, counts, disps, types,
-                         &MessageTraits<ParticleBase>::mpi_type);
-  MPI_Type_commit(&MessageTraits<ParticleBase>::mpi_type);
+                         &MPI_PARTICLE_DATA);
+  MPI_Type_commit(&MPI_PARTICLE_DATA);
 }
 
 void free_mpi_particle_data() {
-  MPI_Type_free(&MessageTraits<ParticleBase>::mpi_type);
+  MPI_Type_free(&MPI_PARTICLE_DATA);
 }
 
 #else  // NOT_MPI_PARALLEL

@@ -8,8 +8,11 @@
 #include <athena/athena_arrays.hpp>
 #include <athena/mesh/mesh.hpp>
 
+// canoe
+#include <virtual_groups.hpp>
+
 // exchanger
-#include <exchanger/linear_exchanger.hpp>
+#include <exchanger/exchanger.hpp>
 
 class ParameterInput;
 
@@ -20,18 +23,17 @@ class Diagnostics : public NamedGroup {
   AthenaArray<Real> data;
 
   // functions
-  Diagnostics(MeshBlock *pmb, std::string short_name, std::string long_name);
+  Diagnostics(MeshBlock *pmb, std::string name, std::string long_name = "");
   virtual ~Diagnostics();
-
-  Diagnostics *operator[](std::string name);
 
   virtual void Progress(AthenaArray<Real> const &w) {}
   virtual void Finalize(AthenaArray<Real> const &w) {}
 
  protected:
-  MeshBlock const *pmy_block_;
+  MeshBlock *pmy_block_;
 
   int ncells1_, ncells2_, ncells3_;
+
   int ncycle_;
 
   //! mean and eddy component
@@ -44,13 +46,14 @@ class Diagnostics : public NamedGroup {
   std::vector<int> brank_;
 
   //! scratch geometric arrays
-  AthenaArray<Real> x1area_, x2area_, x2area_p1_, x3area_, x3area_p1_, vol_,
-      total_vol_;
   AthenaArray<Real> x1edge_, x1edge_p1_, x2edge_, x2edge_p1_, x3edge_,
       x3edge_p1_;
 
-  void setColor_(int *color, CoordinateDirection dir);
-  void gatherAllData23_(AthenaArray<Real> &total_vol,
+  AthenaArray<Real> x1area_, x2area_, x2area_p1_, x3area_, x3area_p1_;
+
+  AthenaArray<Real> vol_, total_vol_;
+
+  void GatherVolumnData(AthenaArray<Real> &total_vol,
                         AthenaArray<Real> &total_data);
 };
 
@@ -59,7 +62,7 @@ using DiagnosticsContainer = std::vector<DiagnosticsPtr>;
 
 class DiagnosticsFactory {
  public:
-  static DiagnosticsContainer CreateFrom(ParameterInput *pin, std::string key);
+  static DiagnosticsContainer CreateFrom(MeshBlock *pmb, ParameterInput *pin);
 };
 
 // register all diagnostics
@@ -98,7 +101,9 @@ class HydroMean : public Diagnostics {
 };
 
 // 4. temperature anomaly
-class TemperatureAnomaly : public Diagnostics {
+class TemperatureAnomaly : public Diagnostics,
+                           public PlanarExchanger<Real, 0>
+{
  public:
   TemperatureAnomaly(MeshBlock *pmb);
   virtual ~TemperatureAnomaly() {}
@@ -111,6 +116,9 @@ class PressureAnomaly : public Diagnostics {
   PressureAnomaly(MeshBlock *pmb);
   virtual ~PressureAnomaly() {}
   void Finalize(AthenaArray<Real> const &w);
+
+ protected:
+  AthenaArray<Real> pf_;
 };
 
 // 6. eddy flux
@@ -164,10 +172,10 @@ class RadiativeFlux : public Diagnostics {
 };
 
 // 11. total angular momentum
-class AngularMomentum : public Diagnostics {
+class SphericalAngularMomentum : public Diagnostics {
  public:
-  AngularMomentum(MeshBlock *pmb);
-  virtual ~AngularMomentum() {}
+  SphericalAngularMomentum(MeshBlock *pmb);
+  virtual ~SphericalAngularMomentum() {}
   void Finalize(AthenaArray<Real> const &w);
 };
 
@@ -189,6 +197,14 @@ class Tendency : public Diagnostics {
  protected:
   Real last_time_;
   AthenaArray<Real> wh_, up_;
+};
+
+class ConvectiveHeatFlux : public Diagnostics {
+ public:
+  ConvectiveHeatFlux(MeshBlock *pmb);
+  virtual ~ConvectiveHeatFlux() {}
+  void Progress(AthenaArray<Real> const &w);
+  void Finalize(AthenaArray<Real> const &w);
 };
 
 #endif  // SRC_DIAGNOSTICS_HPP_

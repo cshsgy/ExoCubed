@@ -25,7 +25,6 @@
 #include <utils/vectorize.hpp>
 
 // canoe
-#include <common.hpp>
 #include <impl.hpp>
 
 // harp

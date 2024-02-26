@@ -3,24 +3,23 @@
 #include <sstream>
 #include <stdexcept>
 
+// application
+#include <application/application.hpp>
+
 // Athena++ headers
-#include <athena/coordinates/coordinates.hpp>
-#include <athena/debugger/debugger.hpp>
-#include <athena/globals.hpp>
 #include <athena/mesh/mesh.hpp>
 
+// diagnostics
 #include "diagnostics.hpp"
 
-const std::string Diagnostics::input_key = "diagnostics";
-
-Diagnostics::Diagnostics(MeshBlock *pmb, std::string short_name,
+Diagnostics::Diagnostics(MeshBlock *pmb, std::string name,
                          std::string long_name)
-    : NamedGroup(short_name, short_name, long_name),
+    : NamedGroup(name, long_name),
       pmy_block_(pmb),
       ncycle_(0) {
-  auto app = App
+  Application::Logger app("main");
+  app->Log("Initialize Diagnostics");
 
-      std::stringstream msg;
   ncells1_ = pmb->block_size.nx1 + 2 * (NGHOST);
   ncells2_ = 1;
   ncells3_ = 1;
@@ -42,11 +41,9 @@ Diagnostics::Diagnostics(MeshBlock *pmb, std::string short_name,
 
   vol_.NewAthenaArray(ncells1_);
   total_vol_.NewAthenaArray(ncells1_);
-  brank_.resize(Globals::nranks);
-  color_.resize(Globals::nranks);
+}
 
-  for (int i = 0; i < Globals::nranks; ++i) {
-    brank_[i] = -1;
-    color_[i] = -1;
-  }
+Diagnostics::~Diagnostics() {
+  Application::Logger app("main");
+  app->Log("Destroy Diagnostics");
 }

@@ -4,16 +4,24 @@
 #include <mpi.h>
 #endif
 
-#include "../coordinates/coordinates.hpp"
-#include "../reconstruct/interpolation.hpp"
-#include "../thermodynamics/thermodynamics.hpp"
+// athena
+#include <athena/athena_arrays.hpp>
+#include <athena/stride_iterator.hpp>
+#include <athena/coordinates/coordinates.hpp>
+#include <athena/reconstruct/interpolation.hpp>
+
+// snap
+#include <snap/thermodynamics/thermodynamics.hpp>
+
+// canoe
 #include "diagnostics.hpp"
 
-ConvectiveHeatFlx::ConvectiveHeatFlx(MeshBlock *pmb)
-    : Diagnostics(pmb, "conv_heat_flx") {
+ConvectiveHeatFlux::ConvectiveHeatFlux(MeshBlock *pmb)
+    : Diagnostics(pmb, "conv_heat_flx",
+        "Z-coordinate convective heat flux (eddy and mean)")
+{
   type = "VECTORS";
   grid = "--C";
-  long_name = "Z-coordinate convective heat flux (eddy and mean)";
   units = "W/(m^2)";
   eddy_.NewAthenaArray(NHYDRO, ncells3_, ncells2_, ncells1_);
   mean_.NewAthenaArray(NHYDRO, ncells3_, ncells2_, ncells1_);
@@ -21,16 +29,10 @@ ConvectiveHeatFlx::ConvectiveHeatFlx(MeshBlock *pmb)
   data.NewAthenaArray(4, 1, 1, ncells1_);
 }
 
-ConvectiveHeatFlx::~ConvectiveHeatFlx() {
-  eddy_.DeleteAthenaArray();
-  mean_.DeleteAthenaArray();
-  data.DeleteAthenaArray();
-}
-
-void ConvectiveHeatFlx::Progress(AthenaArray<Real> const &w) {
+void ConvectiveHeatFlux::Progress(AthenaArray<Real> const &w) {
   MeshBlock *pmb = pmy_block_;
   Coordinates *pcoord = pmb->pcoord;
-  Thermodynamics *pthermo = pmb->pthermo;
+  auto pthermo = Thermodynamics::GetInstance();
 
   int is = pmb->is, js = pmb->js, ks = pmb->ks;
   int ie = pmb->ie, je = pmb->je, ke = pmb->ke;
@@ -72,13 +74,15 @@ void ConvectiveHeatFlx::Progress(AthenaArray<Real> const &w) {
       }
 
   // take horizontal average
-  if (ncycle == 0) std::fill(data.data(), data.data() + data.GetSize(), 0.);
+  if (ncycle_ == 0) {
+    std::fill(data.data(), data.data() + data.GetSize(), 0.);
+  }
 
   for (int k = ks; k <= ke; ++k)
     for (int j = js; j <= je; ++j) {
       pcoord->CellVolume(k, j, is, ie, vol_);
       for (int i = is; i <= ie; ++i) {
-        Real Cp = pthermo->GetMeanCp(w.at(k, j, i));
+        Real Cp = pthermo->GetCpMass(w.at(k, j, i));
         data(0, i) += Cp * mean_(IDN, k, j, i) * eddy_(IPR, k, j, i) *
                       eddy_(IVX, k, j, i) * vol_(i);
         data(1, i) += Cp * mean_(IDN, k, j, i) * mean_(IPR, k, j, i) *
@@ -88,11 +92,11 @@ void ConvectiveHeatFlx::Progress(AthenaArray<Real> const &w) {
       }
     }
 
-  ncycle++;
+  ncycle_++;
   delete[] data_sum;
 }
 
-void ConvectiveHeatFlx::Finalize(AthenaArray<Real> const &w) {
+void ConvectiveHeatFlux::Finalize(AthenaArray<Real> const &w) {
   MeshBlock *pmb = pmy_block_;
 
   int is = pmb->is, js = pmb->js, ks = pmb->ks;

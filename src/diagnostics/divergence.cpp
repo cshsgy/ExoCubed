@@ -5,21 +5,28 @@
 // canoe
 #include "diagnostics.hpp"
 
-Divergence::Divergence(MeshBlock *pmb) : Diagnostics(pmb, "div") {
+Divergence::Divergence(MeshBlock *pmb) : 
+  Diagnostics(pmb, "div", "divergence") 
+{
   type = "SCALARS";
   units = "1/s";
-  long_name = "divergence";
+
   data.NewAthenaArray(ncells3_, ncells2_, ncells1_);
   v1f1_.NewAthenaArray(ncells3_, ncells2_, ncells1_ + 1);
-  if (pmb->block_size.nx2 > 1)
+
+  if (pmb->block_size.nx2 > 1) {
     v2f2_.NewAthenaArray(ncells3_, ncells2_ + 1, ncells1_);
-  if (pmb->block_size.nx3 > 1)
+  }
+
+  if (pmb->block_size.nx3 > 1) {
     v3f3_.NewAthenaArray(ncells3_ + 1, ncells2_, ncells1_);
+  }
 }
 
 void Divergence::Finalize(AthenaArray<Real> const &w) {
   MeshBlock *pmb = pmy_block_;
   Coordinates *pcoord = pmb->pcoord;
+
   int is = pmb->is, js = pmb->js, ks = pmb->ks;
   int ie = pmb->ie, je = pmb->je, ke = pmb->ke;
 
