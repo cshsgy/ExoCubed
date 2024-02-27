@@ -2,8 +2,21 @@ from netCDF4 import Dataset
 import matplotlib.pyplot as plt
 import numpy as np
 
-# read the data
+
+"""User specify"""
+# The data should be in time-press-lat-lon dimensions
 data_path = "/home/linfel/data/hot_jupiter/hotjupiter-a2/last50_pres_hotjupiter.nc"
+
+# time slices for averaging
+timeslices = range(50)     # average 0-49
+#timeslices = range(35,50)  # average 35-49
+#timeslices = [5]           # Instantaneous at 5
+
+# pressure level index
+press_idx = 60   # 181 pressure levels in total
+"""============"""
+
+# read the data
 dataset = Dataset(data_path,'r')
 time = dataset.variables['time'][:]
 lat = dataset.variables['lat'][:]
@@ -13,16 +26,11 @@ temp = dataset.variables['temp'][:]
 vlat = dataset.variables['vlat'][:]
 vlon = dataset.variables['vlon'][:]
 
-
-# specify the time slices for averaging
-timeslices = range(50)
-# specify the index of the isobaric plane
-press_idx = 150
-
 # average data over time
 data = np.mean(temp[timeslices,press_idx,:,:], axis=0)
 mean_vlat = np.mean(vlat[timeslices,press_idx,:,:], axis=0)
 mean_vlon = np.mean(vlon[timeslices,press_idx,:,:], axis=0)
+print("# time slices averaged:", list(timeslices))
 
 # Downsample the data
 stride = 3 
@@ -35,14 +43,14 @@ vlon_downsampled = mean_vlon[::stride, ::stride]
 wind_speed = (mean_vlat**2 + mean_vlon**2)**0.5
 
 # get the pressure at the isobaric plane
-pressure = press[150]
+pressure = press[press_idx]
 print(f"# isobaric plane {pressure} Pa")
 
 # Create a figure and a set of subplots
 plt.figure(figsize=(10, 6))
 
 # Plot contour
-#contour = plt.contour(x, y, data)
+#contour = plt.contour(lon, lat, data)
 #plt.colorbar(contour, label='Temperature')
 
 # Plot pcolor
@@ -57,13 +65,4 @@ plt.xlabel('Longitude')
 plt.ylabel('Latitude')
 plt.title(f'Temperature and horizontal winds on the {pressure} Pa isobaric plane')
 
-# Set the y-axis to a logarithmic scale
-#plt.yscale('log')
-
-# Inverting the y-axis if pressure increases with depth/altitude
-#plt.gca().invert_yaxis()
-
-# Adjust the ticks on the y-axis to be more readable
-#plt.yticks(pressure, labels=np.round(np.log10(pressure), 2))
-
-plt.savefig("images/test7.png",dpi=300)
+plt.savefig(f"images/temp_wind_{pressure}Pa_plane.png",dpi=300)
