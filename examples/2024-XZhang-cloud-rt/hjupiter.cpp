@@ -35,7 +35,7 @@ Real Ps, Ts, Omega, grav, sponge_tau, bflux, gammad, Tmin;
 int sponge_layer;
 
 void MeshBlock::InitUserMeshBlockData(ParameterInput *pin) {
-  AllocateUserOutputVariables(7);
+  AllocateUserOutputVariables(9);
   SetUserOutputVariableName(0, "temp");
   SetUserOutputVariableName(1, "theta");
   SetUserOutputVariableName(2, "lat");
@@ -75,7 +75,7 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin) {
         zenith = std::acos(ray.mu) / M_PI * 180.0;
         user_out_var(6, k, j, i) = zenith;
 
-        /* AM
+        // AM
         Real x1l = pcoord->x1f(i);
         Real x1u = pcoord->x1f(i + 1);
         Real xt = tan(pcoord->x2v(j));
@@ -99,11 +99,12 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin) {
 
         Real vol = pcoord->dx1f(i) * dx2_ang * dx3_ang * sin_theta;
 
-        user_out_var(7, k, j, i) = phydro->w(IDN, k, j, i) * vol *
-               sqrt((sqr(x1l) + sqr(x1u)) / 2.) * cos(lat) *
-               (Omega * sqrt(0.5 * (sqr(x1l) + sqr(x1u))) * cos(lat) + U);
+        user_out_var(7, k, j, i) =
+            phydro->w(IDN, k, j, i) * vol * sqrt((sqr(x1l) + sqr(x1u)) / 2.) *
+            cos(lat) *
+            (Omega * sqrt(0.5 * (sqr(x1l) + sqr(x1u))) * cos(lat) + U);
 
-        user_out_var(8, k, j, i) = phydro->w(IEN, k, j, i) * vol;*/
+        user_out_var(8, k, j, i) = phydro->w(IEN, k, j, i) * vol;
       }
     }
 }
