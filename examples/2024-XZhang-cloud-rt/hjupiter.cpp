@@ -43,6 +43,8 @@ void MeshBlock::InitUserMeshBlockData(ParameterInput *pin) {
   SetUserOutputVariableName(4, "vlat");
   SetUserOutputVariableName(5, "vlon");
   SetUserOutputVariableName(6, "zenith");
+  SetUserOutputVariableName(7, "AMZ");
+  SetUserOutputVariableName(8, "Energy");
 }
 
 void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin) {
@@ -72,8 +74,86 @@ void MeshBlock::UserWorkBeforeOutput(ParameterInput *pin) {
                                                lon);
         zenith = std::acos(ray.mu) / M_PI * 180.0;
         user_out_var(6, k, j, i) = zenith;
+
+        /* AM
+        Real x1l = pcoord->x1f(i);
+        Real x1u = pcoord->x1f(i + 1);
+        Real xt = tan(pcoord->x2v(j));
+        Real yt = tan(pcoord->x3v(k));
+        Real sin_theta =
+            sqrt((1.0 + xt * xt + yt * yt) / (1.0 + xt * xt) / (1.0 + yt * yt));
+
+        Real x1 = tan(pcoord->x2f(j));
+        Real x2 = tan(pcoord->x2f(j + 1));
+        Real y = tan(pcoord->x3v(k));
+        Real delta1 = sqrt(1.0 + x1 * x1 + y * y);
+        Real delta2 = sqrt(1.0 + x2 * x2 + y * y);
+        Real dx2_ang = acos(1 / (delta1 * delta2) * (1 + x1 * x2 + y * y));
+
+        Real x = tan(pcoord->x2v(j));
+        Real y1 = tan(pcoord->x3f(k));
+        Real y2 = tan(pcoord->x3f(k + 1));
+        delta1 = sqrt(1.0 + x * x + y1 * y1);
+        delta2 = sqrt(1.0 + x * x + y2 * y2);
+        Real dx3_ang = acos(1 / (delta1 * delta2) * (1 + x * x + y1 * y2));
+
+        Real vol = pcoord->dx1f(i) * dx2_ang * dx3_ang * sin_theta;
+
+        user_out_var(7, k, j, i) = phydro->w(IDN, k, j, i) * vol *
+               sqrt((sqr(x1l) + sqr(x1u)) / 2.) * cos(lat) *
+               (Omega * sqrt(0.5 * (sqr(x1l) + sqr(x1u))) * cos(lat) + U);
+
+        user_out_var(8, k, j, i) = phydro->w(IEN, k, j, i) * vol;*/
       }
     }
+}
+
+Real AngularMomentum(MeshBlock *pmb, int iout) {
+  auto pexo3 = pmb->pimpl->pexo3;
+  Real AMz = 0;
+  int is = pmb->is, ie = pmb->ie, js = pmb->js, je = pmb->je, ks = pmb->ks,
+      ke = pmb->ke;
+
+  for (int k = ks; k <= ke; k++) {
+    for (int j = js; j <= je; j++) {
+      for (int i = is; i <= ie; i++) {
+        Real x1l = pmb->pcoord->x1f(i);
+        Real x1u = pmb->pcoord->x1f(i + 1);
+        Real U, V;
+        Real lat, lon;
+        pexo3->GetLatLon(&lat, &lon, k, j, i);
+        pexo3->GetUV(&U, &V, pmb->phydro->w(IVY, k, j, i),
+                     pmb->phydro->w(IVZ, k, j, i), k, j, i);
+
+        Real xt = tan(pmb->pcoord->x2v(j));
+        Real yt = tan(pmb->pcoord->x3v(k));
+        Real sin_theta =
+            sqrt((1.0 + xt * xt + yt * yt) / (1.0 + xt * xt) / (1.0 + yt * yt));
+
+        Real x1 = tan(pmb->pcoord->x2f(j));
+        Real x2 = tan(pmb->pcoord->x2f(j + 1));
+        Real y = tan(pmb->pcoord->x3v(k));
+        Real delta1 = sqrt(1.0 + x1 * x1 + y * y);
+        Real delta2 = sqrt(1.0 + x2 * x2 + y * y);
+        Real dx2_ang = acos(1 / (delta1 * delta2) * (1 + x1 * x2 + y * y));
+
+        Real x = tan(pmb->pcoord->x2v(j));
+        Real y1 = tan(pmb->pcoord->x3f(k));
+        Real y2 = tan(pmb->pcoord->x3f(k + 1));
+        delta1 = sqrt(1.0 + x * x + y1 * y1);
+        delta2 = sqrt(1.0 + x * x + y2 * y2);
+        Real dx3_ang = acos(1 / (delta1 * delta2) * (1 + x * x + y1 * y2));
+
+        Real vol = pmb->pcoord->dx1f(i) * dx2_ang * dx3_ang * sin_theta;
+
+        AMz += pmb->phydro->w(IDN, k, j, i) * vol *
+               sqrt((sqr(x1l) + sqr(x1u)) / 2.) * cos(lat) *
+               (Omega * sqrt(0.5 * (sqr(x1l) + sqr(x1u))) * cos(lat) + U);
+      }
+    }
+  }
+
+  return AMz;
 }
 
 void Forcing(MeshBlock *pmb, Real const time, Real const dt,
@@ -163,6 +243,10 @@ void Mesh::InitUserMeshData(ParameterInput *pin) {
   // forcing function
   EnrollUserExplicitSourceFunction(Forcing);
   // EnrollUserTimeStepFunction(TimeStep);
+
+  // Z-Angular Momentum
+  // AllocateUserHistoryOutput(2);
+  // EnrollUserHistoryOutput(0, AngularMomentum, "z-angular-mom");
 }
 
 //! \fn void MeshBlock::ProblemGenerator(ParameterInput *pin)
