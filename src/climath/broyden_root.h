@@ -5,8 +5,9 @@
 extern "C" {
 #endif
 
-int broyden_root(int n, double *x, void (*vecfunc)(int, double *, double *),
-                 double tol_f, int max_it)
+int broyden_root(int n, double *x,
+                 void (*vecfunc)(int, double *, double *, void *), double tol_f,
+                 int max_it, void *arg)
 
 #ifdef __cplusplus
 } /* extern "C" */

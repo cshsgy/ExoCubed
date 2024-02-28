@@ -1,7 +1,12 @@
+// C/C++
+#include <array>
 #include <cmath>
 
 // athena
 #include <athena/coordinates/coordinates.hpp>
+#include <athena/eos/eos.hpp>
+#include <athena/hydro/hydro.hpp>
+#include <athena/stride_iterator.hpp>
 
 // canoe
 #include <air_parcel.hpp>
@@ -9,175 +14,190 @@
 // snap
 #include <snap/thermodynamics/thermodynamics.hpp>
 
-// thermodynamics/saturation_adjustment.cpp  as reference
+struct TPBottomSolver {
+  MeshBlock *pmb;
+  SingleColumn *pscm;
+  int k, j, il, iu;
+};
 
-void convective_adjustment(std::vector<AirParcel>& air_column,
-                           Coordinates* pcoord, Real grav, int k, int j, int il,
-                           int iu) {
+//! wrapper function passing to broyden_root
+//! over SingleColumn::findTPBottom
+void find_tp_bottom(int n, double *x, double *f, void *arg) {
+  Real tempf, presf;
+
+  TPBottomSolver *psolver = static_cast<TPBottomSolver *>(arg);
+
+  auto result =
+      psolver->pscm->findTPBottom(tempf, presf, psolver->pmb, psolver->k,
+                                  psovler->j, psolver->il, psolver->iu);
+
+  f[0] = result[0];
+  f[1] = result[1];
+}
+
+std::array<Real, 2> SingleColumn::findTPBottom(Real tempf, Real presf,
+                                               MeshBlock *pmb, int k, int j,
+                                               int il, int iu) {
   auto pthermo = Thermodynamics::GetInstance();
-  Real Rd = pthermo->GetRd();
-  Real gammad;
-  Real cp;
-  Real cv;
+  auto pcoord = pmb->pcoord;
+  auto phydro = pmb->phydro;
+  Real grav = -phydro->hsrc.GetG1();
 
-  Real temp, volume;
+  pcoord->CellVolumn(k, j, il, iu, vol_);
 
-  // the pressure and density of the lower and upper parcel of the air column
-  // section
-  Real pres_l = air_column[il].w[IPR];
-  Real rho_l = air_column[il].w[IDN];
-  Real pres_u = air_column[iu].w[IPR];
-  Real rho_u = air_column[iu].w[IDN];
-
-  Real total_energy = 0.;
-  Real total_mass = 0.;
-
-  AirParcel* parcel;
+  Real mass0 = 0., enthalpy0 = 0.;
 
   // sum the energy and mass of all air parcels that to be adjusted
   // (conservation of energy and mass)
   for (int i = il; i <= iu; ++i) {
-    parcel = &air_column[i];
-    parcel->ToMassFraction();
-
-    gammad = pthermo->GetGammad(*parcel);
-    cv = Rd / (gammad - 1.);
-    volume = pcoord->GetCellVolume(k, j, i);
-    temp = parcel->w[IPR] / Rd / parcel->w[IDN];  // IDN is density, IPR is
-                                                  // pressure primitive
-    total_mass += parcel->w[IDN] * volume;
-    total_energy +=
-        parcel->w[IDN] * volume * (cv * temp + grav * pcoord->x1v(i));
+    Real density = phydro->u(k, j, i);
+    mass0 += density * vol_(i);
+    enthalpy0 += (u(IEN, k, j, i) + density * grav * pcoord->x1v(i)) * vol_(i);
   }
-
-  // the initial guess of pressure and density of lower parcel
-  Real guess_pres_0 = 0.5 * (pres_l + pres_u);
-  Real guess_rho_0 = 0.5 * (rho_l + rho_u);
-  Real guess_temp_0;
-
-  Real new_total_energy;
-  Real new_total_mass;
-
-  Real total_energy_bias;
-  Real total_mass_bias;
-
-  bool energy_conserved = false;
-  bool mass_conserved = false;
 
   // adjust pressure and density, and examine mass and energy conservation
-  while (energy_conserved == false || mass_conserved == false) {
-    guess_temp_0 = guess_pres_0 / guess_rho_0 / Rd;
+  Real mass1 = 0., enthalpy = 0.;
+  AirParcel air = gather_from_conserved(pmb, k, j, il);
 
-    new_total_energy = 0.;
-    new_total_mass = 0.;
-    for (int i = il; i <= iu; ++i) {
-      parcel = &air_column[i];
-      parcel->ToMassFraction();
+  // half a grid to cell center
+  air.ToMoleFraction();
+  air.w[IDN] = tempf;
+  air.w[IPR] = presf;
 
-      gammad = pthermo->GetGammad(*parcel);
-      cp = Rd * gammad / (gammad - 1.);
-      volume = pcoord->GetCellVolume(k, j, i);
-      temp = guess_temp_0 - grav / cp * (pcoord->x1v(i) - pcoord->x1v(il));
-      parcel->w[IPR] = guess_pres_0 * pow(temp / guess_temp_0, cp / Rd);
-      parcel->w[IDN] = parcel->w[IPR] / Rd / temp;
+  pthermo->Extrapolate(&air, pcoord->dx1f(il) / 2.,
+                       Thermodynamics::Method::ReversibleAdiabat, grav);
+  air.ToMassFraction();
+  mass1 += air.w[IDN] * vol_(il);
+  enthalpy1 += (air.w[IEN] + air.[IDN] * grav * pcoord -> x1v(il)) * vol_(il);
 
-      new_total_mass += parcel->w[IDN] * volume;
-      new_total_energy += parcel->w[IDN] * volume *
-                          (cp / gammad * temp + grav * pcoord->x1v(i));
-    }
-
-    Real volume_0 = pcoord->GetCellVolume(k, j, il);
-
-    // examine if energy conservation is satisfied
-    total_energy_bias = new_total_energy - total_energy;
-    if (fabs(total_energy_bias) > 5.) {
-      Real dE_dP =
-          (cp - Rd + grav * pcoord->x1v(il) / guess_temp_0) * volume_0 / Rd;
-      Real pres_change = total_energy_bias / dE_dP;
-      while (pres_change >= guess_pres_0) {
-        pres_change *= 0.4;
-      }  //
-      guess_pres_0 -= pres_change;
-    } else {
-      energy_conserved = true;
-    }
-
-    // examine if mass conservation is satisfied
-    total_mass_bias = new_total_mass - total_mass;
-    if (fabs(total_mass_bias) > 5.) {
-      Real dm_drho = volume_0;
-      Real rho_change = total_mass_bias / dm_drho;
-      while (rho_change >= guess_rho_0) {
-        rho_change *= 0.4;
-      }
-      guess_rho_0 -= rho_change;
-    } else {
-      mass_conserved = true;
-    }
+  int i = is;
+  for (; i <= iu; ++i) {
+    if (air.w[IDN] < Tmin) break;
+    pthermo->Extrapolate(&air, pcoord->dx1f(i),
+                         Thermodynamics::Method::ReversibleAdiabat, grav);
+    air.ToMassFraction();
+    mass1 += air.w[IDN] * vol_(il);
+    enthalpy1 += (air.w[IEN] + air.[IDN] * grav * pcoord -> x1v(il)) * vol_(il);
   }
-}
 
-Real GetTheta(AirParcel const& air) {
-  auto pthermo = Thermodynamics::GetInstance();
-  Real Rd = pthermo->GetRd();
-  Real pres_ref = 1.0e5;
-  Real pres = air.w[IPR];
-  Real rho = air.w[IDN];
-  Real temp = pres / Rd / rho;
+  // Replace adiabatic atmosphere with isothermal atmosphere
+  for (; i <= iu; ++i) {
+    pthermo->Extrapolate(&air, pcoord->dx1f(i),
+                         Thermodynamics::Method::Isothermal, grav);
+    air.ToMassFraction();
+    mass1 += air.w[IDN] * vol_(il);
+    enthalpy1 += (air.w[IEN] + air.[IDN] * grav * pcoord -> x1v(il)) * vol_(il);
+  }
 
-  Real gammad = pthermo->GetGammad(air);
-  Real cp = Rd * gammad / (gammad - 1.);
-  Real theta = temp * pow(pres_ref / pres, Rd / cp);
-  return theta;
+  return std::array<Real, 2>(
+      {(mass1 - mass0) / mass0, (enthalpy1 - enthalpy0) / enthalpy0});
 }
 
 // type of the function
-void recursively_search_convective_adjustment(
-    std::vector<AirParcel>& air_column, Coordinates* pcoord, Real grav, int k,
-    int j) {
-  size_t nlayers = air_column.size();
+std::array<int, 2> SingleColumn::findUnstableRange(MeshBlock *pmb, int k,
+                                                   int j) {
+  auto pthermo = Thermodynamics::GetInstance();
+  auto pcoord = pmb->pcoord;
+  auto phydro = pmb->phydro;
 
-  // initialize il and iu, the lower and upper level between which the
-  // airparcels need convective adjustment
-  int il = -1;
-  int iu = nlayers - 1;
+  Real den_tol = GetPar<Real>("den_tol");
+  Real grav = -pmb->phydro->hsrc.GetG1();
+  AthenaArray<Real> &u = pmb->phydro->u;
 
-  // determine il where theta starts to decrease with height
-  for (int i = 0; i < nlayers - 1; ++i) {  // where to get is and ie?
-    auto& air2 = air_column[i + 1].ToMassFraction();
-    auto& air1 = air_column[i].ToMassFraction();
-    if (GetTheta(air2) - GetTheta(air1) < -1e-2) {
-      il = i;
-      break;
+  // determine il where convective adjustment starts
+  int il = pmy_block_->is;
+  for (; il <= pmy_block_->ie; ++il) {
+    AirParcel air = gather_from_conserved(pmb, k, j, il);
+    pthermo->Extrapolate(&air, pcoord->dx1f(i),
+                         Thermodynamics::Method::ReversibleAdiabat, grav);
+    air.ToMassFraction();
+    Real density = phydro->u(k, j, il + 1);
+    if (air.w[IDN] - density < -den_tol) break;
+  }
+
+  // determine iu where convective adjustment stops
+  int iu = il + 1;
+  for (; iu < pmy_block_->ie; ++iu) {
+    AirParcel air = gather_from_conserved(pmb, k, j, iu);
+    pthermo->Extrapolate(&air, pcoord->dx1f(i),
+                         Thermodynamics::Method::ReversibleAdiabat, grav);
+    air.ToMassFraction();
+    Real density = phydro->u(k, j, iu + 1);
+    if (air.w[IDN] - density > den_tol) break;
+  }
+
+  return std::array<int, 2>({il, iu});
+}
+
+void SingleColumn::ConvectiveAdjustment(MeshBlock *pmb, int k, int j) {
+  auto pthermo = Thermodynamics::GetInstance();
+  auto pcoord = pmb->pcoord;
+  auto phydro = pmb->phydro;
+
+  Real tp_tol = GetPar<Real>("rel_tol");
+  int max_iter = GetPar<int>("max_iter");
+  Real Tmin = GetPar<Real>("Tmin");
+  Real grav = -pmb->phydro->hsrc.GetG1();
+
+  TPBottomSolver solver;
+  solver.pmb = pmb;
+  solver.pscm = this;
+  solver.k = k;
+  solver.j = j;
+
+  auto range = findUnstableRange(pmb, k, j);
+  AthenaArray<Real> &u = pmb->phydro->u;
+
+  while (range[0] != -1) {
+    solver.il = range[0];
+    solver.iu = range[1];
+
+    // take a guess that the temperature at the bottom of the
+    // convective adjustment column is the same as the cell averaged
+    // temperature (slightly colder than an adiabatic profile)
+    AirParcel air = gather_from_conserved(pmb, k, j, solver.il);
+    air.ToMoleFraction();
+    Real tempf = air.w[IDN];
+
+    // take a guess that the pressure at the bottom of the
+    // convective adjustment column is the integrate mass
+    Real presf = 0. for (int i = solver.il; i <= pmb->ie; ++i) {
+      Real density = phydro->u(k, j, i);
+      presf += density * pcoord->dx1f(i) * grav;
     }
-  }
 
-  // if there is nowhere theta decreases with height, end the function
-  if (il == -1) {
-    std::cout << "no adjustment" << std::endl;
-    return;
-  }
-
-  // determine iu where theta starts to increase with height
-  for (int i = il + 1; i <= iu; ++i) {
-    if (i == iu) {
-      break;
+    Real tp_bot[2] = {tempf, presf};
+    int status =
+        broyden_root(2, tp_bot, find_tp_bottom, tp_tol, max_iter, &solver);
+    if (status != 0) {
+      throw std::runtime_error(
+          "ConvectiveAdjustment: "
+          "Broyden's method failed to converge");
     }
 
-    auto& air2 = air_column[i + 1].ToMassFraction();
-    auto& air1 = air_column[i].ToMassFraction();
-    if (GetTheta(air2) - GetTheta(air1) > 1e-2) {
-      iu = i;
-      break;
+    air.w[IDN] = tp_bot[0];
+    air.w[IPR] = tp_bot[1];
+
+    // half a grid to cell center
+    pthermo->Extrapolate(&air, pcoord->dx1f(solver.il) / 2.,
+                         Thermodynamics::Method::ReversibleAdiabat, grav);
+    AirParcelHelper::distribute_to_conserved(pmb, k, j, solver.il, air);
+
+    int i = solver.il;
+    for (; i <= solver.iu; ++i) {
+      if (air.w[IDN] < Tmin) break;
+      pthermo->Extrapolate(&air, pcoord->dx1f(i),
+                           Thermodynamics::Method::ReversibleAdiabat, grav);
+      AirParcelHelper::distribute_to_conserved(pmb, k, j, i, air);
     }
-  }
 
-  // execute convective adjustment to the aircolumn segment 'il-iu'
-  if (il != -1) {
-    convective_adjustment(air_column, pcoord, grav, k, j, il, iu);
-  }
+    // Replace adiabatic atmosphere with isothermal atmosphere
+    for (; i <= solver.iu; ++i) {
+      pthermo->Extrapolate(&air, pcoord->dx1f(i),
+                           Thermodynamics::Method::Isothermal, grav);
+      AirParcelHelper::distribute_to_conserved(pmb, k, j, i, air);
+    }
 
-  // Recursive call to search further
-  return recursively_search_convective_adjustment(air_column, pcoord, grav, k,
-                                                  j);
+    range = findUnstableRange(pmb, k, j);
+  }
 }

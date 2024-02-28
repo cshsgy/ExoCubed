@@ -37,17 +37,18 @@ void free_fvector(double *m, int nl, int nh, char *calling_func);
 
 int global_step(int n, double *x_old, double f_old, double *g, double *r,
                 double *sn, double max_step, double *delta, int step_type,
-                int *status, double *x, double *f, double *fvec,
-                void (*vecfunc)(int, double *, double *));
+                int *status, double *x, double *f, double *fvec, void *arg,
+                void (*vecfunc)(int, double *, double *, void *));
 
 int line_search(int n, double *x_old, double f_old, double *g, double *sn,
                 double max_step, int *status, double *x, double *f,
-                double *fvec, void (*vecfunc)(int, double *, double *));
+                double *fvec, void *arg,
+                void (*vecfunc)(int, double *, double *, void *));
 
 int dogleg_driver(int n, double *x_old, double f_old, double *g, double *r,
                   double *sn, double max_step, double *delta, int *status,
-                  double *x, double *f, double *fvec,
-                  void (*vecfunc)(int, double *, double *));
+                  double *x, double *f, double *fvec, void *arg,
+                  void (*vecfunc)(int, double *, double *, void *));
 
 int dogleg_step(int n, double *g, double *r, double *sn, double newt_length,
                 double max_step, double *delta, int *first_dog, double *s_hat,
@@ -56,8 +57,8 @@ int dogleg_step(int n, double *g, double *r, double *sn, double newt_length,
 int trust_region(int n, double *x_old, double f_old, double *g, double *s,
                  int newt_taken, double max_step, int step_type, double *r,
                  double *delta, int *status, double *x_prev, double *f_prev,
-                 double *x, double *f, double *fvec,
-                 void (*vecfunc)(int, double *, double *));
+                 double *x, double *f, double *fvec, void *arg,
+                 void (*vecfunc)(int, double *, double *, void *));
 
 int qr_decompose(int n, double *r, double *c, double *d);
 

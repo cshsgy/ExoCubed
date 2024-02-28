@@ -127,8 +127,8 @@ void free_fvector(double *m, int nl, int nh, char *calling_func) {
 
 int global_step(int n, double *x_old, double f_old, double *g, double *r,
                 double *sn, double max_step, double *delta, int step_type,
-                int *status, double *x, double *f, double *fvec,
-                void (*vecfunc)(int, double *, double *)) {
+                int *status, double *x, double *f, double *fvec, void *arg,
+                void (*vecfunc)(int, double *, double *, void *)) {
   int max_taken = FALSE;
   /*
    * The following are part of DEBUG_MILESTONE(.) statements:
@@ -138,13 +138,13 @@ int global_step(int n, double *x_old, double f_old, double *g, double *r,
 
   if (step_type == DS_LINE_STEP) {
     max_taken = line_search(n, x_old, f_old, g, sn, max_step, status, x, f,
-                            fvec, vecfunc);
+                            fvec, arg, vecfunc);
   } else if (step_type == DS_HOOK_STEP) {
     fprintf(stderr, "**error:%s, DS_HOOK_STEP not yet implemented\n", dbmsname);
     exit(1);
   } else if (step_type == DS_DOGLEG_STEP) {
     max_taken = dogleg_driver(n, x_old, f_old, g, r, sn, max_step, delta,
-                              status, x, f, fvec, vecfunc);
+                              status, x, f, fvec, arg, vecfunc);
   } else {
     fprintf(stderr, "**error:%s, unrecognized step_type=%d\n", dbmsname,
             step_type);
@@ -167,7 +167,8 @@ int global_step(int n, double *x_old, double f_old, double *g, double *r,
 
 int line_search(int n, double *x_old, double f_old, double *g, double *sn,
                 double max_step, int *status, double *x, double *f,
-                double *fvec, void (*vecfunc)(int, double *, double *)) {
+                double *fvec, void *arg,
+                void (*vecfunc)(int, double *, double *, void *)) {
   int i, max_taken = FALSE;
   double a, b, lambda, lambda_prev, lambda_min, disc, f_prev, rhs1, rhs2,
       initial_slope, newt_length, rel_step_length, tmp, tmp_lambda;
@@ -217,7 +218,7 @@ int line_search(int n, double *x_old, double f_old, double *g, double *sn,
     /*
      * Calculate fvec[].
      */
-    (*vecfunc)(n, x, fvec);
+    (*vecfunc)(n, x, fvec, arg);
 
     *f = 0.;
     for (i = 0; i < n; i++) {
@@ -289,8 +290,8 @@ int line_search(int n, double *x_old, double f_old, double *g, double *sn,
  */
 int dogleg_driver(int n, double *x_old, double f_old, double *g, double *r,
                   double *sn, double max_step, double *delta, int *status,
-                  double *x, double *f, double *fvec,
-                  void (*vecfunc)(int, double *, double *)) {
+                  double *x, double *f, double *fvec, void *arg,
+                  void (*vecfunc)(int, double *, double *, void *)) {
   int i, max_taken, newt_taken, first_dog = TRUE;
   double newt_length, f_prev, tmp, *s, *s_hat, *nu_hat, *x_prev;
   /*
@@ -326,7 +327,7 @@ int dogleg_driver(int n, double *x_old, double f_old, double *g, double *r,
      */
     max_taken = trust_region(n, x_old, f_old, g, s, newt_taken, max_step,
                              DS_DOGLEG_STEP, r, delta, status, x_prev, &f_prev,
-                             x, f, fvec, vecfunc);
+                             x, f, fvec, arg, vecfunc);
   }
 
   /*
@@ -506,8 +507,8 @@ int dogleg_step(int n, double *g, double *r, double *sn, double newt_length,
 int trust_region(int n, double *x_old, double f_old, double *g, double *s,
                  int newt_taken, double max_step, int step_type, double *r,
                  double *delta, int *status, double *x_prev, double *f_prev,
-                 double *x, double *f, double *fvec,
-                 void (*vecfunc)(int, double *, double *)) {
+                 double *x, double *f, double *fvec, void *arg,
+                 void (*vecfunc)(int, double *, double *, void *)) {
   int i, j, max_taken = FALSE;
   double initial_slope, step_length, rel_step_length, delta_tmp, tmp;
   double df, df_tol, df_pred;
@@ -539,7 +540,7 @@ int trust_region(int n, double *x_old, double f_old, double *g, double *s,
   }
 
   /* Calculate fvec[]. */
-  (*vecfunc)(n, x, fvec);
+  (*vecfunc)(n, x, fvec, arg);
 
   /* Compute f. */
   *f = 0.;

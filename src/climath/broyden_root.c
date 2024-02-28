@@ -52,8 +52,9 @@
  * different initial guess.
  */
 
-int broyden_root(int n, double *x, void (*vecfunc)(int, double *, double *),
-                 double tol_f, int max_it) {
+int broyden_root(int n, double *x,
+                 void (*vecfunc)(int, double *, double *, void *), double tol_f,
+                 int max_it, void *arg) {
   int k, j, i, restart, singular, skip, num_bytes, old_max_taken,
       it = 0, max_taken = FALSE, count_max_taken = 0, status = DS_X_ACCEPTED;
   static int nold = 0;
@@ -125,7 +126,7 @@ int broyden_root(int n, double *x, void (*vecfunc)(int, double *, double *),
   /*
    * Calculate fvec[].
    */
-  (*vecfunc)(n, x, fvec);
+  (*vecfunc)(n, x, fvec, arg);
 
   f = 0.;
   for (i = 0; i < n; i++) {
@@ -174,7 +175,7 @@ int broyden_root(int n, double *x, void (*vecfunc)(int, double *, double *),
         }
         x[j] = tmp + h;
 
-        (*vecfunc)(n, x, fvec2);
+        (*vecfunc)(n, x, fvec2, arg);
 
         h = x[j] - tmp;
         x[j] = tmp;
@@ -336,7 +337,7 @@ int broyden_root(int n, double *x, void (*vecfunc)(int, double *, double *),
      */
     old_max_taken = max_taken;
     max_taken = global_step(n, x_old, f_old, g, r, sn, max_step, &delta,
-                            DS_DOGLEG_STEP, &status, x, &f, fvec, vecfunc);
+                            DS_DOGLEG_STEP, &status, x, &f, fvec, arg, vecfunc);
 
     /*
      * Screen for NaN:

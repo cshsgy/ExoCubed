@@ -148,7 +148,7 @@ inline AirColumn gather_from_conserved(MeshBlock const *pmb, int k, int j,
 }
 
 void distribute_to_primitive(MeshBlock *pmb, int k, int j, int i,
-                             AirParcel const &ac);
+                             AirParcel const &air_in);
 void distribute_to_primitive(MeshBlock *pmb, int k, int j, AirColumn const &ac);
 
 inline void distribute_to_primitive(MeshBlock *pmb, int k, int j, int il,
@@ -159,7 +159,7 @@ inline void distribute_to_primitive(MeshBlock *pmb, int k, int j, int il,
 }
 
 void distribute_to_conserved(MeshBlock *pmb, int k, int j, int i,
-                             AirParcel const &ac);
+                             AirParcel const &air_in);
 void distribute_to_conserved(MeshBlock *pmb, int k, int j, AirColumn const &ac);
 
 inline void distribute_to_conserved(MeshBlock *pmb, int k, int j, int il,

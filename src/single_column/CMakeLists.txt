@@ -1,8 +1,8 @@
-set(namel others)
+set(namel single_column)
 string(TOUPPER ${namel} nameu)
 
 file(GLOB src_files
-    vector_conadj.cpp
+    *.cpp
     )
 
 string(TOLOWER ${CMAKE_BUILD_TYPE} buildl)
