@@ -57,6 +57,89 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid)
     }
   }
 
+  //skip unimportant wavelengths
+  Real dummy;
+  for (int i = 0; i < num_bands - bid; ++i) {
+    file >> dummy;
+  }
+
+  // g-points and weights
+  for (int g = 0; g < len_[2]; ++g) {
+    Real gpoint;
+    file >> gpoint >> dummy;
+    axis_[len_[0] + len_[1] + g] = wmin + (wmax - wmin) * gpoint;
+  }
+
+  int n = 0;
+  for (int i = 0; i < len_[0]; ++i)
+    for (int j = 0; j < len_[1]; ++j)
+      for (int b = 0; b < num_bands; ++b) {
+        if (b == bid) {
+          for (int g = 0; g < len_[2]; ++g, ++n) {
+            file >> kcoeff_[n];
+            kcoeff_[n] = log(std::max(kcoeff_[n], 1.0e-99));
+          }
+        } else {
+          file >> dummy;
+        }
+      }
+
+  file.close();
+}
+//a function overload for testing purpose
+void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid, std::ostring os) 
+{
+  std::ifstream file(fname);
+  if (!file.is_open()) {
+    throw std::runtime_error("Failed to open file: " + fname);
+  }
+
+  size_t num_bands;
+
+  // temperature, pressure, band, g-points
+  file >> len_[0] >> len_[1] >> num_bands >> len_[2];
+  os << len_[0] << " " << len_[1] << " " << len_[2] << " " << len_[3] << " ";
+
+  if (bid >= num_bands) {
+    throw std::runtime_error("Band index out of range: " + std::to_string(bid));
+  }
+
+  axis_.resize(len_[0] + len_[1] + len_[2]);
+  kcoeff_.resize(len_[0] * len_[1] * len_[2]);
+
+  // temperature grid
+  for (int i = 0; i < len_[0]; ++i) {
+    file >> axis_[i];
+    os << axis_[i] << " ";
+  }
+
+  // pressure grid
+  for (int j = 0; j < len_[1]; ++j) {
+    Real pres;
+    file >> pres;
+    os << press << " ";
+    axis_[len_[0] + j] = log(pres);
+  }
+
+  Real wmin, wmax;
+  file >> wmin;
+  // band wavelengths
+  for (int b = 0; b < num_bands; ++b) {
+    if (b == bid) {
+      file >> wmax;
+      os << wmin << " " << wmax << " ";
+      break;
+    } else {
+      file >> wmin;
+    }
+  }
+
+  //skip unimportant wavelengths
+  Real dummy;
+  for (int i = 0; i < num_bands - bid; ++i) {
+    file >> dummy;
+  }
+  
   // g-points and weights
   Real dummy;
   for (int g = 0; g < len_[2]; ++g) {
