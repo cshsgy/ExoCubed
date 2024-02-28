@@ -64,6 +64,8 @@ int qr_decompose(int n, double *r, double *c, double *d);
 
 void qr_update(int n, double *r, double *qt, double *u, double *v);
 
+void qr_rotate(int n, double *r, double *qt, int i, double a, double b);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -7,7 +7,7 @@ extern "C" {
 
 int broyden_root(int n, double *x,
                  void (*vecfunc)(int, double *, double *, void *), double tol_f,
-                 int max_it, void *arg)
+                 int max_it, void *arg);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -1,83 +1,148 @@
-// utils
+// C/C++
 #include <cmath>
-#include <iostream>
 #include <fstream>
-#include <others/vector_conadj.hpp>
-#include <utils/fileio.hpp>  // read_data_vector
-#include <air_parcel.hpp>
-#include <cstdlib>   // for exit program
+#include <iostream>
 #include <random>
 
-int main() {
-	Real grav = 23.1;
-	Real Rd = 3714.;
-	Real Ps = 1.e7;
-	Real Ts = 8000.;
-	Real cp = 3.5*Rd;
-	Real e = 2.718281828459045;
-	Real temp;
-	Real T_fluct;
-	Real theta;
+// external
+#include <gtest/gtest.h>
 
-	AirParcel air(AirParcel::Type::MassFrac);
-	// read air column height
-	std::string input_atm_path =
-	"/home/linfel/ExoCubedlinfel/data/convadj_test_atm2.txt";
-	DataVector atm = read_data_vector(input_atm_path);
+// application
+#include <application/application.hpp>
 
-	Real* x1_ptr;
-	x1_ptr = atm["HGT"].data();
-	size_t nx1 = atm["HGT"].size();
-  
-	// prepare random real number
-	std::random_device rd;
-	std::mt19937 gen(rd()); // Mersenne Twister generator
-	// Define the distribution to be uniform for real numbers between 0.0 and 1.0
-	std::uniform_real_distribution<> dis(-20., 20.0);
+// athena
+#include <athena/coordinates/coordinates.hpp>
+#include <athena/mesh/mesh.hpp>
 
-	// output file
-	std::ofstream outFile1("ac_before.csv");
-	outFile1 << "i,T_fluct,x1,pres,temp,rho,theta" << std::endl;
+// canoe
+#include <air_parcel.hpp>
+#include <impl.hpp>
 
-	// construt the air column
-	std::cout << "Constructing air column" << std::endl;
-	std::vector<AirParcel> vector_ac;
-	for (int i = 0; i < nx1; ++i) {
-		air.SetZero();
-		
-		T_fluct = dis(gen);
-		temp = Ts - grav / cp * (x1_ptr[i]-x1_ptr[0]) + T_fluct;
-		air.w[IPR] = Ps * pow(e, -grav/Rd/temp*(x1_ptr[i]-x1_ptr[0]));
-		air.w[IDN] = air.w[IPR] / Rd / temp;
-		theta = GetTheta(air);
-		std::cout << i << "   " << T_fluct << "  " << x1_ptr[i] << "   " << air.w[IPR] << "   " <<  temp << "   " << air.w[IDN] << std::endl;
-		
-		outFile1 << i << "," << T_fluct << "," << x1_ptr[i] << "," << air.w[IPR] << "," <<
-						temp << "," << air.w[IDN] << "," << theta << std::endl;
-			
+// snap
+#include <snap/thermodynamics/thermodynamics.hpp>
 
-		vector_ac.push_back(air);
-	}
-	
-	outFile1.close();
+// scm
+#include <single_column/single_column.hpp>
 
-	std::cout << "=======================" << std::endl;
-	
-	recursively_search_convective_adjustment(vector_ac, x1_ptr, grav, 0, 0);
+// canoe
+#include <air_parcel.hpp>
 
-	// output air column after convective adjustment
-	std::ofstream outFile2("ac_after.csv");
-	outFile2 << "i,x1,pres,rho,theta" << std::endl;
-	for (int i = 0; i < nx1; ++i) {
-		outFile2 << i << "," << x1_ptr[i] << "," << vector_ac[i].w[IPR] << "," <<
-				 vector_ac[i].w[IDN] << "," << GetTheta(vector_ac[i]) << std::endl;
-	}
-	outFile2.close();
+class TestConvectiveAdjustment : public testing::Test {
+ protected:
+  Mesh* pmesh;
+  ParameterInput* pinput;
+  Real Ps, Ts, grav;
 
-	return 0;
+  virtual void SetUp() {
+    // code here will execute just before the test ensues
+    IOWrapper infile;
+    infile.Open("test_convective_adjustment.inp", IOWrapper::FileMode::read);
+
+    pinput = new ParameterInput;
+    pinput->LoadFromFile(infile);
+    infile.Close();
+
+    Thermodynamics::InitFromAthenaInput(pinput);
+
+    // set up mesh
+    int restart = false;
+    int mesh_only = false;
+    pmesh = new Mesh(pinput, mesh_only);
+
+    // set up components
+    for (int b = 0; b < pmesh->nblocal; ++b) {
+      MeshBlock* pmb = pmesh->my_blocks(b);
+      pmb->pimpl = std::make_shared<MeshBlock::Impl>(pmb, pinput);
+    }
+
+    Ps = pinput->GetReal("problem", "Ps");
+    Ts = pinput->GetReal("problem", "Ts");
+    grav = -pinput->GetReal("hydro", "grav_acc1");
+  }
+
+  virtual void TearDown() {
+    // code here will be called just after the test completes
+    // ok to through exceptions from here if need be
+
+    Thermodynamics::Destroy();
+    IndexMap::Destroy();
+    delete pinput;
+    delete pmesh;
+  }
+};
+
+TEST_F(TestConvectiveAdjustment, RandomProfile) {
+  auto pmb = pmesh->my_blocks(0);
+  auto pcoord = pmb->pcoord;
+
+  // prepare random real number
+  std::random_device rd;
+  std::mt19937 gen(rd());  // Mersenne Twister generator
+
+  // Define the distribution to be uniform for real numbers
+  // between 0.0 and 1.0
+  std::uniform_real_distribution<> dis(-20., 20.0);
+
+  // output file
+  std::ofstream outFile1("ac_before.csv");
+  outFile1 << "i,T_fluct,x1,pres,temp,theta" << std::endl;
+
+  // construt the air column
+  std::vector<AirParcel> vector_ac;
+
+  AirParcel air(AirParcel::Type::MoleFrac);
+  air.SetZero();
+  air.w[IPR] = Ps;
+  air.w[IDN] = Ts;
+
+  auto pthermo = Thermodynamics::GetInstance();
+
+  // half a grid to cell center
+  pthermo->Extrapolate(&air, pcoord->dx1f(pmb->is) / 2.,
+                       Thermodynamics::Method::ReversibleAdiabat, grav);
+
+  int js = pmb->js, ks = pmb->ks;
+  for (int i = pmb->is; i <= pmb->ie; ++i) {
+    Real T_fluct = dis(gen);
+    air.w[IDN] += T_fluct;
+
+    AirParcelHelper::distribute_to_primitive(pmb, ks, js, i, air);
+    AirParcelHelper::distribute_to_conserved(pmb, ks, js, i, air);
+    pthermo->Extrapolate(&air, pcoord->dx1f(i),
+                         Thermodynamics::Method::PseudoAdiabat, grav);
+    Real theta = pthermo->PotentialTemp(pmb, Ps, ks, js, i);
+
+    outFile1 << i << "," << T_fluct << "," << pcoord->x1v(i) << ","
+             << air.w[IPR] << "," << air.w[IDN] << "," << theta << std::endl;
+  }
+  outFile1.close();
+
+  pmb->pimpl->pscm->ConvectiveAdjustment(pmb, pmb->ks, pmb->js);
+
+  // output air column after convective adjustment
+  std::ofstream outFile2("ac_after.csv");
+  outFile2 << "i,x1,pres,temp,theta" << std::endl;
+  for (int i = pmb->is; i <= pmb->ie; ++i) {
+    air = AirParcelHelper::gather_from_conserved(pmb, ks, js, i);
+    AirParcelHelper::distribute_to_primitive(pmb, ks, js, i, air);
+
+    Real theta = pthermo->PotentialTemp(pmb, Ps, ks, js, i);
+    air.ToMoleFraction();
+    outFile2 << i << "," << pcoord->x1v(i) << "," << air.w[IPR] << ","
+             << air.w[IDN] << "," << theta << std::endl;
+  }
+  outFile2.close();
 }
 
+int main(int argc, char* argv[]) {
+  Application::Start(argc, argv);
 
+  testing::InitGoogleTest(&argc, argv);
+  auto app = Application::GetInstance();
 
+  int result = RUN_ALL_TESTS();
 
+  Application::Destroy();
 
+  return result;
+}

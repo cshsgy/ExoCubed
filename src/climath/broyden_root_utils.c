@@ -740,3 +740,89 @@ int qr_decompose(int n, double *r, double *c, double *d) {
 }
 
 /*======================= end of qr_decompose() ==============================*/
+
+/*======================= qr_update() ========================================*/
+
+/*
+ * Adapted from Numerical Recipes in C, 2nd ed., p. 101.
+ * Assumes zero-based indexing.
+ */
+
+void qr_update(int n, double *r, double *qt, double *u, double *v) {
+  int i, j, k;
+  double tmp;
+
+  /* Find largest k such that u[k] != 0. */
+  for (k = n - 1; k > 0; k--) {
+    if (u[k]) {
+      break;
+    }
+  }
+
+  for (i = k - 1; i >= 0; i--) {
+    qr_rotate(n, r, qt, i, u[i], -u[i + 1]);
+    if (u[i] == 0.) {
+      u[i] = fabs(u[i + 1]);
+    } else if (fabs(u[i]) > fabs(u[i + 1])) {
+      tmp = u[i + 1] / u[i];
+      u[i] = fabs(u[i]) * sqrt(1. + tmp * tmp);
+    } else {
+      tmp = u[i] / u[i + 1];
+      u[i] = fabs(u[i + 1]) * sqrt(1. + tmp * tmp);
+    }
+  }
+
+  for (j = 0; j < n; j++) {
+    R(0, j) += u[0] * v[j];
+  }
+  for (i = 0; i < k; i++) {
+    qr_rotate(n, r, qt, i, R(i, i), -R(i + 1, i));
+  }
+
+  return;
+}
+
+/*======================= end of qr_update() =================================*/
+
+/*======================= qr_rotate() ========================================*/
+
+/*
+ * Adapted from Numerical Recipes in C, 2nd ed., p. 101.
+ * Assumes zero-based indexing.
+ */
+
+void qr_rotate(int n, double *r, double *qt, int i, double a, double b) {
+  int j;
+  double c, factor, s, w, y;
+
+  if (a == 0.) {
+    c = 0.;
+    s = b > 0. ? 1. : -1.;
+  } else if (fabs(a) > fabs(b)) {
+    factor = b / a;
+    c = NR_SIGN(1. / sqrt(1. + factor * factor), a);
+    s = factor * c;
+  } else {
+    factor = a / b;
+    s = NR_SIGN(1. / sqrt(1. + factor * factor), b);
+    c = factor * s;
+  }
+
+  for (j = 0; j < n; j++) {
+    y = R(i, j);
+    w = R(i + 1, j);
+    R(i, j) = c * y - s * w;
+    R(i + 1, j) = s * y + c * w;
+  }
+
+  for (j = 0; j < n; j++) {
+    y = QT(i, j);
+    w = QT(i + 1, j);
+    QT(i, j) = c * y - s * w;
+    QT(i + 1, j) = s * y + c * w;
+  }
+
+  return;
+}
+
+/*======================= end of qr_rotate() =================================*/

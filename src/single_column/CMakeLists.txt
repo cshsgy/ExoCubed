@@ -1,4 +1,4 @@
-set(namel single_column)
+set(namel scm)
 string(TOUPPER ${namel} nameu)
 
 file(GLOB src_files

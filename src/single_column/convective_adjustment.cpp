@@ -11,8 +11,14 @@
 // canoe
 #include <air_parcel.hpp>
 
+// climath
+#include <climath/broyden_root.h>
+
 // snap
 #include <snap/thermodynamics/thermodynamics.hpp>
+
+// scm
+#include "single_column.hpp"
 
 struct TPBottomSolver {
   MeshBlock *pmb;
@@ -29,7 +35,7 @@ void find_tp_bottom(int n, double *x, double *f, void *arg) {
 
   auto result =
       psolver->pscm->findTPBottom(tempf, presf, psolver->pmb, psolver->k,
-                                  psovler->j, psolver->il, psolver->iu);
+                                  psolver->j, psolver->il, psolver->iu);
 
   f[0] = result[0];
   f[1] = result[1];
@@ -42,8 +48,9 @@ std::array<Real, 2> SingleColumn::findTPBottom(Real tempf, Real presf,
   auto pcoord = pmb->pcoord;
   auto phydro = pmb->phydro;
   Real grav = -phydro->hsrc.GetG1();
+  Real Tmin = GetPar<Real>("Tmin");
 
-  pcoord->CellVolumn(k, j, il, iu, vol_);
+  pcoord->CellVolume(k, j, il, iu, vol_);
 
   Real mass0 = 0., enthalpy0 = 0.;
 
@@ -52,12 +59,13 @@ std::array<Real, 2> SingleColumn::findTPBottom(Real tempf, Real presf,
   for (int i = il; i <= iu; ++i) {
     Real density = phydro->u(k, j, i);
     mass0 += density * vol_(i);
-    enthalpy0 += (u(IEN, k, j, i) + density * grav * pcoord->x1v(i)) * vol_(i);
+    enthalpy0 +=
+        (phydro->u(IEN, k, j, i) + density * grav * pcoord->x1v(i)) * vol_(i);
   }
 
   // adjust pressure and density, and examine mass and energy conservation
-  Real mass1 = 0., enthalpy = 0.;
-  AirParcel air = gather_from_conserved(pmb, k, j, il);
+  Real mass1 = 0., enthalpy1 = 0.;
+  AirParcel air = AirParcelHelper::gather_from_conserved(pmb, k, j, il);
 
   // half a grid to cell center
   air.ToMoleFraction();
@@ -68,16 +76,16 @@ std::array<Real, 2> SingleColumn::findTPBottom(Real tempf, Real presf,
                        Thermodynamics::Method::ReversibleAdiabat, grav);
   air.ToMassFraction();
   mass1 += air.w[IDN] * vol_(il);
-  enthalpy1 += (air.w[IEN] + air.[IDN] * grav * pcoord -> x1v(il)) * vol_(il);
+  enthalpy1 += (air.w[IEN] + air.w[IDN] * grav * pcoord->x1v(il)) * vol_(il);
 
-  int i = is;
+  int i = il;
   for (; i <= iu; ++i) {
     if (air.w[IDN] < Tmin) break;
     pthermo->Extrapolate(&air, pcoord->dx1f(i),
                          Thermodynamics::Method::ReversibleAdiabat, grav);
     air.ToMassFraction();
     mass1 += air.w[IDN] * vol_(il);
-    enthalpy1 += (air.w[IEN] + air.[IDN] * grav * pcoord -> x1v(il)) * vol_(il);
+    enthalpy1 += (air.w[IEN] + air.w[IDN] * grav * pcoord->x1v(il)) * vol_(il);
   }
 
   // Replace adiabatic atmosphere with isothermal atmosphere
@@ -86,7 +94,7 @@ std::array<Real, 2> SingleColumn::findTPBottom(Real tempf, Real presf,
                          Thermodynamics::Method::Isothermal, grav);
     air.ToMassFraction();
     mass1 += air.w[IDN] * vol_(il);
-    enthalpy1 += (air.w[IEN] + air.[IDN] * grav * pcoord -> x1v(il)) * vol_(il);
+    enthalpy1 += (air.w[IEN] + air.w[IDN] * grav * pcoord->x1v(il)) * vol_(il);
   }
 
   return std::array<Real, 2>(
@@ -102,13 +110,12 @@ std::array<int, 2> SingleColumn::findUnstableRange(MeshBlock *pmb, int k,
 
   Real den_tol = GetPar<Real>("den_tol");
   Real grav = -pmb->phydro->hsrc.GetG1();
-  AthenaArray<Real> &u = pmb->phydro->u;
 
   // determine il where convective adjustment starts
-  int il = pmy_block_->is;
-  for (; il <= pmy_block_->ie; ++il) {
-    AirParcel air = gather_from_conserved(pmb, k, j, il);
-    pthermo->Extrapolate(&air, pcoord->dx1f(i),
+  int il = pmb->is;
+  for (; il <= pmb->ie; ++il) {
+    AirParcel air = AirParcelHelper::gather_from_conserved(pmb, k, j, il);
+    pthermo->Extrapolate(&air, pcoord->dx1f(il),
                          Thermodynamics::Method::ReversibleAdiabat, grav);
     air.ToMassFraction();
     Real density = phydro->u(k, j, il + 1);
@@ -117,9 +124,9 @@ std::array<int, 2> SingleColumn::findUnstableRange(MeshBlock *pmb, int k,
 
   // determine iu where convective adjustment stops
   int iu = il + 1;
-  for (; iu < pmy_block_->ie; ++iu) {
-    AirParcel air = gather_from_conserved(pmb, k, j, iu);
-    pthermo->Extrapolate(&air, pcoord->dx1f(i),
+  for (; iu < pmb->ie; ++iu) {
+    AirParcel air = AirParcelHelper::gather_from_conserved(pmb, k, j, iu);
+    pthermo->Extrapolate(&air, pcoord->dx1f(iu),
                          Thermodynamics::Method::ReversibleAdiabat, grav);
     air.ToMassFraction();
     Real density = phydro->u(k, j, iu + 1);
@@ -135,7 +142,9 @@ void SingleColumn::ConvectiveAdjustment(MeshBlock *pmb, int k, int j) {
   auto phydro = pmb->phydro;
 
   Real tp_tol = GetPar<Real>("rel_tol");
+  int max_iter_broyden = GetPar<int>("max_iter_broyden");
   int max_iter = GetPar<int>("max_iter");
+
   Real Tmin = GetPar<Real>("Tmin");
   Real grav = -pmb->phydro->hsrc.GetG1();
 
@@ -148,27 +157,30 @@ void SingleColumn::ConvectiveAdjustment(MeshBlock *pmb, int k, int j) {
   auto range = findUnstableRange(pmb, k, j);
   AthenaArray<Real> &u = pmb->phydro->u;
 
-  while (range[0] != -1) {
+  int iter;
+  while ((range[0] != -1) && (iter++ < max_iter)) {
     solver.il = range[0];
     solver.iu = range[1];
 
     // take a guess that the temperature at the bottom of the
     // convective adjustment column is the same as the cell averaged
     // temperature (slightly colder than an adiabatic profile)
-    AirParcel air = gather_from_conserved(pmb, k, j, solver.il);
+    AirParcel air =
+        AirParcelHelper::gather_from_conserved(pmb, k, j, solver.il);
     air.ToMoleFraction();
     Real tempf = air.w[IDN];
 
     // take a guess that the pressure at the bottom of the
     // convective adjustment column is the integrate mass
-    Real presf = 0. for (int i = solver.il; i <= pmb->ie; ++i) {
+    Real presf = 0.;
+    for (int i = solver.il; i <= pmb->ie; ++i) {
       Real density = phydro->u(k, j, i);
       presf += density * pcoord->dx1f(i) * grav;
     }
 
     Real tp_bot[2] = {tempf, presf};
-    int status =
-        broyden_root(2, tp_bot, find_tp_bottom, tp_tol, max_iter, &solver);
+    int status = broyden_root(2, tp_bot, find_tp_bottom, tp_tol,
+                              max_iter_broyden, &solver);
     if (status != 0) {
       throw std::runtime_error(
           "ConvectiveAdjustment: "

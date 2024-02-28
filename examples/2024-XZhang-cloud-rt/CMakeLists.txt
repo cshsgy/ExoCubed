@@ -6,7 +6,6 @@ endif()
 
 # 2. Compile hjupiter
 setup_problem(hjupiter)
-setup_problem(test_convadj)
 
 # 2. Copy input files to run directory
 file(GLOB inputs *.inp *.yaml)
