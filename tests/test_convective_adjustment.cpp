@@ -104,16 +104,19 @@ TEST_F(TestConvectiveAdjustment, RandomProfile) {
   int js = pmb->js, ks = pmb->ks;
   for (int i = pmb->is; i <= pmb->ie; ++i) {
     Real T_fluct = dis(gen);
+    air.ToMoleFraction();
     air.w[IDN] += T_fluct;
 
     AirParcelHelper::distribute_to_primitive(pmb, ks, js, i, air);
     AirParcelHelper::distribute_to_conserved(pmb, ks, js, i, air);
-    pthermo->Extrapolate(&air, pcoord->dx1f(i),
-                         Thermodynamics::Method::PseudoAdiabat, grav);
+
     Real theta = pthermo->PotentialTemp(pmb, Ps, ks, js, i);
 
     outFile1 << i << "," << T_fluct << "," << pcoord->x1v(i) << ","
              << air.w[IPR] << "," << air.w[IDN] << "," << theta << std::endl;
+
+    pthermo->Extrapolate(&air, pcoord->dx1f(i),
+                         Thermodynamics::Method::PseudoAdiabat, grav);
   }
   outFile1.close();
 
@@ -122,6 +125,7 @@ TEST_F(TestConvectiveAdjustment, RandomProfile) {
   // output air column after convective adjustment
   std::ofstream outFile2("ac_after.csv");
   outFile2 << "i,x1,pres,temp,theta" << std::endl;
+
   for (int i = pmb->is; i <= pmb->ie; ++i) {
     air = AirParcelHelper::gather_from_conserved(pmb, ks, js, i);
     AirParcelHelper::distribute_to_primitive(pmb, ks, js, i, air);
@@ -132,6 +136,8 @@ TEST_F(TestConvectiveAdjustment, RandomProfile) {
              << air.w[IDN] << "," << theta << std::endl;
   }
   outFile2.close();
+
+  EXPECT_EQ(0, 1);
 }
 
 int main(int argc, char* argv[]) {

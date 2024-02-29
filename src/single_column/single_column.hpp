@@ -20,8 +20,9 @@ class SingleColumn : public ParameterGroup {
   void ConvectiveAdjustment(MeshBlock *pmb, int k, int j);
 
  protected:  // convective adjustment functions
-  std::array<Real, 2> findTPBottom(Real tempf, Real presf, MeshBlock *pmb,
-                                   int k, int j, int il, int iu);
+  std::array<Real, 2> findTPBottom(Real tempf, Real presf, Real mass0,
+                                   Real enthalpy0, MeshBlock *pmb, int k, int j,
+                                   int il, int iu);
   std::array<int, 2> findUnstableRange(MeshBlock *pmb, int k, int j);
 
  protected:

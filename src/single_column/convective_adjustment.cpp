@@ -24,24 +24,27 @@ struct TPBottomSolver {
   MeshBlock *pmb;
   SingleColumn *pscm;
   int k, j, il, iu;
+  Real mass0, enthalpy0, vol0;
 };
 
 //! wrapper function passing to broyden_root
 //! over SingleColumn::findTPBottom
 void find_tp_bottom(int n, double *x, double *f, void *arg) {
-  Real tempf, presf;
-
   TPBottomSolver *psolver = static_cast<TPBottomSolver *>(arg);
 
-  auto result =
-      psolver->pscm->findTPBottom(tempf, presf, psolver->pmb, psolver->k,
-                                  psolver->j, psolver->il, psolver->iu);
+  auto result = psolver->pscm->findTPBottom(
+      x[0], x[1], psolver->mass0, psolver->enthalpy0, psolver->pmb, psolver->k,
+      psolver->j, psolver->il, psolver->iu);
+
+  std::cout << "error0 = " << result[0] << std::endl;
+  std::cout << "error1 = " << result[1] << std::endl;
 
   f[0] = result[0];
   f[1] = result[1];
 }
 
 std::array<Real, 2> SingleColumn::findTPBottom(Real tempf, Real presf,
+                                               Real mass0, Real enthalpy0,
                                                MeshBlock *pmb, int k, int j,
                                                int il, int iu) {
   auto pthermo = Thermodynamics::GetInstance();
@@ -50,21 +53,8 @@ std::array<Real, 2> SingleColumn::findTPBottom(Real tempf, Real presf,
   Real grav = -phydro->hsrc.GetG1();
   Real Tmin = GetPar<Real>("Tmin");
 
-  pcoord->CellVolume(k, j, il, iu, vol_);
-
-  Real mass0 = 0., enthalpy0 = 0.;
-
-  // sum the energy and mass of all air parcels that to be adjusted
-  // (conservation of energy and mass)
-  for (int i = il; i <= iu; ++i) {
-    Real density = phydro->u(k, j, i);
-    mass0 += density * vol_(i);
-    enthalpy0 +=
-        (phydro->u(IEN, k, j, i) + density * grav * pcoord->x1v(i)) * vol_(i);
-  }
-
   // adjust pressure and density, and examine mass and energy conservation
-  Real mass1 = 0., enthalpy1 = 0.;
+  Real mass1 = 0., enthalpy1 = 0., vol = 0.;
   AirParcel air = AirParcelHelper::gather_from_conserved(pmb, k, j, il);
 
   // half a grid to cell center
@@ -72,11 +62,16 @@ std::array<Real, 2> SingleColumn::findTPBottom(Real tempf, Real presf,
   air.w[IDN] = tempf;
   air.w[IPR] = presf;
 
+  std::cout << "tempf = " << tempf << std::endl;
+  std::cout << "presf = " << presf << std::endl;
+
   pthermo->Extrapolate(&air, pcoord->dx1f(il) / 2.,
                        Thermodynamics::Method::ReversibleAdiabat, grav);
+
   air.ToMassFraction();
   mass1 += air.w[IDN] * vol_(il);
   enthalpy1 += (air.w[IEN] + air.w[IDN] * grav * pcoord->x1v(il)) * vol_(il);
+  vol += vol_(il);
 
   int i = il;
   for (; i <= iu; ++i) {
@@ -86,6 +81,7 @@ std::array<Real, 2> SingleColumn::findTPBottom(Real tempf, Real presf,
     air.ToMassFraction();
     mass1 += air.w[IDN] * vol_(il);
     enthalpy1 += (air.w[IEN] + air.w[IDN] * grav * pcoord->x1v(il)) * vol_(il);
+    vol += vol_(il);
   }
 
   // Replace adiabatic atmosphere with isothermal atmosphere
@@ -95,10 +91,16 @@ std::array<Real, 2> SingleColumn::findTPBottom(Real tempf, Real presf,
     air.ToMassFraction();
     mass1 += air.w[IDN] * vol_(il);
     enthalpy1 += (air.w[IEN] + air.w[IDN] * grav * pcoord->x1v(il)) * vol_(il);
+    vol += vol_(il);
   }
 
+  std::cout << std::endl << "mass1 = " << mass1 << std::endl;
+  std::cout << "enthalpy1 = " << enthalpy1 << std::endl;
+
+  // return std::array<Real, 2>({(mass1 - mass0) / mass0,
+  //     (enthalpy1 - enthalpy0) / enthalpy0});
   return std::array<Real, 2>(
-      {(mass1 - mass0) / mass0, (enthalpy1 - enthalpy0) / enthalpy0});
+      {(mass1 - mass0) / vol, (enthalpy1 - enthalpy0) / vol});
 }
 
 // type of the function
@@ -157,10 +159,29 @@ void SingleColumn::ConvectiveAdjustment(MeshBlock *pmb, int k, int j) {
   auto range = findUnstableRange(pmb, k, j);
   AthenaArray<Real> &u = pmb->phydro->u;
 
-  int iter;
+  std::cout << "Find unstable range" << std::endl;
+  std::cout << range[0] << " " << range[1] << std::endl;
+
+  int iter = 0;
   while ((range[0] != -1) && (iter++ < max_iter)) {
     solver.il = range[0];
     solver.iu = range[1];
+
+    pcoord->CellVolume(k, j, solver.il, solver.iu, vol_);
+
+    // sum the energy and mass of all air parcels that to be adjusted
+    // (conservation of energy and mass)
+    solver.mass0 = 0.;
+    solver.enthalpy0 = 0.;
+    for (int i = solver.il; i <= solver.iu; ++i) {
+      Real density = phydro->u(k, j, i);
+      solver.mass0 += density * vol_(i);
+      solver.enthalpy0 +=
+          (phydro->u(IEN, k, j, i) + density * grav * pcoord->x1v(i)) * vol_(i);
+    }
+
+    std::cout << "mass0 = " << solver.mass0 << std::endl;
+    std::cout << "enthalpy0 = " << solver.enthalpy0 << std::endl;
 
     // take a guess that the temperature at the bottom of the
     // convective adjustment column is the same as the cell averaged
@@ -172,11 +193,10 @@ void SingleColumn::ConvectiveAdjustment(MeshBlock *pmb, int k, int j) {
 
     // take a guess that the pressure at the bottom of the
     // convective adjustment column is the integrate mass
-    Real presf = 0.;
-    for (int i = solver.il; i <= pmb->ie; ++i) {
-      Real density = phydro->u(k, j, i);
-      presf += density * pcoord->dx1f(i) * grav;
-    }
+    Real presf = air.w[IPR] * 1.2;
+
+    std::cout << "guess tempf = " << tempf << std::endl;
+    std::cout << "guess presf = " << presf << std::endl;
 
     Real tp_bot[2] = {tempf, presf};
     int status = broyden_root(2, tp_bot, find_tp_bottom, tp_tol,
@@ -186,6 +206,9 @@ void SingleColumn::ConvectiveAdjustment(MeshBlock *pmb, int k, int j) {
           "ConvectiveAdjustment: "
           "Broyden's method failed to converge");
     }
+
+    std::cout << "final tempf = " << tp_bot[0] << std::endl;
+    std::cout << "final presf = " << tp_bot[1] << std::endl;
 
     air.w[IDN] = tp_bot[0];
     air.w[IPR] = tp_bot[1];
