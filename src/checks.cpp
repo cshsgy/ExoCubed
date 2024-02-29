@@ -71,7 +71,7 @@ void check_eos_cons2prim(AthenaArray<Real> const& prim, int k, int j, int il,
 // dirty fix for negative pressure and density
 void fix_eos_cons2prim(MeshBlock* pmb, AthenaArray<Real>& prim, int k, int j,
                        int il, int iu) {
-  auto pthermo = Thermodynamics::GetInstance();
+  /*auto pthermo = Thermodynamics::GetInstance();
   auto pcoord = pmb->pcoord;
   Real Rd = pthermo->GetRd();
   Real grav = pmb->phydro->hsrc.GetG1();
@@ -96,7 +96,7 @@ void fix_eos_cons2prim(MeshBlock* pmb, AthenaArray<Real>& prim, int k, int j,
       prim(IVY, k, j, i) /= 2.;
       prim(IVZ, k, j, i) /= 2.;
     }
-  }
+  }*/
 }
 
 void fix_reconstruct_x1(MeshBlock* pmb, AthenaArray<Real>& wl,
@@ -199,7 +199,7 @@ void check_implicit_cons(AthenaArray<Real> const& cons, int il, int iu, int jl,
 
 void fix_implicit_cons(MeshBlock* pmb, AthenaArray<Real>& cons, int il, int iu,
                        int jl, int ju, int kl, int ku) {
-  auto pthermo = Thermodynamics::GetInstance();
+  /*auto pthermo = Thermodynamics::GetInstance();
   auto pcoord = pmb->pcoord;
   Real Rd = pthermo->GetRd();
   Real grav = pmb->phydro->hsrc.GetG1();
@@ -237,5 +237,5 @@ void fix_implicit_cons(MeshBlock* pmb, AthenaArray<Real>& cons, int il, int iu,
         air.ToMassConcentration();
         for (int n = 0; n < NHYDRO; ++n) cons(n, k, j, i) = air.w[n];
       }
-    }
+    }*/
 }
