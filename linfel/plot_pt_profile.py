@@ -59,4 +59,4 @@ plt.gca().invert_yaxis()
 # Adjust the ticks on the y-axis to be more readable
 #plt.yticks(pressure, labels=np.round(np.log10(pressure), 2))
 
-plt.savefig("images/T-P_profile_equator.png",dpi=300)
+plt.savefig("T-P_profile_equator.png",dpi=300)

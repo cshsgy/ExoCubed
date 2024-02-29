@@ -4,8 +4,13 @@ from scipy.interpolate import griddata
 from tqdm import tqdm
 import os
 
+"""User define here"""
 # Path to your single combined .nc file
 filepath = 't2_hotjupiter-a2-main.nc'
+
+# Save the processed data to a new NetCDF file
+output_filepath = 'polar_' + os.path.basename(filepath)
+"""=================="""
 
 # Variables to process
 variables_to_process = ["temp", "theta", "rho", "press", "vlat", "vlon","vel1"]
@@ -67,8 +72,6 @@ with Dataset(filepath, 'r') as nc:
 
 K = 91  # You can adjust this value as needed
 
-# Save the processed data to a new NetCDF file
-output_filepath = 'polar_' + os.path.basename(filepath)
 with Dataset(output_filepath, mode='w') as new_nc:
     # Create the dimensions
     new_nc.createDimension('time', None)  # Unlimited dimension (usually time)

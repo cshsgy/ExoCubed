@@ -65,4 +65,4 @@ plt.xlabel('Longitude')
 plt.ylabel('Latitude')
 plt.title(f'Temperature and horizontal winds on the {pressure} Pa isobaric plane')
 
-plt.savefig(f"images/temp_wind_{pressure}Pa_plane.png",dpi=300)
+plt.savefig(f"temp_wind_{pressure}Pa_plane.png",dpi=300)

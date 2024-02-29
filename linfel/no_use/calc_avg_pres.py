@@ -5,17 +5,17 @@ from scipy.interpolate import interp1d
 import os
 from tqdm import tqdm
 
-# Set the filepath to your single combined .nc file
-filepath = 'pres_t2_hotjupiter.nc'  # Change this to your file path
+# Set the input filepath
+filepath = 'pres_t2_hotjupiter.nc'
 
-# Set the name of the output file where the results will be saved
-output_file = 't2_averages_and_products.nc'
-
-# Variables to process
-variables_to_process = ["temp", "vlat", "vlon", "vel1"]
+# Set the output filepath
+output_file = 'averages_and_products.nc'
 
 # the time step where you want start
 start_t = 0
+
+# Variables to process
+variables_to_process = ["temp", "vlat", "vlon", "vel1"]
 
 # Initialize accumulators for summing data across all time steps
 data_sums = {}
@@ -24,12 +24,6 @@ upwp_sum = None
 uv_variance_sum = None
 
 timestep_count = 0
-
-#P0 = 1E5
-#R = 3779
-#g = 8.0
-
-#pressure_levels = np.linspace(1E5, 0.01E5, 100)  # Replace with actual pressure levels
 
 # Extract number of time steps in the file
 with Dataset(filepath, 'r') as nc:

@@ -2,8 +2,22 @@ from netCDF4 import Dataset
 import matplotlib.pyplot as plt
 import numpy as np
 
-# read the data
+
+"""User specify"""
+# input nc file
 data_path = "/home/linfel/data/hot_jupiter/hotjupiter-a2/last50_pres_hotjupiter.nc"
+
+# time slices for averaging
+#timeslices = range(50)     # average 0-49
+timeslices = range(35,50)  # average 35-49
+#timeslices = [5]           # Instantaneous at 5
+print("time slices averaged:", list(timeslices))
+
+# index of the vertical surface at a latitude 
+lat_idx = 45   # 91 latitudes in total, 45 is the equator
+"""============"""
+
+# read the data
 dataset = Dataset(data_path,'r')
 time = dataset.variables['time'][:]
 lat = dataset.variables['lat'][:]
@@ -11,16 +25,6 @@ lon = dataset.variables['lon'][:]
 press = dataset.variables['press'][:]
 temp = dataset.variables['temp'][:]
 vlat = dataset.variables['vlat'][:]
-
-"""User specify"""
-# time slices for averaging
-#timeslices = range(50)     # average 0-49
-timeslices = range(35,50)  # average 35-49
-#timeslices = [5]           # Instantaneous at 5
-print("time slices averaged:", list(timeslices))
-# index of the vertical surface at a latitude 
-lat_idx = 46   # 91 latitudes in total, 46 is the equator
-"""============"""
 
 # average data over time
 mean_temp = np.mean(temp[timeslices,:,lat_idx,:], axis=0)
@@ -61,4 +65,4 @@ plt.gca().invert_yaxis()
 # Adjust the ticks on the y-axis to be more readable
 #plt.yticks(pressure, labels=np.round(np.log10(pressure), 2))
 
-plt.savefig("images/temp_wind_equator.png",dpi=300)
+plt.savefig("temp_wind_equator.png",dpi=300)

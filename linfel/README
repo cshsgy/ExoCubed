@@ -1,0 +1,28 @@
+Plotting Instructions
+Linfeng Li 2/28/2024
+linfel@umich.edu
+
+1 - Use NCO to cut the nc file that we combined from the output of our ExoCubed program. For example, the last 100 time slices.
+  	ncks -d time,-100,,1 input_file.nc output_file.nc
+
+2 - Then, use convert_to_polar.py to convert the file produced in step 1 to latitude and longitude coordinates.
+  - Users specify the inputfile and outputfile at the beginning of the python script.
+
+3 - Then, use height_to_pres.py to convert the file produced in step 2 to pressure coordinates.
+  - Users specify the inputfile, outputfile and the new pressure levels you intend to interpolate.
+  - Users can use the "generate_uneven_seq" function to generate the new pressure levels, for examples:
+	generate_uneven_seq(3,5,1):   [1000, 1100, 1200, 1300,..., 9900, 10000, 11000, 12000, 13000,..., 99000, 100000]
+	generate_uneven_seq(0,2,1):   [1, 1.1, 1.2, 1.3, 1.4,..., 9.9, 10, 11, 12, 13, 14,..., 99, 100]
+        generate_uneven_seq(-1,1,2):  [0.1, 0.101, 0.102, 0.103,..., 0.999, 1, 1.01, 1.02, 1.03,..., 9.99, 10]
+    This is useful for later plotting in log pressure axis.
+
+4 - The output generated from step 3 is ready to plot in 
+	plot_pt_profile.py                T-P profiles at the equator for different longitudes
+	plot_temp_wind_equator.py         temperature (colors or contour) and horizontal winds (arrows) at the equator
+	plot_temp_wind_isobaric.py        Temperature (colors or contour) and horizontal winds (arrows) on the isobaric planes
+	plot_zonal_mean_wind.py           zonal-mean zonal wind
+  - Users specify the input nc file, and time slices for taking the average. For plot_temp_wind_isobaric.py, specifying pressure index 
+    is also needed.
+  - The examples for averaging over time slices or getting any instantaneous time slice are given in the python script.
+
+
