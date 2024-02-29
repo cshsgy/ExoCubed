@@ -145,6 +145,7 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid, std::ostring
   for (int g = 0; g < len_[2]; ++g) {
     Real gpoint;
     file >> gpoint >> dummy;
+    os << gpoint << " ";
     axis_[len_[0] + len_[1] + g] = wmin + (wmax - wmin) * gpoint;
   }
 
