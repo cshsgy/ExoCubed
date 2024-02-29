@@ -87,7 +87,7 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid)
   file.close();
 }
 //a function overload for testing purpose
-void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid, std::ostream os) 
+void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid, std::ostream &os) 
 {
   std::ifstream file(fname);
   if (!file.is_open()) {
