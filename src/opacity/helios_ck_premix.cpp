@@ -87,7 +87,7 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid)
   file.close();
 }
 //a function overload for testing purpose
-void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid, std::ostring os) 
+void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid, std::ostream os) 
 {
   std::ifstream file(fname);
   if (!file.is_open()) {
@@ -98,7 +98,7 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid, std::ostring
 
   // temperature, pressure, band, g-points
   file >> len_[0] >> len_[1] >> num_bands >> len_[2];
-  os << len_[0] << " " << len_[1] << " " << len_[2] << " " << len_[3] << " ";
+  os << len_[0] << " " << len_[1] << " " << num_bands << " " << len_[2] << " ";
 
   if (bid >= num_bands) {
     throw std::runtime_error("Band index out of range: " + std::to_string(bid));
@@ -117,7 +117,7 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid, std::ostring
   for (int j = 0; j < len_[1]; ++j) {
     Real pres;
     file >> pres;
-    os << press << " ";
+    os << pres << " ";
     axis_[len_[0] + j] = log(pres);
   }
 
@@ -141,7 +141,6 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid, std::ostring
   }
   
   // g-points and weights
-  Real dummy;
   for (int g = 0; g < len_[2]; ++g) {
     Real gpoint;
     file >> gpoint >> dummy;
