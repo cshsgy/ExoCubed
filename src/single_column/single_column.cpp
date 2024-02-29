@@ -18,9 +18,9 @@ SingleColumn::SingleColumn(MeshBlock *pmb, ParameterInput *pin) {
   SetPar("den_tol",
          pin->GetOrAddReal("convective_adjustment", "den_tol", 1.0e-6));
   SetPar("rel_tol",
-         pin->GetOrAddReal("convective_adjustment", "rel_tol", 1.0e-6));
+         pin->GetOrAddReal("convective_adjustment", "rel_tol", 1.0e-4));
   SetPar("max_iter_broyden",
-         pin->GetOrAddInteger("convective_adjustment", "max_iter_broyden", 10));
+         pin->GetOrAddInteger("convective_adjustment", "max_iter_broyden", 20));
   SetPar("max_iter",
          pin->GetOrAddInteger("convective_adjustment", "max_iter", 2));
   SetPar("Tmin", pin->GetOrAddReal("problem", "Tmin", 10.));

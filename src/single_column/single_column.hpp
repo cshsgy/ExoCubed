@@ -23,7 +23,7 @@ class SingleColumn : public ParameterGroup {
   std::array<Real, 2> findTPBottom(Real tempf, Real presf, Real mass0,
                                    Real enthalpy0, MeshBlock *pmb, int k, int j,
                                    int il, int iu);
-  std::array<int, 2> findUnstableRange(MeshBlock *pmb, int k, int j);
+  std::array<int, 2> findUnstableRange(MeshBlock *pmb, int k, int j, int il);
 
  protected:
   // scrach arrays
