@@ -16,7 +16,7 @@ SingleColumn::SingleColumn(MeshBlock *pmb, ParameterInput *pin) {
   app->Log("Initialize SingleColumn");
 
   SetPar("den_tol",
-         pin->GetOrAddReal("convective_adjustment", "den_tol", 1.0e-6));
+         pin->GetOrAddReal("convective_adjustment", "den_tol", 0.001));
   SetPar("rel_tol",
          pin->GetOrAddReal("convective_adjustment", "rel_tol", 1.0e-4));
   SetPar("max_iter_broyden",
