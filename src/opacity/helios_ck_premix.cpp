@@ -123,7 +123,6 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid, std::ostream
 
   Real wmin, wmax;
   file >> wmin;
-  // band wavelengths
   for (int b = 0; b < num_bands; ++b) {
     if (b == bid) {
       file >> wmax;
@@ -161,7 +160,6 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid, std::ostream
           file >> dummy;
         }
       }
-
   file.close();
 }
 

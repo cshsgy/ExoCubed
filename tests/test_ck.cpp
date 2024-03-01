@@ -11,7 +11,7 @@
 // opacity
 #include <opacity/absorber_ck.hpp>
 
-std::string data_folder = "ck_data_01242024/cia/";
+std::string data_folder = "ck_data_01242024/ck/";
 
 TEST(LoadCoefficient, bid_is_1) {
   std::string correct_output = 
@@ -31,18 +31,24 @@ TEST(LoadCoefficient, bid_is_1) {
   "2.137962089502232 4.570881896148751 10.0 "
   "21.379620895022324 45.708818961487495 100.0 "
   "213.79620895022325 457.0881896148752 1000.0 "
-  "0.26 0.42 "
+  "0.42 0.61 "
   "0.06596025199282501 0.6364909957028067 0.9534715922101487 0.9834995260896214 "
-  "0.1652310514402905 0.30976894855970943 0.00869637112843635 0.01630362887156367";
+  "0.1652310514402905 0.30976894855970943 0.00869637112843635 0.01630362887156367 ";
 
   auto app = Application::GetInstance();
   auto file = app->FindResource(data_folder + "PM_ck_HELIOSK_cond_11_nOPT_wcia.txt");
   HeliosCKPremix PM_ck_HELIOSK_cond_11_nOPT_wcia("PM_ck_HELIOSK_cond_11_nOPT_wcia");
 
-  std::stringstream output;
-  PM_ck_HELIOSK_cond_11_nOPT_wcia.LoadCoefficient(file, 1, output);
+  std::stringstream ss;
+  PM_ck_HELIOSK_cond_11_nOPT_wcia.LoadCoefficient(file, 1, ss);
+  std::string output = "";
+  std::string result;
 
-  EXPECT_EQ(output, correct_output);
+  while (ss >> result) {
+    output += result + " ";
+  }
+  
+  EXPECT_EQ(output, correct_output) << "Expected: " << correct_output << ", Actual: " << output;
 }
 
 int main(int argc, char **argv) {
