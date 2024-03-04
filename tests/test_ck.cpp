@@ -16,20 +16,12 @@
 
 std::string data_folder = "ck_data_01242024/ck/";
 
-TEST(LoadCoefficient, bid_is_0) {
+TEST(LoadCoefficient, bid_is_10) {
   auto app = Application::GetInstance();
   std::string fname = "PM_ck_HELIOSK_cond_11_nOPT_wcia.txt";
   auto file = app->FindResource(data_folder + fname);
   HeliosCKPremix PM_ck_HELIOSK_cond_11_nOPT_wcia("PM_ck_HELIOSK_cond_11_nOPT_wcia");
-  PM_ck_HELIOSK_cond_11_nOPT_wcia.LoadCoefficient(file, 0, std::cout);
-}
-
-TEST(LoadCoefficient, bid_is_1) {
-  auto app = Application::GetInstance();
-  std::string fname = "PM_ck_HELIOSK_cond_11_nOPT_wcia.txt";
-  auto file = app->FindResource(data_folder + fname);
-  HeliosCKPremix PM_ck_HELIOSK_cond_11_nOPT_wcia("PM_ck_HELIOSK_cond_11_nOPT_wcia");
-  PM_ck_HELIOSK_cond_11_nOPT_wcia.LoadCoefficient(file, 1, std::cout);
+  PM_ck_HELIOSK_cond_11_nOPT_wcia.LoadCoefficient(file, 10, std::cout);
 }
 
 int main(int argc, char **argv) {

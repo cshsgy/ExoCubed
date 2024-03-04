@@ -168,7 +168,9 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid, std::ostream
           }
           os << "\n";
         } else {
-          file >> dummy;
+          for (int g = 0; g < len_[2]; ++g, ++n) {
+            file >> dummy;
+          }
         }
       }
   file.close();
