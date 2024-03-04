@@ -21,6 +21,10 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid)
     throw std::runtime_error("Failed to open file: " + fname);
   }
 
+  //skip the first line
+  std::string junk_line;
+  std::getline(file, junk_line);
+
   size_t num_bands;
 
   // temperature, pressure, band, g-points
@@ -94,11 +98,15 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid, std::ostream
     throw std::runtime_error("Failed to open file: " + fname);
   }
 
+  //skip the first line
+  std::string junk_line;
+  std::getline(file, junk_line);
+
   size_t num_bands;
 
   // temperature, pressure, band, g-points
   file >> len_[0] >> len_[1] >> num_bands >> len_[2];
-  os << len_[0] << " " << len_[1] << " " << num_bands << " " << len_[2] << " ";
+  os << len_[0] << " " << len_[1] << " " << num_bands << " " << len_[2] << "\n";
 
   if (bid >= num_bands) {
     throw std::runtime_error("Band index out of range: " + std::to_string(bid));
@@ -110,14 +118,14 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid, std::ostream
   // temperature grid
   for (int i = 0; i < len_[0]; ++i) {
     file >> axis_[i];
-    os << axis_[i] << " ";
+    os << axis_[i] << "\n";
   }
 
   // pressure grid
   for (int j = 0; j < len_[1]; ++j) {
     Real pres;
     file >> pres;
-    os << pres << " ";
+    os << pres << "\n";
     axis_[len_[0] + j] = log(pres);
   }
 
@@ -126,7 +134,7 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid, std::ostream
   for (int b = 0; b < num_bands; ++b) {
     if (b == bid) {
       file >> wmax;
-      os << wmin << " " << wmax << " ";
+      os << wmin << " " << wmax << " " << "\n";
       break;
     } else {
       file >> wmin;
@@ -135,7 +143,7 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid, std::ostream
 
   //skip unimportant wavelengths
   Real dummy;
-  for (int i = 0; i < num_bands - bid; ++i) {
+  for (int i = 0; i < num_bands - bid - 1; ++i) {
     file >> dummy;
   }
   
@@ -146,6 +154,7 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid, std::ostream
     os << gpoint << " ";
     axis_[len_[0] + len_[1] + g] = wmin + (wmax - wmin) * gpoint;
   }
+  os << "\n";
 
   int n = 0;
   for (int i = 0; i < len_[0]; ++i)
@@ -154,8 +163,10 @@ void HeliosCKPremix::LoadCoefficient(std::string fname, size_t bid, std::ostream
         if (b == bid) {
           for (int g = 0; g < len_[2]; ++g, ++n) {
             file >> kcoeff_[n];
+            os << kcoeff_[n] << " ";
             kcoeff_[n] = log(std::max(kcoeff_[n], 1.0e-99));
           }
+          os << "\n";
         } else {
           file >> dummy;
         }
