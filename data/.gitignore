@@ -6,7 +6,7 @@
 *.hit
 
 # data folder
-**/*
+*/
 
 # tmp files
 .*
