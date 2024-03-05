@@ -235,8 +235,10 @@ void check_implicit_cons(AthenaArray<Real> const& cons, int il, int iu, int jl,
 
 void fix_implicit_cons(MeshBlock* pmb, AthenaArray<Real>& cons, int il, int iu,
                        int jl, int ju, int kl, int ku) {
-  /*auto pthermo = Thermodynamics::GetInstance();
+  auto pthermo = Thermodynamics::GetInstance();
   auto pcoord = pmb->pcoord;
+  auto pscm = pmb->pimpl->pscm;
+
   Real Rd = pthermo->GetRd();
   Real grav = pmb->phydro->hsrc.GetG1();
 
@@ -251,7 +253,23 @@ void fix_implicit_cons(MeshBlock* pmb, AthenaArray<Real>& cons, int il, int iu,
         }
       }
 
-      AirParcel air0(AirParcel::Type::MassConc);
+      AirColumn ac(pmb->ncells1);
+      for (int i = ifix - 1; i <= iu; ++i) {
+        ac[i].SetType(AirParcel::Type::MassConc);
+        for (int n = 0; n < NHYDRO; ++n) {
+          ac[i].w[n] = cons(n, k, j, i);
+        }
+      }
+
+      pscm->ConvectiveAdjustment(ac, k, j, ifix - 1, iu);
+
+      for (int i = ifix - 1; i <= iu; ++i) {
+        for (int n = 0; n < NHYDRO; ++n) {
+          cons(n, k, j, i) = ac[i].w[n];
+        }
+      }
+
+      /*AirParcel air0(AirParcel::Type::MassConc);
       for (int n = 0; n < NHYDRO; ++n) air0.w[n] = cons(n, k, j, ifix - 1);
       air0.ToMoleFraction();
       Real temp = air0.w[IDN];
@@ -272,6 +290,6 @@ void fix_implicit_cons(MeshBlock* pmb, AthenaArray<Real>& cons, int il, int iu,
 
         air.ToMassConcentration();
         for (int n = 0; n < NHYDRO; ++n) cons(n, k, j, i) = air.w[n];
-      }
-    }*/
+      }*/
+    }
 }

@@ -2,6 +2,9 @@
 #include <array>
 #include <cmath>
 
+// external
+#include <application/application.hpp>
+
 // athena
 #include <athena/coordinates/coordinates.hpp>
 #include <athena/eos/eos.hpp>
@@ -70,6 +73,31 @@ std::array<Real, 2> SingleColumn::findAdiabaticMassEnthalpy(AirParcel air,
   return std::array<Real, 2>({mass1, enthalpy1});
 }
 
+std::array<Real, 2> SingleColumn::FindMassEnthalpy(AirColumn const &ac, int k,
+                                                   int j, int il, int iu) {
+  auto pcoord = pmy_block_->pcoord;
+  Real grav = -pmy_block_->phydro->hsrc.GetG1();
+
+  pcoord->CellVolume(k, j, il, iu, vol_);
+
+  Real mass = 0.;
+  Real enthalpy = 0.;
+
+  for (int i = il; i <= iu; ++i) {
+    auto air = ac[i];
+    air.ToMassConcentration();
+
+    Real density = air.w[IDN];
+    for (int n = 1; n <= NVAPOR; ++n) {
+      density += air.w[n];
+    }
+    mass += density * vol_(i);
+    enthalpy += (air.w[IEN] + density * grav * pcoord->x1v(i)) * vol_(i);
+  }
+
+  return std::array<Real, 2>({mass, enthalpy});
+}
+
 // type of the function
 void SingleColumn::FindUnstableRange(AirColumn const &ac, int il, int iu,
                                      std::vector<std::array<int, 2>> &ranges) {
@@ -117,12 +145,11 @@ void SingleColumn::FindUnstableRange(AirColumn const &ac, int il, int iu,
 
 void SingleColumn::ConvectiveAdjustment(AirColumn &ac, int k, int j, int il,
                                         int iu) {
+  if (il >= iu) return;
+
   auto pthermo = Thermodynamics::GetInstance();
   auto pcoord = pmy_block_->pcoord;
-  auto phydro = pmy_block_->phydro;
   Real grav = -pmy_block_->phydro->hsrc.GetG1();
-
-  pcoord->CellVolume(k, j, il, iu, vol_);
 
   Real tp_tol = GetPar<Real>("rel_tol");
   int max_iter = GetPar<int>("max_iter");
@@ -131,25 +158,14 @@ void SingleColumn::ConvectiveAdjustment(AirColumn &ac, int k, int j, int il,
   solver.pscm = this;
   solver.il = il;
   solver.iu = iu;
-  solver.air0 = ac[il].ToMassFraction();
+  solver.air0 = ac[il];
+  solver.air0.ToMassFraction();
 
   // sum the energy and mass of all air parcels that to be adjusted
   // (conservation of energy and mass)
-  solver.mass0 = 0.;
-  solver.enthalpy0 = 0.;
-
-  for (int i = il; i <= iu; ++i) {
-    auto air = ac[i];
-    air.ToMassConcentration();
-
-    Real density = air.w[IDN];
-    for (int n = 1; n <= NVAPOR; ++n) {
-      density += air.w[n];
-    }
-    solver.mass0 += density * vol_(i);
-    solver.enthalpy0 +=
-        (air.w[IEN] + density * grav * pcoord->x1v(i)) * vol_(i);
-  }
+  auto result = FindMassEnthalpy(ac, k, j, il, iu);
+  solver.mass0 = result[0];
+  solver.enthalpy0 = result[1];
 
   if (solver.mass0 < 0. || solver.enthalpy0 < 0.) {
     throw std::runtime_error("ConvectiveAdjustment: negative mass or enthalpy");
@@ -172,8 +188,20 @@ void SingleColumn::ConvectiveAdjustment(AirColumn &ac, int k, int j, int il,
   solver.air0.w[IDN] *= tp_bot[0];
   solver.air0.w[IPR] *= tp_bot[1];
 
+  auto app = Application::Logger("single_column");
+
   for (int i = il; i <= iu; ++i) {
-    ac[i] = solver.air0.ToMassFraction();
+    solver.air0.ConvertTo(ac[i].GetType());
+    ac[i].w[IDN] = solver.air0.w[IDN];
+    ac[i].w[IPR] = solver.air0.w[IPR];
+    ac[i].w[IVX] /= 2.;
+    ac[i].w[IVY] /= 2.;
+    ac[i].w[IVZ] /= 2.;
+
+    std::stringstream msg;
+    msg << "ac[" << k << "," << j << "," << i << "] = " << ac[i];
+    app->Log(msg.str());
+
     pthermo->Extrapolate(&solver.air0, pcoord->dx1f(i),
                          Thermodynamics::Method::ReversibleAdiabat, grav);
   }

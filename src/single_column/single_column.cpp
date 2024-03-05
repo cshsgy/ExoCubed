@@ -13,6 +13,10 @@
 
 SingleColumn::SingleColumn(MeshBlock *pmb, ParameterInput *pin)
     : pmy_block_(pmb) {
+  // auto app = Application::GetInstance();
+  // app->InstallMonitor("single_column", "single_column.out",
+  // "single_column.out"); auto log = app->GetMonitor("single_column");
+
   Application::Logger app("single_column");
   app->Log("Initialize SingleColumn");
 

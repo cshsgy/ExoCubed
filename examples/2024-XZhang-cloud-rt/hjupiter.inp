@@ -38,7 +38,7 @@ dt         = 1
 cfl_number = 0.9          # The Courant, Friedrichs, & Lewy (CFL) Number
 nlim       = -1           # cycle limit
 tlim       = 1.0368E10     # time limit
-xorder     = 5            # horizontal reconstruction order
+xorder     = 2            # horizontal reconstruction order
 integrator = rk3          # integration method
 shock_capture = true
 

@@ -24,6 +24,9 @@ class SingleColumn : public ParameterGroup {
   void FindUnstableRange(AirColumn const &ac, int il, int iu,
                          std::vector<std::array<int, 2>> &ranges);
 
+  std::array<Real, 2> FindMassEnthalpy(AirColumn const &ac, int k, int j,
+                                       int il, int iu);
+
   //! \brief perform convective adjustment over a column range
   //! \param ac vector of air parcels [Mass Fraction]
   //! \param il lower index of the range
