@@ -98,6 +98,11 @@ class AirParcel {
   AirParcel &ToMoleFraction();
   AirParcel &ToMoleConcentration();
 
+  // thermodynamic functions
+  Real gammad() const;
+  Real chi() const;
+  Real theta(Real p0) const;
+
  protected:
   void massFractionToMassConcentration();
   void massConcentrationToMassFraction();

@@ -6,6 +6,7 @@
 #include <athena/athena.hpp>
 
 // canoe
+#include <air_parcel.hpp>
 #include <virtual_groups.hpp>
 
 class MeshBlock;
@@ -17,15 +18,27 @@ class SingleColumn : public ParameterGroup {
   SingleColumn(MeshBlock *pmb, ParameterInput *pin);
   virtual ~SingleColumn();
 
-  void ConvectiveAdjustment(MeshBlock *pmb, int k, int j);
+  //! \param ac vector of air parcels [Mass Fraction]
+  //! \param il lower index of the range
+  //! \param iu upper index of the range
+  void FindUnstableRange(AirColumn const &ac, int il, int iu,
+                         std::vector<std::array<int, 2>> &ranges);
+
+  //! \brief perform convective adjustment over a column range
+  //! \param ac vector of air parcels [Mass Fraction]
+  //! \param il lower index of the range
+  //! \param iu upper index of the range
+  void ConvectiveAdjustment(AirColumn &ac, int k, int j, int il, int iu);
 
  protected:  // convective adjustment functions
-  std::array<Real, 2> findTPBottom(Real tempf, Real presf, Real mass0,
-                                   Real enthalpy0, MeshBlock *pmb, int k, int j,
-                                   int il, int iu);
-  std::array<int, 2> findUnstableRange(MeshBlock *pmb, int k, int j, int il);
+  //! Find the mass and enthalpy of an adiabatic air column
+  //! The air parcel at the starting level is given by ac
+  std::array<Real, 2> findAdiabaticMassEnthalpy(AirParcel air, int il, int iu);
 
  protected:
-  // scrach arrays
+  //! ptr to meshblock
+  MeshBlock *pmy_block_;
+
+  //! scrach arrays for volumn
   AthenaArray<Real> vol_;
 };

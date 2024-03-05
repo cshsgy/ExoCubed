@@ -11,7 +11,8 @@
 // scm
 #include "single_column.hpp"
 
-SingleColumn::SingleColumn(MeshBlock *pmb, ParameterInput *pin) {
+SingleColumn::SingleColumn(MeshBlock *pmb, ParameterInput *pin)
+    : pmy_block_(pmb) {
   Application::Logger app("single_column");
   app->Log("Initialize SingleColumn");
 
@@ -19,11 +20,8 @@ SingleColumn::SingleColumn(MeshBlock *pmb, ParameterInput *pin) {
          pin->GetOrAddReal("convective_adjustment", "den_tol", 0.001));
   SetPar("rel_tol",
          pin->GetOrAddReal("convective_adjustment", "rel_tol", 1.0e-4));
-  SetPar("max_iter_broyden",
-         pin->GetOrAddInteger("convective_adjustment", "max_iter_broyden", 20));
   SetPar("max_iter",
-         pin->GetOrAddInteger("convective_adjustment", "max_iter", 2));
-  SetPar("Tmin", pin->GetOrAddReal("problem", "Tmin", 10.));
+         pin->GetOrAddInteger("convective_adjustment", "max_iter", 10));
 
   // allocate scratch arrays
   vol_.NewAthenaArray(pmb->ncells1);

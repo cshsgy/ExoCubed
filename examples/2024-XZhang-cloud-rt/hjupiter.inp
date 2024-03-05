@@ -35,17 +35,17 @@ file_type  = dbg
 dt         = 1
 
 <time>
-cfl_number = 0.5          # The Courant, Friedrichs, & Lewy (CFL) Number
+cfl_number = 0.9          # The Courant, Friedrichs, & Lewy (CFL) Number
 nlim       = -1           # cycle limit
 tlim       = 1.0368E10     # time limit
-xorder     = 2            # horizontal reconstruction order
+xorder     = 5            # horizontal reconstruction order
 integrator = rk3          # integration method
 shock_capture = true
 
 <mesh>
 nx1        = 64           # Number of zones in X1-direction
 x1min      = 8.E7         # minimum value of X1
-x1max      = 8.4E7       # maximum value of X1
+x1max      = 8.5E7       # maximum value of X1
 ix1_bc     = reflecting   # inner-X1 boundary flag
 ox1_bc     = reflecting   # outer-X1 boundary flag
 
@@ -96,6 +96,12 @@ dt            = 200.
 nstr          = 4
 radiation_config = hjupiter.yaml
 relax_time    = 1.E4
+
+<convective_adjustment>
+den_tol = 1.e-5
+rel_tol = 1.e-4
+max_iter = 10
+
 
 <problem>
 Omega      = 2.1E-5           # Rotational frequency, 1/s

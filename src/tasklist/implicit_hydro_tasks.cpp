@@ -293,8 +293,8 @@ TaskStatus ImplicitHydroTasks::UpdateAllConserved(MeshBlock *pmb, int stage) {
 
   for (int k = ks; k <= ke; k++)
     for (int j = js; j <= je; j++) {
-      pscm->ConvectiveAdjustment(pmb, k, j);
-      // auto &&ac = AirParcelHelper::gather_from_conserved(pmb, k, j, is, ie);
+      // pscm->ConvectiveAdjustment(pmb, k, j, pmb->is, pmb->ie);
+      //  auto &&ac = AirParcelHelper::gather_from_conserved(pmb, k, j, is, ie);
 
       // pmicro->AddFrictionalHeating(air_column);
 
