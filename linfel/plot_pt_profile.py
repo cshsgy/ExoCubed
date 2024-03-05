@@ -31,7 +31,7 @@ print("# time slices averaged:", list(timeslices))
 latitude = lat[lat_idx]
 print(f"# latitude {latitude}°")
 
-# Create a figure and a set of subplots
+# Create a figure
 plt.figure(figsize=(10, 6))
 
 for ilon in range(0,91,6):
