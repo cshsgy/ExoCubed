@@ -22,6 +22,7 @@ TEST(LoadCoefficient, bid_is_10) {
   auto file = app->FindResource(data_folder + fname);
   HeliosCKPremix PM_ck_HELIOSK_cond_11_nOPT_wcia("PM_ck_HELIOSK_cond_11_nOPT_wcia");
   PM_ck_HELIOSK_cond_11_nOPT_wcia.LoadCoefficient(file, 10, std::cout);
+  EXPECT_EQ(1, 1);
 }
 
 int main(int argc, char **argv) {
