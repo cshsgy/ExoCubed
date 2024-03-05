@@ -6,6 +6,9 @@
 #include <stdexcept>
 
 // athena
+#include <athena/coordinates/coordinates.hpp>
+#include <athena/eos/eos.hpp>
+#include <athena/field/field.hpp>
 #include <athena/hydro/hydro.hpp>
 #include <athena/mesh/mesh.hpp>
 #include <athena/parameter_input.hpp>
@@ -128,10 +131,12 @@ void Forcing(MeshBlock *pmb, Real const time, Real const dt,
     }
 
   // bottom flux
+  auto pcoord = pmb->pcoord;
   for (int k = pmb->ks; k <= pmb->ke; ++k)
     for (int j = pmb->js; j <= pmb->je; ++j) {
       int i = pmb->is;
-      du(IEN, k, j, i) += bflux / pmb->pcoord->dx1f(i) * dt;
+      du(IEN, k, j, i) += dt * bflux * pcoord->GetFace1Area(k, j, i) /
+                          pcoord->GetCellVolume(k, j, i);
     }
 }
 
@@ -173,6 +178,8 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
   auto pthermo = Thermodynamics::GetInstance();
 
   AirParcel air(AirParcel::Type::MoleFrac);
+  srand(Globals::my_rank + time(0));
+
   // construct atmosphere from bottom up
   for (int k = ks; k <= ke; ++k)
     for (int j = js; j <= je; ++j) {
@@ -186,6 +193,7 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
 
       int i = is;
       for (; i <= ie; ++i) {
+        air.w[IVX] = 0.001 * (1. * rand() / RAND_MAX - 0.5);
         if (air.w[IDN] < Tmin) break;
         AirParcelHelper::distribute_to_conserved(this, k, j, i, air);
         pthermo->Extrapolate(&air, pcoord->dx1f(i),
@@ -195,6 +203,7 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
       // Replace adiabatic atmosphere with isothermal atmosphere if temperature
       // is too low
       for (; i <= ie; ++i) {
+        air.w[IVX] = 0.001 * (1. * rand() / RAND_MAX - 0.5);
         AirParcelHelper::distribute_to_conserved(this, k, j, i, air);
         pthermo->Extrapolate(&air, pcoord->dx1f(i),
                              Thermodynamics::Method::Isothermal, grav);

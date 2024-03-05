@@ -16,7 +16,7 @@ ir:
   num-bins: 1
   opacity: [H2-ir]
   rt-solver: Disort
-  parameters: {fluor: 850.91056} #assuming Tint = 350. K
+  parameters: {} #assuming Tint = 350. K
   flags: [broad_band, thermal_emission]
 
 vis:
