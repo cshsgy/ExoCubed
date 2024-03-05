@@ -2,11 +2,9 @@
 *.par
 
 # datafile
-*.txt
 *.hit
 
 # data folder
-*/
 
 # tmp files
 .*
