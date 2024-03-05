@@ -6,10 +6,10 @@ import os
 
 """User define here"""
 # Path to your single combined .nc file
-filepath = 't2_hotjupiter-a2-main.nc'
+filepath = '/home/linfel/data/hjupiter/xiz-0225-shj-main.nc'
 
 # Save the processed data to a new NetCDF file
-output_filepath = 'polar_' + os.path.basename(filepath)
+output_filepath = '/home/linfel/data/hjupiter/polar_' + os.path.basename(filepath)
 """=================="""
 
 # Variables to process

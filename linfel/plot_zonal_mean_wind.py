@@ -5,11 +5,11 @@ import numpy as np
 
 """User specify"""
 # input nc file
-data_path = "/home/linfel/data/hot_jupiter/hotjupiter-a2/last50_pres_hotjupiter.nc"
+data_path = "/home/linfel/data/hjupiter/pres_xiz-0225-shj-main.nc"
 
 # time slices for averaging
-#timeslices = range(50)     # average 0-49
-timeslices = range(35,50)  # average 35-49
+timeslices = range(54)     # average 0-49
+#timeslices = range(35,50)  # average 35-49
 #timeslices = [5]           # Instantaneous at 5
 print("time slices averaged:", list(timeslices))
 
@@ -31,14 +31,14 @@ zonal_mean_data = np.mean(time_mean_data, axis=2)
 plt.figure(figsize=(10, 6))
 
 # Create a pseudocolor plot with a non-regular rectangular grid
-c = plt.pcolor(lat, pressure, zonal_mean_data, shading='auto', cmap='RdBu_r', vmin=-np.max(np.abs(data)), vmax=np.max(np.abs(data)))
+c = plt.pcolor(lat, pressure, zonal_mean_data, shading='auto', cmap='RdBu_r', vmin=-np.max(np.abs(zonal_mean_data)), vmax=np.max(np.abs(zonal_mean_data)))
 
 # Add a colorbar to show the temperature scale
 plt.colorbar(c, label='Wind speed (m/s)')
 
 # Labels and title
 plt.xlabel('Latitude')
-plt.ylabel('Pressure')
+plt.ylabel('Pressure / Pa')
 plt.title('Zonal-mean zonal wind')
 
 # Set the y-axis to a logarithmic scale

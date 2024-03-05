@@ -3,30 +3,15 @@ import numpy as np
 from scipy.interpolate import interp1d
 from tqdm import tqdm
 
-
-def generate_uneven_seq(low_limit,up_limit,step_order):
-    """ example:
-        generate_uneven_seq(0,2,1):   [1, 1.1, 1.2, 1.3, 1.4,..., 9.9, 10, 11, 12, 13, 14,..., 99, 100]
-        generate_uneven_seq(-1,1,2):  [0.1, 0.101, 0.102, 0.103,..., 0.999, 1, 1.01, 1.02, 1.03,..., 9.99, 10]
-    """
-    i = low_limit
-    seq = []
-    while i<up_limit:
-        seq_i = list(np.arange(10.**i, 10.**(i+1), 10.**(i-step_order)))
-        seq = seq + seq_i
-        i += 1
-    seq.append(10.**up_limit)
-    return np.array(seq)
-
 """User define here"""
 # Original input NetCDF file
-inputfile = '/home/linfel/data/hot_jupiter/hotjupiter-a2/last50_polar_hotjupiter-a2-main.nc' 
+inputfile = '/home/linfel/data/hjupiter/polar_xiz-0225-shj-main.nc' 
 # New output NetCDF file
-outputfile = '/home/linfel/data/hot_jupiter/hotjupiter-a2/last50_pres_hotjupiter.nc'
+outputfile = '/home/linfel/data/hjupiter/pres_xiz-0225-shj-main.nc'
 
-# 'new_press_levels' is provided as a 1D numpy array of the new pressure levels
-#new_press_levels = np.linspace(1E5, 0.01E5, 100)
-new_press_levels = np.flip(generate_uneven_seq(3,5,1))
+# 'new_press_levels' is provided as a 1D numpy array
+new_log_press = np.linspace(7.4, 0., 149)
+new_press_levels = 10.**new_log_press
 """================"""
 
 # Open the original input NetCDF file
@@ -80,13 +65,13 @@ with nc.Dataset(inputfile, 'r') as src:
                 for x2 in range(len(x2_dim)):
                     for x3 in range(len(x3_dim)):
                         # Extract the slice of pressure values for the current point
-                        press_slice = press_var[t, :, x2, x3]
+                        original_log_press = np.log10(press_var[t, :, x2, x3])
                         # Extract the original data slice
                         original_data = variable[t, :, x2, x3]
                         # Create an interpolation function based on the original pressure and data
-                        f = interp1d(press_slice, original_data, kind='linear', bounds_error=False, fill_value="extrapolate")
+                        f = interp1d(original_log_press, original_data, kind='linear', bounds_error=False, fill_value="extrapolate")
                         # Interpolate to the new press levels
-                        interp_data = f(new_press_levels)
+                        interp_data = f(new_log_press)
                         # Insert the interpolated data into the new NetCDF file
                         with nc.Dataset(outputfile, 'a') as dst: 
                             dst.variables[name][t, :, x2, x3] = interp_data
