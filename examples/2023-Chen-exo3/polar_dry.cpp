@@ -76,15 +76,15 @@ void Forcing(MeshBlock *pmb, Real const time, Real const dt,
         Real omega1, omega2;
         // Load Latitude
         Real lat, lon;
-        FindLatlon(&lat, &lon, pmb->pcoord->x3v(i), pmb->pcoord->x2v(j));
+        FindLatlon(&lat, &lon, pmb->pcoord->x3v(k), pmb->pcoord->x2v(j));
 
         omega1 = cos(lat) * Omega;
         omega2 = sin(lat) * Omega;  // f
         Real m1 = w(IDN, k, j, i) * w(IVX, k, j, i);
         Real m2 = w(IDN, k, j, i) * w(IVY, k, j, i);
         Real m3 = w(IDN, k, j, i) * w(IVZ, k, j, i);
-        u(IM1, k, j, i) -= -2. * dt * (omega1 * m2);
-        u(IM2, k, j, i) -= 2. * dt * (omega1 * m1 - omega2 * m3);
+        // u(IM1, k, j, i) -= -2. * dt * (omega1 * m2);
+        u(IM2, k, j, i) += 2. * dt * (omega2 * m3);
         u(IM3, k, j, i) -= 2. * dt * (omega2 * m2);
       }
     }
@@ -120,7 +120,7 @@ void Forcing(MeshBlock *pmb, Real const time, Real const dt,
   for (int k = pmb->ks; k <= pmb->ke; ++k) {
     for (int j = pmb->js; j <= pmb->je; ++j) {
       for (int i = pmb->is; i <= pmb->ie; ++i) {
-        Real dist = sqrt(pmb->pcoord->x3v(i) * pmb->pcoord->x3v(i) +
+        Real dist = sqrt(pmb->pcoord->x3v(k) * pmb->pcoord->x3v(k) +
                          pmb->pcoord->x2v(j) * pmb->pcoord->x2v(j));
         Real lat_now = 90. - dist / Rp / M_PI * 180.;
         Real s = lat_now / sponge_lat;
@@ -217,7 +217,7 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
   for (int k = ks; k <= ke; ++k)
     for (int j = js; j <= je; ++j) {
       air.w[IPR] = p0;
-      air.w[IDN] = Ts;
+      air.w[IDN] = Ts * pow(p0/1E5, 0.32);
 
       int i = is;
       // for (; i <= ie; ++i) {
@@ -235,10 +235,10 @@ void MeshBlock::ProblemGenerator(ParameterInput *pin) {
       for (; i <= ie; ++i) {
         AirParcelHelper::distribute_to_conserved(this, k, j, i, air);
         pthermo->Extrapolate(&air, pcoord->dx1f(i),
-                             Thermodynamics::Method::Isothermal, grav, 0.001);
+                             Thermodynamics::Method::DryAdiabat, -grav, 0.000);
         // add noise
-        air.w[IVY] = 0.00001 * distribution(generator);
-        air.w[IVZ] = 0.00001 * distribution(generator);
+        air.w[IVY] = 5.0 * distribution(generator);
+        air.w[IVZ] = 5.0 * distribution(generator);
       }
     }
 }
