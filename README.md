@@ -1,4 +1,4 @@
-# Canoe: Comprehensive Atmosphere N' Ocean Engine
+# ExoCubed: A Riemann-Solver based Cubed-Sphere Dynamic Core for Planetary Atmospheres
 
 [![build](https://github.com/chengcli/canoe/actions/workflows/main.yml/badge.svg)](https://github.com/chengcli/canoe/actions/workflows/main.yml)
 [![build](https://github.com/chengcli/canoe/actions/workflows/mac.yml/badge.svg)](https://github.com/chengcli/canoe/actions/workflows/mac.yml)
@@ -95,6 +95,14 @@ to delete the whole directory if you want another build. `cd` to build and `cmak
 ```
 cd build
 cmake ..
+```
+Specifically, if building 2D shallow water model on a cubed-sphere, use
+```
+cmake .. -DTASK=exo2
+```
+For 3D shallow water model on a cubed-sphere, use
+```
+cmake .. -DTASK=exo3
 ```
 This command tells the cmake command to look for `CMakeFiles.txt` in the parent directory,
 and start configuring the compile environment. Then compile the code by
