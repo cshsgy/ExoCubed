@@ -5,6 +5,9 @@
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![codecov](https://codecov.io/gh/chengcli/canoe/branch/main/graph/badge.svg?token=hKnnv79a09)](https://codecov.io/gh/chengcli/canoe)
 
+## Overview
+ExoCubed is a general framework to simulate fluid dynamics with the geometry of a sphere. Specifically, it handles the simulation of planetary atmospheres with different models ranging from shallow-water models to fully 3-dimensional general circulation models. It employs a Riemann-solver approach, making it better tailored for the extreme worlds existent in the solar system, where the Mach number in certain parts of the atmospheres is high and brings about possible discontinuity/shocks.
+
 ## Install system libraries and toolchain
 Canoe can be installed on either a Linux distribution or on MacOS. Open a Linux or Mac terminal,
 you can clone this repo using the following command:
