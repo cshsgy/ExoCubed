@@ -3,6 +3,7 @@
 # ========================
 
 add_subdirectory(2023-Chen-exo3)
+add_subdirectory(2024-Lian-venus-pv)
 
 if(${HYDROSTATIC})
   #add_subdirectory(1d-rad-jupiter)
