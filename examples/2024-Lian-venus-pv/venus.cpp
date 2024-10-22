@@ -29,6 +29,8 @@ Real vrad, vphi;
 Real vis, b; 
 Real max_cyclone, max_anticyclone;
 
+// All forcing are add to 'ie' layer
+
 bool thermal_tide;
 /* Thickening effect of the fluid layer due to the movement of substellar point. 
  * 'tide_amp' is the amplitude of the tide thickness, and 'tau_t' is the relaxa-
