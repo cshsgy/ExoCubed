@@ -1,0 +1,114 @@
+<job>
+problem_id = venus_test  # problem ID: basename of output filenames
+
+<output0>
+file_type  = rst
+dt         = 8640000.
+
+<output1>
+file_type  = hst         # History data dump
+dt         = 8640000.        # time increment between outputs
+
+<output2>
+#ghost_zones= true
+file_type  = netcdf    # Binary data dump
+variable   = prim        # variables to be output
+dt         = 86400.         # time increment between outputs
+#dt         = 1000.
+
+<output3>
+#ghost_zones= true
+file_type  = netcdf
+variable   = uov
+dt         = 86400.
+#dt         = 1000.
+
+<time>
+cfl_number = 0.7          # The Courant, Friedrichs, & Lewy (CFL) Number
+nlim       = -1         # cycle limit
+tlim       = 1.e8           # time limit
+#tlim       = 1.e6
+xorder     = 5            # horizontal reconstruction order
+integrator = rk3          # integration method
+
+<mesh>
+nx1        = 3            # Number of zones in X1-direction
+x1min      = 6050000          # minimum value of X1
+x1max      = 6050001           # maximum value of X1
+ix1_bc     = reflecting   # inner-X1 boundary flag
+ox1_bc     = reflecting   # outer-X1 boundary flag
+
+nx2        = 96            # Number of zones in X2-direction
+x2min      = -1.e7           # minimum value of X2
+x2max      = 1.e7         # maximum value of X2
+ix2_bc     = periodic   # inner-X2 boundary flag
+ox2_bc     = periodic   # outer-X2 boundary flag
+
+nx3        = 144           # Number of zones in X3-direction
+x3min      = -1.e7           # minimum value of X3
+x3max      = 1.e7         # maximum value of X3
+ix3_bc     = periodic   # inner-X3 boundary flag
+ox3_bc     = periodic   # outer-X3 boundary flag
+
+ReferencePressure = 1.E5
+PressureScaleHeight = 10.E3
+
+<meshblock>
+nx1        = 3
+nx2        = 24
+nx3        = 24
+
+<hydro>
+gamma       = 1.4         # gamma = C_p/C_v
+multi_layer_coupling = true
+
+<problem>
+h0 = 8000.
+g = 8.89
+omega_planet = 2.99e-7
+radius = 6.05e6
+sponge_lat = 10.
+sponge_tau = 2.5e2
+vrad = 1.e6
+vphi = 100.
+vis = 0.
+max_cyclone = 90.
+max_anticyclone = 90.
+b = 2.
+
+<thermal>
+thermal_tide = true
+orbital_period = 19414080.0
+rotation_period = 20995200.0
+obliq = 3.39458
+tau_t = 1.E9
+tide_amp = 1.E11
+
+<topo>
+istopowave = false
+wave_amp = 5.E4
+wave_wid_x = 15.0
+wave_pos_x = 30.0
+wave_wid_y = 15.0
+wave_pos_y = 70.0
+
+wave_wid_x2 = 20.0
+wave_pos_x2 = 100.0
+wave_wid_y2 = 25.0
+wave_pos_y2 = 30.0
+
+tau_w = 1.E1
+time_interval = 25200.0
+
+<circu>
+iscircuwave = false
+wavec_wid_y = 5.0
+wavec_pos_y = 70.0
+wavec_amp = 5.E4
+
+<circurr>
+iscircurrent = true;
+curr_wid_y = 5.0;
+curr_pos_y = 75.0;
+curr_amp = 50.0;
+
